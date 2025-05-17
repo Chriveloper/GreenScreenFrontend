@@ -6,11 +6,14 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase',
     '@nuxtjs/tailwindcss'
   ],
-  runtimeConfig: {
-    public: {
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseKey: process.env.SUPABASE_KEY,
-    }
+  supabase: {
+    redirect: false
   },
+  tailwindcss: {
+
+  },
+  css: [
+    '~assets/css/tailwind.css',
+  ],
 
 })
