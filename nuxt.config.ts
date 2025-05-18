@@ -1,19 +1,61 @@
+import { VitePWA } from 'vite-plugin-pwa';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2024-11-01',
+  compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
   modules: [
-    '@nuxtjs/supabase',
-    '@nuxtjs/tailwindcss'
+    '@nuxtjs/tailwindcss',
+    '@pinia/nuxt',
   ],
-  supabase: {
-    redirect: false
-  },
-  tailwindcss: {
-
+  // Configure PWA via Vite plugin
+  vite: {
+    plugins: [
+      VitePWA({
+        manifest: {
+          name: 'GreenScreen Focus Manager',
+          short_name: 'GreenScreen',
+          description: 'Stay focused and grow your virtual terrarium',
+          lang: 'en',
+          theme_color: '#10B981',
+          background_color: '#ffffff',
+          display: 'standalone',
+          start_url: '/',
+          icons: [
+            { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' }
+          ]
+        },
+        workbox: {
+          runtimeCaching: [
+            {
+              urlPattern: '/api/.*',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'api-cache',
+                expiration: { maxEntries: 50, maxAgeSeconds: 86400 }
+              }
+            },
+            {
+              urlPattern: /\.(?:png|jpg|jpeg|svg|ico)$/, 
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'asset-images',
+                expiration: { maxEntries: 100, maxAgeSeconds: 604800 }
+              }
+            }
+          ]
+        }
+      })
+    ]
   },
   css: [
-    '~assets/css/tailwind.css',
+    '~/assets/css/tailwind.css',
   ],
-
+  runtimeConfig: {
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_KEY,
+    }
+  }
 })
