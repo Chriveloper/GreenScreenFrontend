@@ -174,7 +174,7 @@
     loadPearls();
     const {data} = await $supabase.auth.getSession();
     if (!data.session) {
-      navigateTo('/signup');
+      //navigateTo('/signup');
     }
   });
 </script>
