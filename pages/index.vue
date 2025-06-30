@@ -132,3 +132,19 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+const { $supabase } = useNuxtApp();
+
+const router = useRouter();
+
+// check for existing session
+onMounted(async () => {
+  const {data} = await $supabase.auth.getSession();
+  if (!data.session) {
+    navigateTo('/signup');
+  }
+});
+</script>
