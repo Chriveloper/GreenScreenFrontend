@@ -141,6 +141,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import {useRouter} from "#vue-router";
 
 // State for mobile menu
 const mobileMenuOpen = ref(false)
@@ -153,11 +154,12 @@ const shouldShowNavigation = computed(() => {
   return !['/login', '/signup'].includes(route.path)
 })
 
+const { $supabase } = useNuxtApp();
+
 // Logout function (placeholder)
-const logout = () => {
-  // TODO: Implement logout logic with Supabase
-  console.log('Logging out...')
-  navigateTo('/login')
+const logout = async () => {
+  await $supabase.auth.signOut();
+  navigateTo('/signup')
 }
 </script>
 
