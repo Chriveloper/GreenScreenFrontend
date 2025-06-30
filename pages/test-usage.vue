@@ -1,14 +1,14 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold text-blue-600 mb-6">Usage Data Test</h1>
+    <h1 class="text-2xl font-bold text-sky-600 mb-6">Usage Data Test</h1>
     
-    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-4">Native Data Communication Test</h2>
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6 border-t-4 border-sky-400">
+      <h2 class="text-lg font-semibold mb-4 text-sky-700">Native Data Communication Test</h2>
       
       <div class="mb-4">
         <button 
           @click="simulateNativeData" 
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mr-4"
+          class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg mr-4"
         >
           Simulate Native Data
         </button>
@@ -20,28 +20,28 @@
         </button>
       </div>
       
-      <div class="border rounded-lg p-4 bg-gray-50">
-        <h3 class="font-semibold mb-2">Raw Data Output:</h3>
-        <pre id="output" class="text-sm text-gray-700 whitespace-pre-wrap">{{ rawOutput }}</pre>
+      <div class="border rounded-lg p-4 bg-sky-50">
+        <h3 class="font-semibold mb-2 text-sky-700">Raw Data Output:</h3>
+        <pre class="text-sm text-gray-700 whitespace-pre-wrap">{{ rawOutput }}</pre>
       </div>
     </div>
 
-    <div v-if="parsedUsageData.length > 0" class="bg-white rounded-lg shadow-lg p-6">
-      <h2 class="text-lg font-semibold mb-4">Parsed Usage Data</h2>
+    <div v-if="parsedUsageData.length > 0" class="bg-white rounded-lg shadow-lg p-6 border-t-4 border-sky-400">
+      <h2 class="text-lg font-semibold mb-4 text-sky-700">Parsed Usage Data</h2>
       
-      <div class="overflow-x-auto">
-        <table class="min-w-full table-auto">
+      <div class="overflow-x-auto mb-6">
+        <table class="min-w-full table-auto border-collapse">
           <thead>
-            <tr class="bg-gray-100">
-              <th class="px-4 py-2 text-left">App Name</th>
-              <th class="px-4 py-2 text-left">Package</th>
-              <th class="px-4 py-2 text-left">Usage (min)</th>
-              <th class="px-4 py-2 text-left">Start Time</th>
-              <th class="px-4 py-2 text-left">End Time</th>
+            <tr class="bg-sky-50 border-b border-sky-200">
+              <th class="px-4 py-2 text-left font-medium text-sky-700">App Name</th>
+              <th class="px-4 py-2 text-left font-medium text-sky-700">Package Name</th>
+              <th class="px-4 py-2 text-left font-medium text-sky-700">Usage Time</th>
+              <th class="px-4 py-2 text-left font-medium text-sky-700">Start Time</th>
+              <th class="px-4 py-2 text-left font-medium text-sky-700">End Time</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="app in parsedUsageData" :key="app.packageName" class="border-b">
+            <tr v-for="app in parsedUsageData" :key="`${app.packageName}-${app.startTime}`" class="border-b hover:bg-sky-25">
               <td class="px-4 py-2 font-medium">{{ app.appName }}</td>
               <td class="px-4 py-2 text-sm text-gray-600">{{ app.packageName }}</td>
               <td class="px-4 py-2">{{ formatUsageTime(app.usage) }}</td>
@@ -53,17 +53,17 @@
       </div>
 
       <div class="mt-6">
-        <h3 class="font-semibold mb-2">Usage Summary:</h3>
+        <h3 class="font-semibold mb-2 text-sky-700">Usage Summary:</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-blue-50 p-4 rounded-lg">
+          <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
             <p class="text-sm text-gray-600">Total Apps</p>
-            <p class="text-2xl font-bold text-blue-600">{{ parsedUsageData.length }}</p>
+            <p class="text-2xl font-bold text-sky-600">{{ parsedUsageData.length }}</p>
           </div>
-          <div class="bg-green-50 p-4 rounded-lg">
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
             <p class="text-sm text-gray-600">Total Usage</p>
             <p class="text-2xl font-bold text-green-600">{{ totalUsageMinutes }} min</p>
           </div>
-          <div class="bg-purple-50 p-4 rounded-lg">
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <p class="text-sm text-gray-600">Most Used App</p>
             <p class="text-2xl font-bold text-purple-600">{{ mostUsedApp?.appName || 'N/A' }}</p>
           </div>
