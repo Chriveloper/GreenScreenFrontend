@@ -144,11 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, inject} from 'vue';
+import {ref} from 'vue';
   const playerPearls = ref(250)
   const totalPearlsEarned = ref(475)
-
-  onMounted(async () => {
-    console.log('Fetched data:', inject('pearls'));
-  });
 </script>

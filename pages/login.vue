@@ -63,20 +63,26 @@ const error = ref('');
 const handleLogin = async () => {
   error.value = '';
 
-  const { data, error: signInError } = await $supabase.auth.signInWithPassword({
+  const { error: signInError } = await $supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value
   });
 
   if (signInError) {
-    if (
-        signInError.message &&
-        signInError.message.toLowerCase().includes('invalid login credentials')
-    ) {
-      error.value = 'Invalid email or password.';
-    } else {
-      error.value = signInError.message;
+    switch (signInError.code){
+      case "email_not_confirmed":
+        localStorage.setItem('pending_email', email.value);
+        localStorage.setItem('pending_password', password.value);
+        navigateTo('/check-email');
+        break
+      case "invalid_credentials":
+        error.value = 'Invalid email or password.';
+        break
+      default:
+        error.value = signInError.message;
+        break
     }
+
     return;
   }
 

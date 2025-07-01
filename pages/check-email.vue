@@ -15,27 +15,39 @@
       >
         I Verified My Email
       </button>
+
+      <!-- Resend button -->
+      <button
+          @click="resendVerification"
+          :disabled="resendLoading"
+          class="w-full mt-4 bg-gray-300 text-gray-800 rounded py-2 hover:bg-gray-400 transition disabled:opacity-50"
+      >
+        <span v-if="resendLoading">Resending...</span>
+        <span v-else>Resend Verification Email</span>
+      </button>
+
       <p v-if="error" class="text-red-600 mt-4 text-sm">{{ error }}</p>
+      <p v-if="successMessage" class="text-green-600 mt-4 text-sm">{{ successMessage }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
 const { $supabase } = useNuxtApp();
-const router = useRouter();
 
-let pendingEmail : string | null;
-let pendingPassword : string | null;
+let pendingEmail: string | null;
+let pendingPassword: string | null;
+
 const error = ref('');
+const successMessage = ref('');
+const resendLoading = ref(false);
 
-onMounted(async () => {
+onMounted(() => {
   if (typeof localStorage == 'undefined') {
     navigateTo('/');
     return;
   }
-
   pendingEmail = localStorage.getItem('pending_email');
   pendingPassword = localStorage.getItem('pending_password');
 
@@ -60,13 +72,36 @@ const tryVerify = async () => {
   if (signInError) {
     error.value = signInError.message;
   } else if (data.session) {
-    localStorage.setItem('access_token', data.session.access_token);
-    localStorage.setItem('refresh_token', data.session.refresh_token);
     localStorage.removeItem('pending_email');
     localStorage.removeItem('pending_password');
-    navigateTo('/main');
+    navigateTo('/');
   } else {
     error.value = 'Account still not verified. Please check again.';
+  }
+};
+
+const resendVerification = async () => {
+  error.value = '';
+  successMessage.value = '';
+  if (!pendingEmail) {
+    error.value = 'No pending email to resend.';
+    return;
+  }
+
+  resendLoading.value = true;
+
+  try{
+    const { error: resendError } = await $supabase.auth.resend({  type: 'signup',  email: pendingEmail})
+
+    if (resendError) {
+      error.value = resendError.message || 'Failed to resend verification email.';
+    } else {
+      successMessage.value = 'Verification email resent successfully.';
+    }
+  } catch (err: any) {
+    error.value = err.message || 'An unexpected error occurred.';
+  } finally {
+    resendLoading.value = false;
   }
 };
 </script>

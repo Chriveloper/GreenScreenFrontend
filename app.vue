@@ -142,8 +142,6 @@
 import {ref, computed, onMounted} from 'vue'
 import { useRoute } from 'vue-router'
 
-import { provide } from 'vue'
-
 // State for mobile menu
 const mobileMenuOpen = ref(false)
 
@@ -152,57 +150,99 @@ const route = useRoute()
 
 // Determine if navigation should be shown (hide on auth pages)
 const shouldShowNavigation = computed(() => {
-  return !['/login', '/signup'].includes(route.path)
+  return !['/login', '/signup', '/check-email'].includes(route.path)
 })
 
 const { $supabase } = useNuxtApp();
-if (localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
-  const {data} = await $supabase.auth.getSession();
-  if (data.session) {
-    const { data: userData, error } = await $supabase
-        .from('userdata')
-        .select(); // or specific fields: 'id, title, completed'
-
-    if (error) {
-      console.error(error);
-    } else {
-      const pearls = 123
-      provide('pearls', pearls)
-      console.log('Fetched data:', userData);
-    }
-  }
-}
 
 onMounted(async () => {
-  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){return;}
-
-  const {data} = await $supabase.auth.getSession();
-  if (!data) return;
-  if (!data.session) {
-    navigateTo('/signup');
-    return;
-  }
-
-  if (data.session) {
-    navigateTo('/');
-  }
+  $supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (session && session.user && session.user.id){
+        localStorage.setItem("user-id", session.user.id)
+      }
+      await loadUserData()
+    }
+  });
 
   if (typeof localStorage == 'undefined') {
     return;
   }
 
-  const pendingEmail = localStorage.getItem('pending_email');
-
-  if (pendingEmail) {
-    navigateTo('/check-email');
-  }
+  await checkLoggedIn();
+  await checkEmailAuth();
 });
 
-// Logout function (placeholder)
+const checkEmailAuth = async () => {
+  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
+    navigateTo('/signup');
+    return;
+  }
+
+  if (localStorage.getItem('pending_email')) {
+    navigateTo('/check-email');
+  }
+}
+
+const checkLoggedIn = async () => {
+  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
+    navigateTo('/signup');
+    return;
+  }
+
+  const {data} = await $supabase.auth.getSession();
+  if (!data || !data.session) {
+    navigateTo('/signup');
+  }
+  else navigateTo('/');
+}
+
+//Load userData from database
+const loadUserData = async () => {
+  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
+    return;
+  }
+
+  const {data} = await $supabase.auth.getSession();
+  if (!data || !data.session) return;
+
+  const id = localStorage.getItem("user-id")
+
+  if (!id) return
+
+  const { data: userData } = await $supabase
+      .from('userdata')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+  console.log(userData)
+
+  //no User Data Saved
+  if (!userData || userData.length === 0) {
+    localStorage.setItem("aquarium" ,  "{}")
+    localStorage.setItem("fish" , "{}")
+    localStorage.setItem("decoration" , "{}")
+    localStorage.setItem("pearls" , 0)
+    return;
+  }
+
+  localStorage.setItem("aquarium" ,  JSON.stringify(userData[0].aquarium))
+  localStorage.setItem("fish" , JSON.stringify(userData[0].fish))
+  localStorage.setItem("decoration" , JSON.stringify(userData[0].decoration))
+  localStorage.setItem("pearls" , userData[0].pearls)
+}
+
+// Logout function
 const logout = async () => {
   await $supabase.auth.signOut();
+  localStorage.removeItem("aquarium")
+  localStorage.removeItem("fish")
+  localStorage.removeItem("decoration")
+  localStorage.removeItem("pearls")
   navigateTo('/signup')
 }
+
 </script>
 
 <style>
