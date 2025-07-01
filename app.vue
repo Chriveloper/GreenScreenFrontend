@@ -176,6 +176,20 @@ onMounted(async () => {
   if (!data.session) {
     //navigateTo('/signup');
   }
+
+  if (data.session) {
+    navigateTo('/');
+  }
+
+  if (typeof localStorage == 'undefined') {
+    return;
+  }
+
+  const pendingEmail = localStorage.getItem('pending_email');
+
+  if (pendingEmail) {
+    navigateTo('/check-email');
+  }
 });
 
 // Logout function (placeholder)
