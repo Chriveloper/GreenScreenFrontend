@@ -61,32 +61,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 const { $supabase } = useNuxtApp();
 
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const error = ref('');
-const router = useRouter();
-
-onMounted(async () => {
-  const { data } = await $supabase.auth.getSession();
-  if (data.session) {
-    // valid session found, redirect
-    navigateTo('/');
-  }
-
-  if (typeof localStorage == 'undefined') {
-    return;
-  }
-
-  const pendingEmail = localStorage.getItem('pending_email');
-
-  if (pendingEmail) {
-    navigateTo('/check-email');
-  }
-});
 
 const handleSignup = async () => {
   error.value = '';
@@ -102,7 +82,6 @@ const handleSignup = async () => {
 
   if (userExistsError) {
     error.value = userExistsError.message;
-    // console.log(userExistsError);
     return;
   }
 

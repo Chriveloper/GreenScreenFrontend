@@ -145,38 +145,10 @@
 
 <script setup lang="ts">
 import {ref, onMounted, inject} from 'vue';
-  import { useRouter } from 'vue-router';
-  const { $supabase } = useNuxtApp();
-
-
   const playerPearls = ref(250)
   const totalPearlsEarned = ref(475)
 
-  const loadPearls = () => {
-    if (process.client) {
-      const savedPearls = localStorage.getItem('playerPearls')
-      if (savedPearls) {
-        playerPearls.value = parseInt(savedPearls)
-      }
-      
-      const savedTotalPearls = localStorage.getItem('totalPearlsEarned')
-      if (savedTotalPearls) {
-        totalPearlsEarned.value = parseInt(savedTotalPearls)
-      }
-    }
-  }
-
-
-  const router = useRouter();
-
-  // check for existing session
   onMounted(async () => {
-
     console.log('Fetched data:', inject('pearls'));
-    loadPearls();
-    const {data} = await $supabase.auth.getSession();
-    if (!data.session) {
-      //navigateTo('/signup');
-    }
   });
 </script>
