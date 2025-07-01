@@ -40,9 +40,9 @@
         </div>
       </form>
       <div class="mt-4 flex justify-between text-sm">
-        <NuxtLink class="text-blue-600 hover:underline" to="/forgot-password">
+        <!-- <NuxtLink class="text-blue-600 hover:underline" to="/forgot-password">
           Forgot your password?
-        </NuxtLink>
+        </NuxtLink> -->
         <NuxtLink class="text-blue-600 hover:underline" to="/signup">
           Don't have an account? Sign up
         </NuxtLink>
