@@ -156,23 +156,23 @@ const shouldShowNavigation = computed(() => {
 })
 
 const { $supabase } = useNuxtApp();
+const {data} = await $supabase.auth.getSession();
+if (data.session) {
+  const { data: userData, error } = await $supabase
+      .from('userdata')
+      .select(); // or specific fields: 'id, title, completed'
 
-const { data: userData, error } = await $supabase
-    .from('userdata')
-    .select(); // or specific fields: 'id, title, completed'
-
-if (error) {
-  console.error(error);
-} else {
-  const pearls = 123
-  provide('pearls', pearls)
-  console.log('Fetched data:', userData);
+  if (error) {
+    console.error(error);
+  } else {
+    const pearls = 123
+    provide('pearls', pearls)
+    console.log('Fetched data:', userData);
+  }
 }
 
 
-
 onMounted(async () => {
-  const {data} = await $supabase.auth.getSession();
   if (!data.session) {
     //navigateTo('/signup');
   }
