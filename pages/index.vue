@@ -144,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue';
+import {ref, onMounted, inject} from 'vue';
   import { useRouter } from 'vue-router';
   const { $supabase } = useNuxtApp();
 
@@ -171,6 +171,8 @@
 
   // check for existing session
   onMounted(async () => {
+
+    console.log('Fetched data:', inject('pearls'));
     loadPearls();
     const {data} = await $supabase.auth.getSession();
     if (!data.session) {
