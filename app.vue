@@ -139,9 +139,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import {ref, computed, onMounted} from 'vue'
 import { useRoute } from 'vue-router'
-import {useRouter} from "#vue-router";
+
+import { provide } from 'vue'
 
 // State for mobile menu
 const mobileMenuOpen = ref(false)
@@ -155,6 +156,27 @@ const shouldShowNavigation = computed(() => {
 })
 
 const { $supabase } = useNuxtApp();
+
+const { data: userData, error } = await $supabase
+    .from('userdata')
+    .select(); // or specific fields: 'id, title, completed'
+
+if (error) {
+  console.error(error);
+} else {
+  const pearls = 123
+  provide('pearls', pearls)
+  console.log('Fetched data:', userData);
+}
+
+
+
+onMounted(async () => {
+  const {data} = await $supabase.auth.getSession();
+  if (!data.session) {
+    //navigateTo('/signup');
+  }
+});
 
 // Logout function (placeholder)
 const logout = async () => {
