@@ -216,10 +216,8 @@ const loadUserData = async () => {
       .eq('id', id)
       .single();
 
-  console.log(userData)
-
   //no User Data Saved
-  if (!userData || userData.length === 0) {
+  if (!userData) {
     localStorage.setItem("aquarium" ,  "{}")
     localStorage.setItem("fish" , "{}")
     localStorage.setItem("decoration" , "{}")
@@ -227,10 +225,10 @@ const loadUserData = async () => {
     return;
   }
 
-  localStorage.setItem("aquarium" ,  JSON.stringify(userData[0].aquarium))
-  localStorage.setItem("fish" , JSON.stringify(userData[0].fish))
-  localStorage.setItem("decoration" , JSON.stringify(userData[0].decoration))
-  localStorage.setItem("pearls" , userData[0].pearls)
+  localStorage.setItem("aquarium" ,  JSON.stringify(userData.aquarium))
+  localStorage.setItem("fish" , JSON.stringify(userData.fish))
+  localStorage.setItem("decoration" , JSON.stringify(userData.decoration))
+  localStorage.setItem("pearls" , userData.pearls)
 }
 
 // Logout function
@@ -240,6 +238,7 @@ const logout = async () => {
   localStorage.removeItem("fish")
   localStorage.removeItem("decoration")
   localStorage.removeItem("pearls")
+  localStorage.removeItem("user-id")
   navigateTo('/signup')
 }
 
