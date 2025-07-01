@@ -174,6 +174,8 @@ if (localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
 }
 
 onMounted(async () => {
+  const {data} = await $supabase.auth.getSession();
+  if (!data) return;
   if (!data.session) {
     navigateTo('/signup');
     return;
