@@ -25,7 +25,7 @@
             :class="{ 'opacity-50': fish.owned }"
           >
             <div class="text-center">
-              <div s
+              <div
                 class="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl"
                 :style="{ backgroundColor: fish.color }"
               >
@@ -140,7 +140,11 @@
 import { ref, onMounted } from 'vue'
 
 // Player currency
-const playerPearls = localStorage.getItem("pearls") // Starting pearls
+const playerPearls = ref(0)
+
+onMounted(async () => {
+  playerPearls.value = Number(localStorage.getItem("pearls")) || 0
+});
 
 // Purchase modal
 const showPurchaseModal = ref(false)

@@ -155,7 +155,7 @@ const shouldShowNavigation = computed(() => {
 
 const { $supabase } = useNuxtApp();
 
-onMounted(async () => {
+  onMounted(async () => {
   $supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
       if (session && session.user && session.user.id){
