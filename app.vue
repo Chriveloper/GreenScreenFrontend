@@ -194,7 +194,12 @@ const checkLoggedIn = async () => {
   if (!data || !data.session) {
     navigateTo('/signup');
   }
-  else navigateTo('/');
+  else {
+    console.log(route.name)
+    if (route.name === "login" || route.name === "signup" || route.name === "check-email") {
+      navigateTo("/");
+    }
+  }
 }
 
 //Load userData from database
@@ -239,6 +244,7 @@ const logout = async () => {
   localStorage.removeItem("decoration")
   localStorage.removeItem("pearls")
   localStorage.removeItem("user-id")
+
   navigateTo('/signup')
 }
 
