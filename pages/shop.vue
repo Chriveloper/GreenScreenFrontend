@@ -138,12 +138,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-
+const { $supabase } = useNuxtApp();
 // Player currency
 const playerPearls = ref(0)
 
 onMounted(async () => {
   playerPearls.value = Number(localStorage.getItem("pearls")) || 0
+  console.log(playerPearls.value)
+  loadPurchases()
 });
 
 // Purchase modal
@@ -339,42 +341,56 @@ const closePurchaseModal = () => {
 }
 
 // Save/Load functions
-const savePurchases = () => {
-  if (process.client) {
-    const ownedFish = fishShop.value.filter(f => f.owned).map(f => f.id)
-    const ownedPlants = plantShop.value.filter(p => p.owned).map(p => p.id)
-    
-    localStorage.setItem('ownedFish', JSON.stringify(ownedFish))
-    localStorage.setItem('ownedPlants', JSON.stringify(ownedPlants))
-  }
+const savePurchases = async() => {
+  const fish = fishShop.value.filter(f => f.owned).map(f => f.id)
+  const decoration = plantShop.value.filter(p => p.owned).map(p => p.id)
+
+  const id = localStorage.getItem("user-id")
+
+  if (!id) return
+
+  console.log("shop " + playerPearls.value)
+  await $supabase
+      .from('userdata')
+      .update({
+        pearls: Number(playerPearls.value),
+        fish: fish,
+        decoration: decoration
+      })
+      .eq('id', id);
+
+  localStorage.setItem('pearls', playerPearls.value.toString())
+  localStorage.setItem('fish', JSON.stringify(fish))
+  localStorage.setItem('decoration', JSON.stringify(decoration))
 }
 
-const savePearls = () => {
-  if (process.client) {
-    localStorage.setItem('playerPearls', playerPearls.value.toString())
-  }
+const savePearls = async () => {
+  const id = localStorage.getItem("user-id")
+
+  if (!id) return
+
+  await $supabase
+      .from('userdata')
+      .update({ pearls: Number(playerPearls.value) })
+      .eq('id', id)
+  localStorage.setItem('pearls', playerPearls.value.toString())
 }
 
 const loadPurchases = () => {
   if (process.client) {
-    // Load pearls
-    const savedPearls = localStorage.getItem('playerPearls')
-    if (savedPearls) {
-      playerPearls.value = parseInt(savedPearls)
-    }
     
     // Load owned fish
-    const ownedFish = JSON.parse(localStorage.getItem('ownedFish') || '[]')
+    const fishOwned = JSON.parse(localStorage.getItem('fish') || '[]')
     fishShop.value.forEach(fish => {
-      if (ownedFish.includes(fish.id)) {
+      if (fishOwned.includes(fish.id)) {
         fish.owned = true
       }
     })
     
     // Load owned plants
-    const ownedPlants = JSON.parse(localStorage.getItem('ownedPlants') || '[]')
+    const decoration = JSON.parse(localStorage.getItem('decoration') || '[]')
     plantShop.value.forEach(plant => {
-      if (ownedPlants.includes(plant.id)) {
+      if (decoration.includes(plant.id)) {
         plant.owned = true
       }
     })
@@ -391,8 +407,4 @@ const addPearls = (amount) => {
 if (process.client) {
   window.addPearls = addPearls
 }
-
-onMounted(() => {
-  loadPurchases()
-})
 </script>
