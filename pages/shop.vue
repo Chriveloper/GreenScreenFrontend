@@ -140,7 +140,7 @@
 import { ref, onMounted } from 'vue'
 
 // Player currency
-const playerPearls = ref(250) // Starting pearls
+const playerPearls = localStorage.getItem("pearls") // Starting pearls
 
 // Purchase modal
 const showPurchaseModal = ref(false)

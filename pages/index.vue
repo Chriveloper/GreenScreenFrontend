@@ -145,6 +145,6 @@
 
 <script setup lang="ts">
 import {ref} from 'vue';
-  const playerPearls = ref(250)
+  const playerPearls = localStorage.getItem("pearls")
   const totalPearlsEarned = ref(475)
 </script>
