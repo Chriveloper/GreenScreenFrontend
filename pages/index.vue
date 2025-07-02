@@ -144,7 +144,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from 'vue';
-  const playerPearls = localStorage.getItem("pearls")
-  const totalPearlsEarned = ref(475)
+import {onMounted, ref} from 'vue';
+let playerPearls = ref(475)
+let totalPearlsEarned = ref(475)
+onMounted(async () => {
+  playerPearls.value = Number(localStorage.getItem("pearls")) || 0
+  totalPearlsEarned.value = 500
+});
+
 </script>
