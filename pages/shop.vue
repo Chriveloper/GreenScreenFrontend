@@ -396,15 +396,4 @@ const loadPurchases = () => {
     })
   }
 }
-
-// Add pearls function (called when focus sessions complete)
-const addPearls = (amount) => {
-  playerPearls.value += amount
-  savePearls()
-}
-
-// Expose addPearls function globally for other components
-if (process.client) {
-  window.addPearls = addPearls
-}
 </script>
