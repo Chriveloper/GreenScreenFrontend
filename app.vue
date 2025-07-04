@@ -7,7 +7,7 @@
       v-if="shouldShowNavigation"
     >
       <div class="flex items-center justify-between h-16 px-6 border-b">
-        <span class="text-sky-600 font-bold text-xl">AquaFocus</span>
+        <span class="text-sky-600 font-bold text-xl">Bluescreen</span>
         <button 
           @click="mobileMenuOpen = false"
           class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
@@ -123,7 +123,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span class="text-sky-600 font-bold text-xl">AquaFocus</span>
+          <span class="text-sky-600 font-bold text-xl">Bluescreen</span>
           <div class="w-10"></div> <!-- Spacer for centering -->
         </div>
       </header>
