@@ -221,12 +221,15 @@ const displayTime = computed(() => {
 
 // Screen time computed properties
 const totalScreenTimeToday = computed(() => {
-  return todayUsageData.value.reduce((total, app) => total + app.usage, 0)
+  // Convert from seconds to minutes
+  const totalSeconds = todayUsageData.value.reduce((total, app) => total + app.usage, 0)
+  return Math.round(totalSeconds / 60)
 })
 
 const dailyProgressPercentage = computed(() => {
   const limitMinutes = dailyLimitHours.value * 60
-  return (totalScreenTimeToday.value / limitMinutes) * 100
+  const totalMinutes = totalScreenTimeToday.value
+  return (totalMinutes / limitMinutes) * 100
 })
 
 const isOverDailyLimit = computed(() => {
@@ -234,7 +237,12 @@ const isOverDailyLimit = computed(() => {
 })
 
 const topAppsToday = computed(() => {
-  return [...todayUsageData.value].sort((a, b) => b.usage - a.usage)
+  return [...todayUsageData.value]
+    .map(app => ({
+      ...app,
+      usageMinutes: Math.round(app.usage / 60) // Convert seconds to minutes
+    }))
+    .sort((a, b) => b.usage - a.usage)
 })
 
 const availableApps = computed(() => {
@@ -361,10 +369,10 @@ const saveDailyGoal = () => {
 
 const addAppLimit = () => {
   if (selectedApp.value && newAppLimit.value) {
+    // Store app limits in minutes (as entered by user)
     appLimits.value[selectedApp.value] = parseInt(newAppLimit.value)
     selectedApp.value = ''
     newAppLimit.value = ''
-    // Save to localStorage or send to backend
     localStorage.setItem('appLimits', JSON.stringify(appLimits.value))
   }
 }
@@ -374,42 +382,45 @@ const removeAppLimit = (packageName) => {
   localStorage.setItem('appLimits', JSON.stringify(appLimits.value))
 }
 
-const isAppOverLimit = (app) => {
-  const limit = appLimits.value[app.packageName]
-  return limit && app.usage > limit
-}
-
 const formatAppName = (packageName) => {
   const app = availableApps.value.find(a => a.packageName === packageName)
   return app ? app.appName : packageName
 }
 
-const formatUsageTime = (minutes) => {
+const formatUsageTime = (seconds) => {
+  const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `${minutes}m`
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
 }
 
+const isAppOverLimit = (app) => {
+  const limit = appLimits.value[app.packageName]
+  const appMinutes = Math.round(app.usage / 60)
+  return limit && appMinutes > limit
+}
+
+// Usage data methods
 const requestUsageData = () => {
   if (process.client && typeof fetchNativeData !== 'undefined') {
     console.log("📤 [Focus] Requesting usage data...")
     fetchNativeData.postMessage('request_device_data')
   } else {
     console.log('⚠️ Native data channel not available - using sample data')
-    // Use sample data for development
+    // Use sample data for development (in seconds)
     processUsageData(JSON.stringify([
       {
         "packageName": "com.android.chrome",
         "appName": "chrome",
-        "usage": 120,
+        "usage": 7200, // 2 hours in seconds
         "startTime": new Date().toISOString(),
         "endTime": new Date().toISOString()
       },
       {
         "packageName": "com.instagram.android",
         "appName": "instagram",
-        "usage": 45,
+        "usage": 2700, // 45 minutes in seconds
         "startTime": new Date().toISOString(),
         "endTime": new Date().toISOString()
       }

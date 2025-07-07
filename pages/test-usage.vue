@@ -160,7 +160,8 @@ const clearOutput = () => {
 
 // Computed properties for data analysis
 const totalUsageMinutes = computed(() => {
-  return parsedUsageData.value.reduce((total, app) => total + app.usage, 0)
+  const totalSeconds = parsedUsageData.value.reduce((total, app) => total + app.usage, 0)
+  return Math.round(totalSeconds / 60)
 })
 
 const mostUsedApp = computed(() => {
@@ -171,7 +172,8 @@ const mostUsedApp = computed(() => {
 })
 
 // Utility functions
-const formatUsageTime = (minutes) => {
+const formatUsageTime = (seconds) => {
+  const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `${minutes}m`
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
