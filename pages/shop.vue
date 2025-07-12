@@ -137,20 +137,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-const { $supabase } = useNuxtApp();
-// Player currency
-const playerPearls = ref(0)
+import { ref, onMounted, computed } from 'vue'
+import { useUserStore } from '~/stores/user'
 
-onMounted(async () => {
-  playerPearls.value = Number(localStorage.getItem("pearls")) || 0
-  console.log(playerPearls.value)
-  loadPurchases()
-});
+const userStore = useUserStore()
 
 // Purchase modal
 const showPurchaseModal = ref(false)
 const purchasedItem = ref(null)
+
+// Computed properties from store
+const playerPearls = computed(() => userStore.pearls)
+const ownedFish = computed(() => userStore.fish)
+const ownedDecorations = computed(() => userStore.decorations)
 
 // Fish shop items
 const fishShop = ref([
@@ -160,8 +159,7 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#FFA726',
     price: 50,
-    description: 'Classic orange goldfish',
-    owned: false
+    description: 'Classic orange goldfish'
   },
   {
     id: 'angelfish',
@@ -169,8 +167,7 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#FFD54F',
     price: 75,
-    description: 'Elegant striped angelfish',
-    owned: false
+    description: 'Elegant striped angelfish'
   },
   {
     id: 'clownfish',
@@ -178,8 +175,7 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#FF7043',
     price: 100,
-    description: 'Colorful reef clownfish',
-    owned: false
+    description: 'Colorful reef clownfish'
   },
   {
     id: 'blue_tang',
@@ -187,8 +183,7 @@ const fishShop = ref([
     emoji: '🐟',
     color: '#42A5F5',
     price: 120,
-    description: 'Beautiful blue tropical fish',
-    owned: false
+    description: 'Beautiful blue tropical fish'
   },
   {
     id: 'royal_gramma',
@@ -196,8 +191,7 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#AB47BC',
     price: 150,
-    description: 'Purple and yellow beauty',
-    owned: false
+    description: 'Purple and yellow beauty'
   },
   {
     id: 'mandarin_fish',
@@ -205,8 +199,7 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#66BB6A',
     price: 200,
-    description: 'Exotic mandarin dragonet',
-    owned: false
+    description: 'Exotic mandarin dragonet'
   },
   {
     id: 'seahorse',
@@ -214,8 +207,7 @@ const fishShop = ref([
     emoji: '🦄',
     color: '#8D6E63',
     price: 300,
-    description: 'Mystical seahorse',
-    owned: false
+    description: 'Mystical seahorse'
   },
   {
     id: 'pufferfish',
@@ -223,8 +215,7 @@ const fishShop = ref([
     emoji: '🐡',
     color: '#FFAB40',
     price: 250,
-    description: 'Spiky pufferfish',
-    owned: false
+    description: 'Spiky pufferfish'
   }
 ])
 
@@ -236,8 +227,7 @@ const plantShop = ref([
     emoji: '🌿',
     color: '#4CAF50',
     price: 25,
-    description: 'Basic green seaweed',
-    owned: false
+    description: 'Basic green seaweed'
   },
   {
     id: 'coral_pink',
@@ -245,44 +235,7 @@ const plantShop = ref([
     emoji: '🪸',
     color: '#EC407A',
     price: 40,
-    description: 'Beautiful pink coral',
-    owned: false
-  },
-  {
-    id: 'coral_orange',
-    name: 'Orange Coral',
-    emoji: '🪸',
-    color: '#FF7043',
-    price: 45,
-    description: 'Vibrant orange coral',
-    owned: false
-  },
-  {
-    id: 'anemone',
-    name: 'Sea Anemone',
-    emoji: '🪼',
-    color: '#9C27B0',
-    price: 60,
-    description: 'Swaying sea anemone',
-    owned: false
-  },
-  {
-    id: 'kelp',
-    name: 'Kelp Forest',
-    emoji: '🌱',
-    color: '#2E7D32',
-    price: 80,
-    description: 'Tall kelp plants',
-    owned: false
-  },
-  {
-    id: 'bubble_coral',
-    name: 'Bubble Coral',
-    emoji: '🫧',
-    color: '#00BCD4',
-    price: 100,
-    description: 'Bubbly coral formation',
-    owned: false
+    description: 'Beautiful pink coral'
   },
   {
     id: 'treasure_chest',
@@ -290,8 +243,7 @@ const plantShop = ref([
     emoji: '💰',
     color: '#8D6E63',
     price: 150,
-    description: 'Mysterious treasure chest',
-    owned: false
+    description: 'Mysterious treasure chest'
   },
   {
     id: 'shipwreck',
@@ -299,39 +251,36 @@ const plantShop = ref([
     emoji: '🚢',
     color: '#5D4037',
     price: 200,
-    description: 'Ancient sunken ship',
-    owned: false
+    description: 'Ancient sunken ship'
   }
 ])
 
+// Computed properties to check if items are owned
+const isFishOwned = (id) => ownedFish.value.includes(id)
+const isDecorationOwned = (id) => ownedDecorations.value.includes(id)
+
 // Purchase functions
-const buyFish = (fish) => {
-  if (playerPearls.value >= fish.price && !fish.owned) {
-    playerPearls.value -= fish.price
-    fish.owned = true
-    purchasedItem.value = fish
-    showPurchaseModal.value = true
+const buyFish = async (fish) => {
+  if (playerPearls.value >= fish.price && !isFishOwned(fish.id)) {
+    const success = await userStore.purchaseItem('fish', fish)
     
-    // Save to localStorage
-    savePurchases()
-    savePearls()
-    
-    console.log(`Purchased ${fish.name} for ${fish.price} pearls`)
+    if (success) {
+      purchasedItem.value = fish
+      showPurchaseModal.value = true
+      console.log(`Purchased ${fish.name} for ${fish.price} pearls`)
+    }
   }
 }
 
-const buyPlant = (plant) => {
-  if (playerPearls.value >= plant.price && !plant.owned) {
-    playerPearls.value -= plant.price
-    plant.owned = true
-    purchasedItem.value = plant
-    showPurchaseModal.value = true
+const buyPlant = async (plant) => {
+  if (playerPearls.value >= plant.price && !isDecorationOwned(plant.id)) {
+    const success = await userStore.purchaseItem('decorations', plant)
     
-    // Save to localStorage
-    savePurchases()
-    savePearls()
-    
-    console.log(`Purchased ${plant.name} for ${plant.price} pearls`)
+    if (success) {
+      purchasedItem.value = plant
+      showPurchaseModal.value = true
+      console.log(`Purchased ${plant.name} for ${plant.price} pearls`)
+    }
   }
 }
 
@@ -340,60 +289,10 @@ const closePurchaseModal = () => {
   purchasedItem.value = null
 }
 
-// Save/Load functions
-const savePurchases = async() => {
-  const fish = fishShop.value.filter(f => f.owned).map(f => f.id)
-  const decoration = plantShop.value.filter(p => p.owned).map(p => p.id)
-
-  const id = localStorage.getItem("user-id")
-
-  if (!id) return
-
-  console.log("shop " + playerPearls.value)
-  await $supabase
-      .from('userdata')
-      .update({
-        pearls: Number(playerPearls.value),
-        fish: fish,
-        decoration: decoration
-      })
-      .eq('id', id);
-
-  localStorage.setItem('pearls', playerPearls.value.toString())
-  localStorage.setItem('fish', JSON.stringify(fish))
-  localStorage.setItem('decoration', JSON.stringify(decoration))
-}
-
-const savePearls = async () => {
-  const id = localStorage.getItem("user-id")
-
-  if (!id) return
-
-  await $supabase
-      .from('userdata')
-      .update({ pearls: Number(playerPearls.value) })
-      .eq('id', id)
-  localStorage.setItem('pearls', playerPearls.value.toString())
-}
-
-const loadPurchases = () => {
-  if (process.client) {
-    
-    // Load owned fish
-    const fishOwned = JSON.parse(localStorage.getItem('fish') || '[]')
-    fishShop.value.forEach(fish => {
-      if (fishOwned.includes(fish.id)) {
-        fish.owned = true
-      }
-    })
-    
-    // Load owned plants
-    const decoration = JSON.parse(localStorage.getItem('decoration') || '[]')
-    plantShop.value.forEach(plant => {
-      if (decoration.includes(plant.id)) {
-        plant.owned = true
-      }
-    })
+onMounted(async () => {
+  // If we're not logged in, redirect to login
+  if (!userStore.isLoggedIn) {
+    navigateTo('/login')
   }
-}
+})
 </script>

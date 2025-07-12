@@ -12,7 +12,7 @@
                 name="email"
                 type="email"
                 autocomplete="email"
-                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
                 required
             />
           </div>
@@ -24,7 +24,7 @@
                 name="password"
                 type="password"
                 autocomplete="current-password"
-                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
                 required
             />
           </div>
@@ -33,24 +33,25 @@
           </div>
           <button
               type="submit"
-              class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700 transition"
+              :disabled="loading"
+              class="w-full bg-sky-600 text-white rounded py-2 hover:bg-sky-700 transition disabled:opacity-70"
           >
-            Sign In
+            <span v-if="loading">Signing in...</span>
+            <span v-else>Sign In</span>
           </button>
         </div>
       </form>
       <div class="mt-4 flex justify-between text-sm">
-        <!-- <NuxtLink class="text-blue-600 hover:underline" to="/forgot-password">
+        <NuxtLink class="text-sky-600 hover:underline" to="/forgot-password">
           Forgot your password?
-        </NuxtLink> -->
-        <NuxtLink class="text-blue-600 hover:underline" to="/signup">
+        </NuxtLink>
+        <NuxtLink class="text-sky-600 hover:underline" to="/signup">
           Don't have an account? Sign up
         </NuxtLink>
       </div>
     </div>
   </div>
 </template>
-
 
 <script setup lang="ts">
 import { ref } from 'vue';
@@ -59,35 +60,38 @@ const { $supabase } = useNuxtApp();
 const email = ref('');
 const password = ref('');
 const error = ref('');
+const loading = ref(false);
 
 const handleLogin = async () => {
   error.value = '';
+  loading.value = true;
 
-  const { error: signInError } = await $supabase.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
-  });
+  try {
+    const { error: signInError } = await $supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value
+    });
 
-  if (signInError) {
-    switch (signInError.code){
-      case "email_not_confirmed":
+    if (signInError) {
+      if (signInError.message.includes('Email not confirmed')) {
+        // Save pending email info and redirect to verification page
         localStorage.setItem('pending_email', email.value);
         localStorage.setItem('pending_password', password.value);
         navigateTo('/check-email');
-        break
-      case "invalid_credentials":
-        error.value = 'Invalid email or password.';
-        break
-      default:
+      } else {
         error.value = signInError.message;
-        break
+      }
+      return;
     }
 
-    return;
+    // Redirect to dashboard on success
+    navigateTo('/');
+  } catch (err) {
+    console.error('Login error:', err);
+    error.value = 'An unexpected error occurred. Please try again.';
+  } finally {
+    loading.value = false;
   }
-
-  // redirect to the main page
-  navigateTo('/');
 };
 </script>
 
