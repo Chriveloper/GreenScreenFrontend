@@ -242,6 +242,83 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    async updateScreenTimeGoals(goals: { dailyLimit: number }) {
+      if (!this.user || !this.userProfile) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        
+        const { error } = await $supabase
+          .from('user_data')
+          .update({ screen_time_goals: goals })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.screen_time_goals = goals;
+        console.log('Screen time goals updated:', goals);
+        return true;
+      } catch (err) {
+        console.error('Error updating screen time goals:', err);
+        return false;
+      }
+    },
+    
+    async updateAppLimits(limits: Record<string, number>) {
+      if (!this.user || !this.userProfile) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        
+        const { error } = await $supabase
+          .from('user_data')
+          .update({ app_limits: limits })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.app_limits = limits;
+        console.log('App limits updated:', limits);
+        return true;
+      } catch (err) {
+        console.error('Error updating app limits:', err);
+        return false;
+      }
+    },
+    
+    async saveUsageData(usageData: any[]) {
+      if (!this.user) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        
+        // Format data for insertion
+        const formattedData = usageData.map(app => ({
+          user_id: this.user!.id,
+          date: new Date(app.startTime).toISOString().split('T')[0],
+          app_name: app.appName,
+          package_name: app.packageName,
+          usage_seconds: app.usage,
+          start_time: app.startTime,
+          end_time: app.endTime
+        }));
+        
+        const { error } = await $supabase
+          .from('usage_data')
+          .insert(formattedData);
+          
+        if (error) throw error;
+        
+        console.log('Usage data saved successfully');
+        return true;
+      } catch (err) {
+        console.error('Error saving usage data:', err);
+        return false;
+      }
+    },
+    
     clearUserData() {
       this.user = null;
       this.userProfile = null;
