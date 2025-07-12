@@ -33,14 +33,14 @@
       </div>
 
       <!-- Duration Selection -->
-      <div class="mb-6">
+      <div class="mb-4">
         <h3 class="text-center text-gray-600 mb-3">Select Focus Duration</h3>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             @click="setFocusTime(15)"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
-            :class="focusMinutes === 15 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            :class="focusSelection === 15 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
           >
             <div class="font-bold text-sky-700">15 min</div>
             <div class="text-xs text-yellow-600">{{ 15**2 }} pearls</div>
@@ -49,7 +49,7 @@
             @click="setFocusTime(25)"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
-            :class="focusMinutes === 25 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            :class="focusSelection === 25 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
           >
             <div class="font-bold text-sky-700">25 min</div>
             <div class="text-xs text-yellow-600">{{ 25**2 }} pearls</div>
@@ -58,12 +58,42 @@
             @click="setFocusTime(45)"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
-            :class="focusMinutes === 45 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            :class="focusSelection === 45 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
           >
             <div class="font-bold text-sky-700">45 min</div>
             <div class="text-xs text-yellow-600">{{ 45**2 }} pearls</div>
           </button>
+          <button
+            @click="setFocusTime('custom')"
+            :disabled="isRunning"
+            class="p-3 rounded-lg transition"
+            :class="focusSelection === 'custom' ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+          >
+            <div class="font-bold text-sky-700">Custom</div>
+            <div class="text-xs text-gray-500">Enter time</div>
+          </button>
         </div>
+      </div>
+
+      <!-- Custom Time Input -->
+      <div v-if="focusSelection === 'custom'" class="mb-6">
+        <label for="custom-minutes" class="block text-sm font-medium text-gray-700 text-center">Custom Minutes</label>
+        <div class="mt-1 relative rounded-md shadow-sm w-48 mx-auto">
+          <input
+            type="number"
+            name="custom-minutes"
+            id="custom-minutes"
+            v-model.number="customMinutes"
+            :disabled="isRunning"
+            class="w-full text-center p-2 border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
+            placeholder="e.g., 10"
+            min="1"
+            max="180"
+          />
+        </div>
+        <p v-if="customMinutes > 0" class="text-center text-xs text-yellow-600 mt-2">
+          Reward: {{ customMinutes**2 }} pearls
+        </p>
       </div>
 
       <!-- Controls -->
@@ -113,13 +143,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted, watch } from 'vue';
 import { useUserStore } from '~/stores/user';
 
 const userStore = useUserStore();
 
 // State
-const focusMinutes = ref(25);
+const focusSelection = ref(25); // 15, 25, 45, or 'custom'
+const customMinutes = ref(10);
 const timeLeft = ref(25 * 60);
 const isRunning = ref(false);
 let timerInterval = null;
@@ -129,8 +160,18 @@ const showCompletionModal = ref(false);
 const lastPearlReward = ref(0);
 const completedSessionMinutes = ref(0);
 
+// Debug Mode
+const debugMode = ref(false); // Set to true for fast testing
+
 // Computed Properties
 const playerPearls = computed(() => userStore.pearls);
+const activeMinutes = computed(() => {
+  if (focusSelection.value === 'custom') {
+    return Math.max(1, customMinutes.value || 1); // Ensure at least 1 minute
+  }
+  return focusSelection.value;
+});
+
 const displayTime = computed(() => {
   const minutes = Math.floor(timeLeft.value / 60);
   const seconds = timeLeft.value % 60;
@@ -139,43 +180,84 @@ const displayTime = computed(() => {
 
 const circumference = 2 * Math.PI * 45;
 const progressOffset = computed(() => {
-  const totalSeconds = focusMinutes.value * 60;
+  const totalSeconds = activeMinutes.value * 60;
+  if (totalSeconds === 0) return circumference;
   const percentage = (totalSeconds - timeLeft.value) / totalSeconds;
   return circumference * (1 - percentage);
 });
 
+// Watch for changes in custom minutes to update the timer
+watch(customMinutes, (newVal) => {
+  if (focusSelection.value === 'custom' && !isRunning.value) {
+    timeLeft.value = Math.max(1, newVal || 1) * 60;
+  }
+});
+
 // Methods
-const setFocusTime = (minutes) => {
+const setFocusTime = (selection) => {
   if (isRunning.value) return;
-  focusMinutes.value = minutes;
-  timeLeft.value = minutes * 60;
+  focusSelection.value = selection;
+  timeLeft.value = activeMinutes.value * 60;
 };
 
 const calculatePearlReward = () => {
-  return Math.round(Math.pow(focusMinutes.value, 2));
+  return Math.round(Math.pow(activeMinutes.value, 2));
 };
 
-const startTimer = () => {
-  if (isRunning.value) return;
+const refreshUserData = async () => {
+  console.log('Refreshing user data...');
+  await userStore.loadUserProfile();
+  console.log('User data refreshed. Current pearls:', userStore.pearls);
+};
+
+const startTimer = async () => {
+  if (isRunning.value || activeMinutes.value <= 0) return;
   isRunning.value = true;
-  timerInterval = setInterval(() => {
+  
+  // For debugging - finish immediately
+  if (debugMode.value) {
+    console.log("DEBUG MODE: Completing timer immediately");
+    completeTimer();
+    return;
+  }
+  
+  timerInterval = setInterval(async () => {
     if (timeLeft.value > 0) {
       timeLeft.value--;
     } else {
-      clearInterval(timerInterval);
-      isRunning.value = false;
-      
-      // Session Complete Logic
-      const pearlReward = calculatePearlReward();
-      lastPearlReward.value = pearlReward;
-      completedSessionMinutes.value = focusMinutes.value;
-      
-      userStore.addFocusSession(focusMinutes.value, pearlReward);
-      
-      showCompletionModal.value = true;
-      resetTimer(false); // Reset without changing duration
+      await completeTimer();
     }
   }, 1000);
+};
+
+// Extract timer completion logic to a separate function
+const completeTimer = async () => {
+  clearInterval(timerInterval);
+  isRunning.value = false;
+  
+  // Session Complete Logic
+  const pearlReward = calculatePearlReward();
+  console.log(`Timer completed! Calculated reward: ${pearlReward} pearls for ${activeMinutes.value} minutes`);
+  
+  lastPearlReward.value = pearlReward;
+  completedSessionMinutes.value = activeMinutes.value;
+  
+  // Add better error handling and feedback
+  try {
+    const success = await userStore.addFocusSession(activeMinutes.value, pearlReward);
+    if (success) {
+      console.log(`Successfully added ${pearlReward} pearls to account.`);
+      // Force refresh user data
+      await refreshUserData();
+    } else {
+      console.error('Failed to add focus session rewards');
+    }
+  } catch (error) {
+    console.error('Error while adding focus session:', error);
+  }
+  
+  showCompletionModal.value = true;
+  resetTimer(false); // Reset without changing duration
 };
 
 const pauseTimer = () => {
@@ -186,9 +268,9 @@ const pauseTimer = () => {
 const resetTimer = (changeDuration = true) => {
   pauseTimer();
   if (changeDuration) {
-    focusMinutes.value = 25;
+    focusSelection.value = 25;
   }
-  timeLeft.value = focusMinutes.value * 60;
+  timeLeft.value = focusSelection.value * 60;
 };
 
 const closeCompletionModal = () => {
@@ -199,3 +281,7 @@ onUnmounted(() => {
   clearInterval(timerInterval);
 });
 </script>
+
+<style scoped>
+/* Add any component-specific styles here */
+</style>
