@@ -143,13 +143,20 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import {onMounted, ref} from 'vue';
-let playerPearls = ref(475)
-let totalPearlsEarned = ref(475)
-onMounted(async () => {
-  playerPearls.value = Number(localStorage.getItem("pearls")) || 0
-  totalPearlsEarned.value = 500
-});
+<script setup>
+import { computed, onMounted } from 'vue';
+import { useUserStore } from '~/stores/user';
 
+const userStore = useUserStore();
+
+// Use computed properties to access store data
+const playerPearls = computed(() => userStore.pearls);
+const totalPearlsEarned = computed(() => userStore.pearls); // This should be a proper calculation from focus sessions
+
+// Check if we need to load user data
+onMounted(async () => {
+  if (userStore.isLoggedIn && !userStore.userProfile) {
+    await userStore.loadUserProfile();
+  }
+});
 </script>
