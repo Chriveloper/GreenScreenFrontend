@@ -30,6 +30,8 @@ export const useUserStore = defineStore('user', {
     user: null as any | null,
     userProfile: null as UserProfile | null,
     loading: false,
+    installed_apps : "" as String,
+    usage_data : "" as String,
   }),
   
   getters: {
