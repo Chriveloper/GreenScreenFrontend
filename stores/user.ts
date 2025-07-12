@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { useNuxtApp } from '#app';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Define TypeScript interfaces for better type checking
 interface UserProfile {
@@ -30,8 +31,8 @@ export const useUserStore = defineStore('user', {
     user: null as any | null,
     userProfile: null as UserProfile | null,
     loading: false,
-    installed_apps : "" as String,
-    usage_data : "" as String,
+    installed_apps: "" as string,
+    usage_data: "" as string,
   }),
   
   getters: {
@@ -39,6 +40,8 @@ export const useUserStore = defineStore('user', {
     pearls: (state) => state.userProfile?.pearls || 0,
     fish: (state) => state.userProfile?.fish || [],
     decorations: (state) => state.userProfile?.decorations || [],
+    screenTimeGoals: (state) => state.userProfile?.screen_time_goals || { dailyLimit: 240 },
+    appLimits: (state) => state.userProfile?.app_limits || {},
   },
   
   actions: {
@@ -55,13 +58,14 @@ export const useUserStore = defineStore('user', {
       
       try {
         const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
         
-        if (!$supabase) {
+        if (!supabase) {
           console.error('Supabase client not available');
           return null;
         }
         
-        const { data, error } = await $supabase
+        const { data, error } = await supabase
           .from('user_data')
           .select('*')
           .eq('id', this.user.id)
@@ -93,6 +97,7 @@ export const useUserStore = defineStore('user', {
       
       try {
         const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
         
         const defaultProfile: UserProfile = {
           id: this.user.id,
@@ -104,7 +109,7 @@ export const useUserStore = defineStore('user', {
           app_limits: {}
         };
         
-        const { data, error } = await $supabase
+        const { data, error } = await supabase
           .from('user_data')
           .insert(defaultProfile)
           .select()
@@ -131,6 +136,7 @@ export const useUserStore = defineStore('user', {
       
       try {
         const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
         
         // Get current collections
         const currentFish = [...this.fish];
@@ -158,7 +164,7 @@ export const useUserStore = defineStore('user', {
         }
         
         // Update in database
-        const { error } = await $supabase
+        const { error } = await supabase
           .from('user_data')
           .update({
             pearls: currentPearls - item.price,
@@ -193,8 +199,9 @@ export const useUserStore = defineStore('user', {
       
       try {
         const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
         
-        if (!$supabase) {
+        if (!supabase) {
           console.error('Supabase client not available');
           return false;
         }
@@ -203,7 +210,7 @@ export const useUserStore = defineStore('user', {
         console.log('Current pearls:', this.userProfile.pearls);
         
         // First log the focus session
-        const { error: sessionError } = await $supabase
+        const { error: sessionError } = await supabase
           .from('focus_sessions')
           .insert({
             user_id: this.user.id,
@@ -221,7 +228,7 @@ export const useUserStore = defineStore('user', {
         const newPearlBalance = this.userProfile.pearls + pearlsEarned;
         
         // Update pearls in user profile
-        const { error: updateError } = await $supabase
+        const { error: updateError } = await supabase
           .from('user_data')
           .update({
             pearls: newPearlBalance
@@ -240,6 +247,86 @@ export const useUserStore = defineStore('user', {
         return true;
       } catch (err) {
         console.error('Error in addFocusSession:', err);
+        return false;
+      }
+    },
+    
+    async updateScreenTimeGoals(goals: { dailyLimit: number }) {
+      if (!this.user || !this.userProfile) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        const { error } = await supabase
+          .from('user_data')
+          .update({ screen_time_goals: goals })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.screen_time_goals = goals;
+        console.log('Screen time goals updated:', goals);
+        return true;
+      } catch (err) {
+        console.error('Error updating screen time goals:', err);
+        return false;
+      }
+    },
+    
+    async updateAppLimits(limits: Record<string, number>) {
+      if (!this.user || !this.userProfile) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        const { error } = await supabase
+          .from('user_data')
+          .update({ app_limits: limits })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.app_limits = limits;
+        console.log('App limits updated:', limits);
+        return true;
+      } catch (err) {
+        console.error('Error updating app limits:', err);
+        return false;
+      }
+    },
+    
+    async saveUsageData(usageData: any[]) {
+      if (!this.user) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        // Format data for insertion
+        const formattedData = usageData.map(app => ({
+          user_id: this.user!.id,
+          date: new Date(app.startTime).toISOString().split('T')[0],
+          app_name: app.appName,
+          package_name: app.packageName,
+          usage_seconds: app.usage,
+          start_time: app.startTime,
+          end_time: app.endTime
+        }));
+        
+        const { error } = await supabase
+          .from('usage_data')
+          .insert(formattedData);
+          
+        if (error) throw error;
+        
+        console.log('Usage data saved successfully');
+        return true;
+      } catch (err) {
+        console.error('Error saving usage data:', err);
         return false;
       }
     },
