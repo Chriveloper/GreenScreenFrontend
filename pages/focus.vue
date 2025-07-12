@@ -1,149 +1,7 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-sky-600">Focus Session</h1>
-      <div class="flex items-center bg-white rounded-lg shadow px-4 py-2 border-t-4 border-yellow-400">
-        <span class="text-2xl mr-2">🐚</span>
-        <span class="text-lg font-bold text-yellow-600">{{ playerPearls }}</span>
-        <span class="text-sm text-gray-600 ml-1">Pearls</span>
-      </div>
-    </div>
-    
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Screen Time Goals Section -->
-      <div class="bg-white rounded-lg shadow-lg p-8">
-        <h2 class="text-lg font-semibold text-sky-700 mb-6">Screen Time Goals</h2>
-        
-        <!-- Goal Setting -->
-        <div class="mb-6">
-          <label for="daily-limit" class="block text-sm font-medium text-gray-700 mb-2">Daily Screen Time Limit (hours)</label>
-          <div class="flex items-center space-x-2">
-            <input 
-              type="number" 
-              id="daily-limit" 
-              v-model="dailyLimitHours"
-              min="1" 
-              max="12" 
-              step="0.5"
-              class="w-20 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-            >
-            <span class="text-sm text-gray-600">hours per day</span>
-            <button 
-              @click="saveDailyGoal"
-              class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
-            >
-              Set Goal
-            </button>
-          </div>
-        </div>
-
-        <!-- App-Specific Limits -->
-        <div class="mb-6">
-          <h3 class="text-md font-medium text-gray-700 mb-3">App Limits</h3>
-          <div class="space-y-3">
-            <div v-for="(limit, app) in appLimits" :key="app" class="flex items-center justify-between bg-sky-50 p-3 rounded-lg">
-              <div>
-                <p class="font-medium text-gray-800">{{ formatAppName(app) }}</p>
-                <p class="text-sm text-gray-600">{{ limit }} minutes/day</p>
-              </div>
-              <button 
-                @click="removeAppLimit(app)"
-                class="text-red-500 hover:text-red-700 text-sm"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-          
-          <!-- Add New App Limit -->
-          <div class="mt-4 border-t pt-4">
-            <div class="flex space-x-2">
-              <select 
-                v-model="selectedApp"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-              >
-                <option value="">Select an app...</option>
-                <option v-for="app in availableApps" :key="app.packageName" :value="app.packageName">
-                  {{ app.appName }}
-                </option>
-              </select>
-              <input 
-                type="number" 
-                v-model="newAppLimit"
-                placeholder="Minutes"
-                min="5"
-                max="480"
-                class="w-20 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-              >
-              <button 
-                @click="addAppLimit"
-                :disabled="!selectedApp || !newAppLimit"
-                class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md text-sm font-medium transition disabled:opacity-50"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Today's Progress -->
-        <div class="border-t pt-6">
-          <h3 class="text-md font-medium text-gray-700 mb-4">Today's Progress</h3>
-          
-          <!-- Overall Progress -->
-          <div class="mb-4">
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-sm font-medium text-gray-700">Total Screen Time</span>
-              <span class="text-sm font-medium" :class="isOverDailyLimit ? 'text-red-600' : 'text-gray-700'">
-                {{ formatUsageTime(totalScreenTimeToday) }} / {{ dailyLimitHours }}h
-              </span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                class="h-3 rounded-full transition-all duration-500"
-                :class="isOverDailyLimit ? 'bg-red-500' : 'bg-sky-600'"
-                :style="{ width: `${Math.min(dailyProgressPercentage, 100)}%` }"
-              ></div>
-            </div>
-            <p v-if="isOverDailyLimit" class="text-xs text-red-600 mt-1">
-              ⚠️ You've exceeded your daily limit by {{ formatUsageTime(totalScreenTimeToday - (dailyLimitHours * 60)) }}
-            </p>
-          </div>
-
-          <!-- App Usage Today -->
-          <div v-if="todayUsageData.length > 0">
-            <h4 class="text-sm font-medium text-gray-700 mb-2">Top Apps Today</h4>
-            <div class="space-y-2">
-              <div 
-                v-for="app in topAppsToday.slice(0, 5)" 
-                :key="app.packageName"
-                class="flex items-center justify-between text-sm"
-              >
-                <span class="font-medium">{{ app.appName }}</span>
-                <div class="flex items-center space-x-2">
-                  <span :class="isAppOverLimit(app) ? 'text-red-600' : 'text-gray-600'">
-                    {{ formatUsageTime(app.usage) }}
-                  </span>
-                  <span v-if="isAppOverLimit(app)" class="text-red-500 text-xs">⚠️</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- No Data Message -->
-          <div v-else class="text-center py-4">
-            <p class="text-gray-500 text-sm">No usage data available yet.</p>
-            <button 
-              @click="requestUsageData"
-              class="mt-2 text-sky-600 hover:text-sky-700 text-sm font-medium"
-            >
-              Refresh Data
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Focus Timer Section -->
+      <!-- First column: Focus Timer -->
       <div class="bg-white rounded-lg shadow-lg p-8">
         <h2 class="text-lg font-semibold text-sky-700 mb-6">Focus Timer</h2>
         
@@ -167,7 +25,7 @@
                 stroke="#0284c7"
                 stroke-width="12"
                 stroke-dasharray="553"
-                :stroke-dashoffset="isBreak ? '0' : progressOffset"
+                :stroke-dashoffset="progressOffset"
                 stroke-linecap="round"
                 transform="rotate(-90 96 96)"
                 class="transition-all duration-1000 ease-linear"
@@ -248,93 +106,113 @@
           </button>
         </div>
       </div>
-
-      <!-- Add this section to your grid in focus.vue -->
+      
+      <!-- Second column: Usage Analytics -->
       <div class="bg-white rounded-lg shadow-lg p-8">
         <h2 class="text-lg font-semibold text-sky-700 mb-6">Usage Analytics</h2>
         
-        <!-- Weekly Usage Chart -->
-        <div class="mb-8">
-          <h3 class="text-md font-medium text-gray-700 mb-4">Weekly Screen Time</h3>
-          <div class="h-48 flex items-end space-x-3">
-            <!-- We'll implement a simple bar chart for now -->
-            <div v-for="(day, index) in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']" :key="day" class="flex-1 flex flex-col items-center">
-              <!-- Calculate random height for demo - replace with actual data -->
-              <div 
-                class="w-full bg-sky-500 rounded-t transition-all duration-500"
-                :style="{ height: `${Math.floor(Math.random() * 100)}%` }"
-              ></div>
-              <span class="text-xs mt-1 text-gray-500">{{ day }}</span>
+        <!-- Daily Screen Time Summary -->
+        <div class="mb-6 bg-gray-50 rounded-lg p-4">
+          <h3 class="text-md font-medium text-gray-700 mb-2">Today's Screen Time</h3>
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-2xl font-bold text-sky-600">{{ formatUsageTime(totalScreenTimeToday) }}</span>
+              <span class="text-sm text-gray-500 ml-2">of {{ dailyLimitHours }}h limit</span>
+            </div>
+            <div class="w-24 h-24 relative">
+              <!-- Circle progress for screen time -->
+              <svg class="w-full h-full transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  fill="none"
+                  stroke="#f1f5f9"
+                  stroke-width="8"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  fill="none"
+                  :stroke="isOverDailyLimit ? '#ef4444' : '#0284c7'"
+                  stroke-width="8"
+                  :stroke-dasharray="251.2"
+                  :stroke-dashoffset="dailyLimitProgress"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-sm font-medium">{{ dailyLimitPercentage }}%</span>
+              </div>
             </div>
           </div>
         </div>
         
-        <!-- App Categories -->
+        <!-- App Usage List -->
         <div>
-          <h3 class="text-md font-medium text-gray-700 mb-4">Top Categories</h3>
-          <div class="space-y-3">
-            <!-- Sample categories - replace with actual data -->
-            <div class="flex items-center">
-              <span class="w-24 text-sm">Social</span>
-              <div class="flex-1 bg-gray-200 h-4 rounded-full overflow-hidden">
-                <div class="bg-pink-500 h-full rounded-full" style="width: 65%"></div>
+          <h3 class="text-md font-medium text-gray-700 mb-2">Today's App Usage</h3>
+          <div v-if="todayUsageData.length > 0" class="space-y-3">
+            <!-- App usage items -->
+            <div 
+              v-for="app in sortedTodayUsage" 
+              :key="app.packageName"
+              :class="{'border-red-500': isAppOverLimit(app)}"
+              class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-l-4"
+            >
+              <div>
+                <p class="font-medium">{{ app.appName }}</p>
+                <p class="text-xs text-gray-500">{{ formatUsageTime(app.usage) }}</p>
               </div>
-              <span class="ml-2 text-sm">65%</span>
-            </div>
-            <div class="flex items-center">
-              <span class="w-24 text-sm">Games</span>
-              <div class="flex-1 bg-gray-200 h-4 rounded-full overflow-hidden">
-                <div class="bg-purple-500 h-full rounded-full" style="width: 20%"></div>
+              
+              <!-- Show warning if over limit -->
+              <div v-if="isAppOverLimit(app)" class="text-red-500 text-xs font-medium flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Over limit
               </div>
-              <span class="ml-2 text-sm">20%</span>
-            </div>
-            <div class="flex items-center">
-              <span class="w-24 text-sm">Productivity</span>
-              <div class="flex-1 bg-gray-200 h-4 rounded-full overflow-hidden">
-                <div class="bg-green-500 h-full rounded-full" style="width: 15%"></div>
+              
+              <!-- Show limit if set -->
+              <div v-else-if="appLimits[app.packageName]" class="text-gray-500 text-xs">
+                Limit: {{ appLimits[app.packageName] }}min
               </div>
-              <span class="ml-2 text-sm">15%</span>
             </div>
           </div>
+          <p v-else class="text-gray-500 text-sm italic">No usage data available for today</p>
         </div>
       </div>
     </div>
-
-    <!-- Session Complete Modal -->
+    
+    <!-- Completion Modal -->
     <div v-if="showCompletionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-8 max-w-md mx-4">
-        <div class="text-center">
-          <div class="text-6xl mb-4">🎉</div>
-          <h3 class="text-2xl font-bold mb-4 text-sky-600">Session Complete!</h3>
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div class="flex items-center justify-center mb-2">
-              <span class="text-3xl mr-2">🐚</span>
-              <span class="text-2xl font-bold text-yellow-600">+{{ lastPearlReward }}</span>
-            </div>
-            <p class="text-sm text-yellow-700">Pearls earned for your focus!</p>
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-          <p class="text-gray-600 mb-6">
-            Great job focusing for {{ completedSessionMinutes }} minutes!
-          </p>
-          <div class="flex space-x-4">
-            <button 
-              @click="closeCompletionModal"
-              class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium"
-            >
-              Continue
-            </button>
-            <NuxtLink 
-              to="/shop"
-              @click="closeCompletionModal"
-              class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md font-medium text-center"
-            >
-              Visit Shop
-            </NuxtLink>
+          <h3 class="text-xl font-bold text-gray-900">Focus Session Complete!</h3>
+          <p class="text-gray-600 mt-2">You've completed a {{ completedSessionMinutes }} minute focus session.</p>
+          <div class="flex items-center justify-center mt-4 text-yellow-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-xl font-bold ml-2">+{{ lastPearlReward }} pearls</span>
           </div>
+        </div>
+        <div class="flex space-x-3">
+          <button @click="closeCompletionModal" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium">
+            Continue
+          </button>
+          <NuxtLink to="/shop" @click="closeCompletionModal" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center">
+            Visit Shop
+          </NuxtLink>
         </div>
       </div>
     </div>
-
+    
     <!-- Notifications -->
     <div class="fixed bottom-4 right-4 z-50">
       <transition-group name="notification">
@@ -408,55 +286,27 @@ const progressOffset = computed(() => {
 // Screen time computed properties
 const totalScreenTimeToday = computed(() => {
   // Convert from seconds to minutes
-  const totalSeconds = todayUsageData.value.reduce((total, app) => total + app.usage, 0)
-  return Math.round(totalSeconds / 60)
+  return todayUsageData.value.reduce((total, app) => total + app.usage, 0)
 })
 
-const dailyProgressPercentage = computed(() => {
-  const limitMinutes = dailyLimitHours.value * 60
-  const totalMinutes = totalScreenTimeToday.value
-  return (totalMinutes / limitMinutes) * 100
+const dailyLimitPercentage = computed(() => {
+  const dailyLimitSeconds = dailyLimitHours.value * 60 * 60
+  const percentage = Math.min(100, Math.round((totalScreenTimeToday.value / dailyLimitSeconds) * 100))
+  return percentage
+})
+
+const dailyLimitProgress = computed(() => {
+  const percentage = Math.min(1, totalScreenTimeToday.value / (dailyLimitHours.value * 60 * 60))
+  return 251.2 * (1 - percentage) // 251.2 is circumference of circle with r=40
 })
 
 const isOverDailyLimit = computed(() => {
-  return totalScreenTimeToday.value > (dailyLimitHours.value * 60)
+  return totalScreenTimeToday.value > dailyLimitHours.value * 60 * 60
 })
 
-const topAppsToday = computed(() => {
-  return [...todayUsageData.value]
-    .map(app => ({
-      ...app,
-      usageMinutes: Math.round(app.usage / 60) // Convert seconds to minutes
-    }))
-    .sort((a, b) => b.usage - a.usage)
+const sortedTodayUsage = computed(() => {
+  return [...todayUsageData.value].sort((a, b) => b.usage - a.usage)
 })
-
-const availableApps = computed(() => {
-  const uniqueApps = new Map()
-  rawUsageData.value.forEach(app => {
-    if (!uniqueApps.has(app.packageName)) {
-      uniqueApps.set(app.packageName, app)
-    }
-  })
-  return Array.from(uniqueApps.values()).sort((a, b) => a.appName.localeCompare(b.appName))
-})
-
-const closeCompletionModal = () => {
-  showCompletionModal.value = false
-}
-
-// Pearl calculation
-const calculatePearlReward = () => {
-  // Base pearls: 1 pearl per minute
-  // Bonus for longer sessions
-  const basePearls = focusMinutes.value
-  let bonus = 0
-  
-  if (focusMinutes.value >= 45) bonus = 10
-  else if (focusMinutes.value >= 25) bonus = 5
-  
-  return basePearls + bonus
-}
 
 // Timer methods
 const startTimer = () => {
@@ -468,12 +318,13 @@ const startTimer = () => {
       } else {
         // Timer finished
         isRunning.value = false;
+        clearInterval(timerInterval);
+        
         if (isBreak.value) {
           // Break finished, start new focus session
           isBreak.value = false;
           timeLeft.value = focusMinutes.value * 60;
-          
-          console.log('Break finished! Ready for next focus session.');
+          showNotification('Break finished! Ready for next focus session.', 'info');
         } else {
           // Focus session finished - award pearls
           const pearlReward = calculatePearlReward();
@@ -489,10 +340,7 @@ const startTimer = () => {
           // Start break
           isBreak.value = true;
           timeLeft.value = breakMinutes.value * 60;
-          
-          console.log(`Focus session completed! Earned ${pearlReward} pearls.`);
         }
-        clearInterval(timerInterval);
       }
     }, 1000);
   }
@@ -521,10 +369,20 @@ const setFocusTime = (minutes) => {
   }
 };
 
+const closeCompletionModal = () => {
+  showCompletionModal.value = false;
+};
+
+// Calculate pearl reward based on session length
+const calculatePearlReward = () => {
+  // Basic formula: 2 pearls per 5 minutes, rounded up
+  return Math.ceil(focusMinutes.value / 5) * 2;
+};
+
 // Screen time methods
 const saveDailyGoal = async () => {
   // Update screen time goals in store
-  const goals = { ...userStore.screenTimeGoals, dailyLimit: dailyLimitHours.value * 60 }
+  const goals = { dailyLimit: dailyLimitHours.value * 60 }
   await userStore.updateScreenTimeGoals(goals)
   console.log(`Daily limit set to ${dailyLimitHours.value} hours`)
 }
@@ -553,7 +411,7 @@ const removeAppLimit = async (packageName) => {
 }
 
 const formatAppName = (packageName) => {
-  const app = availableApps.value.find(a => a.packageName === packageName)
+  const app = todayUsageData.value.find(a => a.packageName === packageName)
   return app ? app.appName : packageName
 }
 
@@ -579,31 +437,23 @@ const requestUsageData = () => {
   } else {
     console.log('⚠️ Native data channel not available - using sample data')
     // Use sample data for development (in seconds)
-    processUsageData(JSON.stringify([
-      {
-        "packageName": "com.android.chrome",
-        "appName": "chrome",
-        "usage": 7200, // 2 hours in seconds
-        "startTime": new Date().toISOString(),
-        "endTime": new Date().toISOString()
-      },
-      {
-        "packageName": "com.instagram.android",
-        "appName": "instagram",
-        "usage": 2700, // 45 minutes in seconds
-        "startTime": new Date().toISOString(),
-        "endTime": new Date().toISOString()
-      }
-    ]))
+    const sampleData = JSON.stringify([
+      { packageName: 'com.instagram.android', appName: 'Instagram', usage: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
+      { packageName: 'com.facebook.katana', appName: 'Facebook', usage: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
+      { packageName: 'com.whatsapp', appName: 'WhatsApp', usage: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
+      { packageName: 'com.tiktok.app', appName: 'TikTok', usage: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString() }
+    ])
+    processUsageData(sampleData)
   }
 }
 
+// Process usage data from native app
 const processUsageData = (data) => {
   try {
     const parsed = JSON.parse(data)
     rawUsageData.value = parsed
     
-    // Filter today's data (you might want to implement proper date filtering)
+    // Filter for today's data
     const today = new Date().toDateString()
     todayUsageData.value = parsed.filter(app => {
       const appDate = new Date(app.startTime).toDateString()
