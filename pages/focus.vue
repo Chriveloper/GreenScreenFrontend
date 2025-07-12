@@ -142,6 +142,162 @@
           </div>
         </div>
       </div>
+
+      <!-- Focus Timer Section -->
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <h2 class="text-lg font-semibold text-sky-700 mb-6">Focus Timer</h2>
+        
+        <!-- Timer Display -->
+        <div class="flex flex-col items-center mb-8">
+          <div class="relative">
+            <svg class="w-48 h-48">
+              <circle
+                cx="96"
+                cy="96"
+                r="88"
+                fill="none"
+                stroke="#f1f5f9"
+                stroke-width="12"
+              />
+              <circle
+                cx="96"
+                cy="96"
+                r="88"
+                fill="none"
+                stroke="#0284c7"
+                stroke-width="12"
+                stroke-dasharray="553"
+                :stroke-dashoffset="isBreak ? '0' : progressOffset"
+                stroke-linecap="round"
+                transform="rotate(-90 96 96)"
+                class="transition-all duration-1000 ease-linear"
+              />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="text-center">
+                <p class="text-3xl font-bold text-sky-700">{{ displayTime }}</p>
+                <p class="text-sm text-gray-500">{{ isBreak ? 'Break' : 'Focus' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Timer Controls -->
+        <div class="flex justify-center space-x-3 mb-6">
+          <button 
+            @click="setFocusTime(15)"
+            :class="{'bg-sky-600 text-white': focusMinutes === 15 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 15 || isRunning}"
+            class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+            :disabled="isRunning"
+          >
+            15 min
+          </button>
+          <button 
+            @click="setFocusTime(25)"
+            :class="{'bg-sky-600 text-white': focusMinutes === 25 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 25 || isRunning}"
+            class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+            :disabled="isRunning"
+          >
+            25 min
+          </button>
+          <button 
+            @click="setFocusTime(45)"
+            :class="{'bg-sky-600 text-white': focusMinutes === 45 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 45 || isRunning}"
+            class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+            :disabled="isRunning"
+          >
+            45 min
+          </button>
+        </div>
+        
+        <!-- Session Goal Input -->
+        <div class="mb-6">
+          <label for="session-goal" class="block text-sm font-medium text-gray-700 mb-2">Session Goal (optional)</label>
+          <input 
+            type="text" 
+            id="session-goal" 
+            v-model="sessionGoal"
+            placeholder="What will you focus on?"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+            :disabled="isRunning"
+          >
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex space-x-3">
+          <button 
+            v-if="!isRunning"
+            @click="startTimer"
+            class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-md font-medium text-sm transition"
+          >
+            Start Focus
+          </button>
+          <button 
+            v-else
+            @click="pauseTimer"
+            class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md font-medium text-sm transition"
+          >
+            Pause
+          </button>
+          <button 
+            @click="resetTimer"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-md font-medium text-sm transition"
+            :disabled="!isRunning && timeLeft === focusMinutes * 60"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Add this section to your grid in focus.vue -->
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <h2 class="text-lg font-semibold text-sky-700 mb-6">Usage Analytics</h2>
+        
+        <!-- Weekly Usage Chart -->
+        <div class="mb-8">
+          <h3 class="text-md font-medium text-gray-700 mb-4">Weekly Screen Time</h3>
+          <div class="h-48 flex items-end space-x-3">
+            <!-- We'll implement a simple bar chart for now -->
+            <div v-for="(day, index) in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']" :key="day" class="flex-1 flex flex-col items-center">
+              <!-- Calculate random height for demo - replace with actual data -->
+              <div 
+                class="w-full bg-sky-500 rounded-t transition-all duration-500"
+                :style="{ height: `${Math.floor(Math.random() * 100)}%` }"
+              ></div>
+              <span class="text-xs mt-1 text-gray-500">{{ day }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- App Categories -->
+        <div>
+          <h3 class="text-md font-medium text-gray-700 mb-4">Top Categories</h3>
+          <div class="space-y-3">
+            <!-- Sample categories - replace with actual data -->
+            <div class="flex items-center">
+              <span class="w-24 text-sm">Social</span>
+              <div class="flex-1 bg-gray-200 h-4 rounded-full overflow-hidden">
+                <div class="bg-pink-500 h-full rounded-full" style="width: 65%"></div>
+              </div>
+              <span class="ml-2 text-sm">65%</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-24 text-sm">Games</span>
+              <div class="flex-1 bg-gray-200 h-4 rounded-full overflow-hidden">
+                <div class="bg-purple-500 h-full rounded-full" style="width: 20%"></div>
+              </div>
+              <span class="ml-2 text-sm">20%</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-24 text-sm">Productivity</span>
+              <div class="flex-1 bg-gray-200 h-4 rounded-full overflow-hidden">
+                <div class="bg-green-500 h-full rounded-full" style="width: 15%"></div>
+              </div>
+              <span class="ml-2 text-sm">15%</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Session Complete Modal -->
@@ -178,6 +334,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Notifications -->
+    <div class="fixed bottom-4 right-4 z-50">
+      <transition-group name="notification">
+        <div 
+          v-for="notification in notifications" 
+          :key="notification.id"
+          :class="{
+            'bg-sky-100 border-sky-500': notification.type === 'info',
+            'bg-yellow-100 border-yellow-500': notification.type === 'warning',
+            'bg-red-100 border-red-500': notification.type === 'error'
+          }"
+          class="mb-2 p-3 border-l-4 rounded shadow-md max-w-xs"
+        >
+          {{ notification.message }}
+        </div>
+      </transition-group>
+    </div>
   </div>
 </template>
 
@@ -210,6 +384,9 @@ const newAppLimit = ref('')
 const todayUsageData = ref([])
 const rawUsageData = ref([])
 
+// Notifications
+const notifications = ref([])
+
 // Get user data from store
 const playerPearls = computed(() => userStore.pearls)
 const appLimits = computed(() => userStore.appLimits)
@@ -220,6 +397,13 @@ const displayTime = computed(() => {
   const seconds = timeLeft.value % 60
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 })
+
+// Add this computed property
+const progressOffset = computed(() => {
+  const totalSeconds = focusMinutes.value * 60;
+  const percentage = (totalSeconds - timeLeft.value) / totalSeconds;
+  return 553 * (1 - percentage); // 553 is the circumference of the circle with r=88
+});
 
 // Screen time computed properties
 const totalScreenTimeToday = computed(() => {
@@ -257,69 +441,6 @@ const availableApps = computed(() => {
   return Array.from(uniqueApps.values()).sort((a, b) => a.appName.localeCompare(b.appName))
 })
 
-// Timer methods
-const setFocusTime = (minutes) => {
-  if (!isRunning.value) {
-    focusMinutes.value = minutes
-    timeLeft.value = minutes * 60
-  }
-}
-
-const startTimer = () => {
-  if (!isRunning.value) {
-    isRunning.value = true
-    timerInterval = setInterval(() => {
-      if (timeLeft.value > 0) {
-        timeLeft.value--
-      } else {
-        // Timer finished
-        isRunning.value = false
-        if (isBreak.value) {
-          // Break finished, start new focus session
-          isBreak.value = false
-          timeLeft.value = focusMinutes.value * 60
-          
-          console.log('Break finished! Ready for next focus session.')
-        } else {
-          // Focus session finished - award pearls
-          const pearlReward = calculatePearlReward()
-          lastPearlReward.value = pearlReward
-          completedSessionMinutes.value = focusMinutes.value
-          
-          // Save session and update pearls in store
-          userStore.addFocusSession(focusMinutes.value, pearlReward)
-          
-          // Show completion modal
-          showCompletionModal.value = true
-          
-          // Start break
-          isBreak.value = true
-          timeLeft.value = breakMinutes.value * 60
-          
-          console.log(`Focus session completed! Earned ${pearlReward} pearls.`)
-        }
-        clearInterval(timerInterval)
-      }
-    }, 1000)
-  }
-}
-
-const pauseTimer = () => {
-  isRunning.value = false
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
-}
-
-const resetTimer = () => {
-  isRunning.value = false
-  isBreak.value = false
-  timeLeft.value = focusMinutes.value * 60
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
-}
-
 const closeCompletionModal = () => {
   showCompletionModal.value = false
 }
@@ -336,6 +457,69 @@ const calculatePearlReward = () => {
   
   return basePearls + bonus
 }
+
+// Timer methods
+const startTimer = () => {
+  if (!isRunning.value) {
+    isRunning.value = true;
+    timerInterval = setInterval(() => {
+      if (timeLeft.value > 0) {
+        timeLeft.value--;
+      } else {
+        // Timer finished
+        isRunning.value = false;
+        if (isBreak.value) {
+          // Break finished, start new focus session
+          isBreak.value = false;
+          timeLeft.value = focusMinutes.value * 60;
+          
+          console.log('Break finished! Ready for next focus session.');
+        } else {
+          // Focus session finished - award pearls
+          const pearlReward = calculatePearlReward();
+          lastPearlReward.value = pearlReward;
+          completedSessionMinutes.value = focusMinutes.value;
+          
+          // Save session and update pearls in store
+          userStore.addFocusSession(focusMinutes.value, pearlReward);
+          
+          // Show completion modal
+          showCompletionModal.value = true;
+          
+          // Start break
+          isBreak.value = true;
+          timeLeft.value = breakMinutes.value * 60;
+          
+          console.log(`Focus session completed! Earned ${pearlReward} pearls.`);
+        }
+        clearInterval(timerInterval);
+      }
+    }, 1000);
+  }
+};
+
+const pauseTimer = () => {
+  isRunning.value = false;
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+};
+
+const resetTimer = () => {
+  isRunning.value = false;
+  isBreak.value = false;
+  timeLeft.value = focusMinutes.value * 60;
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+};
+
+const setFocusTime = (minutes) => {
+  if (!isRunning.value) {
+    focusMinutes.value = minutes;
+    timeLeft.value = minutes * 60;
+  }
+};
 
 // Screen time methods
 const saveDailyGoal = async () => {
@@ -441,11 +625,27 @@ const processUsageData = (data) => {
 const setupNativeCallback = () => {
   if (process.client) {
     window.onNativeData = function(data) {
-      console.log("🟢 [Focus] Received usage data from native:", data)
-      processUsageData(data)
-    }
+      console.log("🟢 [Focus] Received usage data from native:", data);
+      processUsageData(data);
+      
+      // Add notification if daily limit is exceeded
+      setTimeout(() => {
+        if (isOverDailyLimit.value) {
+          showNotification('Daily screen time limit exceeded!', 'warning');
+        }
+      }, 500);
+    };
+    
+    // Add a method that Flutter can call when the app is put in background
+    window.onAppBackground = function() {
+      // Save any unsaved state
+      console.log("App went to background");
+      if (isRunning.value) {
+        pauseTimer();
+      }
+    };
   }
-}
+};
 
 // Load saved settings
 const loadSettings = async () => {
@@ -469,4 +669,25 @@ onUnmounted(() => {
     clearInterval(timerInterval)
   }
 })
+
+// Notifications
+const showNotification = (message, type = 'info') => {
+  const id = Date.now();
+  notifications.value.push({ id, message, type });
+  
+  // Auto-dismiss after 5 seconds
+  setTimeout(() => {
+    notifications.value = notifications.value.filter(n => n.id !== id);
+  }, 5000);
+};
 </script>
+
+<style>
+.notification-enter-active, .notification-leave-active {
+  transition: all 0.3s ease;
+}
+.notification-enter-from, .notification-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+</style>
