@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import {ref, computed, onMounted} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {useUserStore} from '@/stores/user'
 
 const userStore = useUserStore()
@@ -82,7 +82,7 @@ const loadUsageDataFromStore = () => {
     const installed = JSON.parse(installedRaw)
 
     // Merge icon and appName from installed apps
-    const enriched = usage.map(entry => {
+    parsedUsageData.value = usage.map(entry => {
       const match = installed.find(app => app.packageName === entry.packageName)
       return {
         ...entry,
@@ -90,8 +90,6 @@ const loadUsageDataFromStore = () => {
         icon: match?.icon || null
       }
     })
-
-    parsedUsageData.value = enriched
   } catch (e) {
     console.error("Error loading user store usage data:", e)
   }
