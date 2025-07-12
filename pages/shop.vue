@@ -36,6 +36,7 @@
                   class="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl"
                   :style="{ backgroundColor: fish.color }"
                 >
+                  
                   {{ fish.emoji }}
                 </div>
                 <h3 class="font-semibold text-gray-800 mb-1">{{ fish.name }}</h3>
@@ -173,7 +174,7 @@ const fishShop = ref([
   {
     id: 'goldfish',
     name: 'Goldfish',
-    emoji: '🐠',
+    emoji: 'fish_1.gif',
     color: '#FFA726',
     price: 50,
     description: 'Classic orange goldfish',
