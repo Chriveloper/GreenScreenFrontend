@@ -1,23 +1,23 @@
 <template>
   <div class="min-h-screen flex bg-sky-50">
     <!-- Left Sidebar Menu -->
-    <div 
-      :class="{'translate-x-0': mobileMenuOpen, '-translate-x-full': !mobileMenuOpen}" 
-      class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
-      v-if="shouldShowNavigation"
+    <div
+        :class="{'translate-x-0': mobileMenuOpen, '-translate-x-full': !mobileMenuOpen}"
+        class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
+        v-if="shouldShowNavigation"
     >
       <div class="flex items-center justify-between h-16 px-6 border-b">
         <span class="text-sky-600 font-bold text-xl">Bluescreen</span>
-        <button 
-          @click="mobileMenuOpen = false"
-          class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
+        <button
+            @click="mobileMenuOpen = false"
+            class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
         >
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
+
       <nav class="mt-8">
         <ul class="space-y-2">
           <li>
@@ -72,11 +72,11 @@
             </NuxtLink>
           </li>
         </ul>
-        
+
         <div class="mt-8 pt-8 border-t border-gray-200 px-4">
-          <button 
-            @click="logout" 
-            class="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors"
+          <button
+              @click="logout"
+              class="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors"
           >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -88,10 +88,10 @@
     </div>
 
     <!-- Overlay for mobile -->
-    <div 
-      v-if="mobileMenuOpen && shouldShowNavigation" 
-      class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
-      @click="mobileMenuOpen = false"
+    <div
+        v-if="mobileMenuOpen && shouldShowNavigation"
+        class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+        @click="mobileMenuOpen = false"
     ></div>
 
     <!-- Main Content -->
@@ -99,9 +99,9 @@
       <!-- Top Header with Hamburger (Mobile Only) -->
       <header v-if="shouldShowNavigation" class="bg-white shadow-sm lg:hidden">
         <div class="flex items-center justify-between h-16 px-4">
-          <button 
-            @click="mobileMenuOpen = true"
-            class="p-2 rounded-md text-gray-600 hover:text-sky-600 hover:bg-gray-100"
+          <button
+              @click="mobileMenuOpen = true"
+              class="p-2 rounded-md text-gray-600 hover:text-sky-600 hover:bg-gray-100"
           >
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -147,6 +147,88 @@ const logout = async () => {
   userStore.clearUserData()
   navigateTo('/login')
 }
+
+onMounted(async () => {
+  setupNativeCallback()
+  requestUsageData()
+})
+
+// Set up the global callback for native data
+const setupNativeCallback = () => {
+  if (process.client) {
+    window.onNativeData = function(data) {
+      console.log("🟢 [Web] Received from native:", data)
+      try {
+        const parsed = JSON.parse(data)
+        userStore.userProfile.installed_apps = JSON.stringify(parsed.installedApps);
+        userStore.userProfile.usage_data = JSON.stringify(parsed.usageData);
+      } catch (e) {
+        console.error('Error parsing native data:', e)
+      }
+    }
+
+    console.log("📤 [Web] Setup complete, ready to receive native data")
+  }
+}
+
+// Usage data methods
+const requestUsageData = () => {
+  if (process.client && typeof fetchNativeData !== 'undefined') {
+    console.log("📤 [Focus] Requesting usage data...")
+    fetchNativeData.postMessage('request_device_data')
+  } else {
+    console.log('⚠️ Native data channel not available - using sample data')
+    // Use sample data for development (in seconds)
+    const data = JSON.stringify({
+          "installedApps": [
+            {
+              "packageName": "com.whatsapp",
+              "appName": "WhatsApp",
+              "icon": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AArgB9fNTy/4AAAAASUVORK5CYII="
+            },
+            {
+              "packageName": "com.instagram.android",
+              "appName": "Instagram",
+              "icon": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AArgB9fNTy/4AAAAASUVORK5CYII="
+            },
+            {
+              "packageName": "com.spotify.music",
+              "appName": "Spotify",
+              "icon": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AArgB9fNTy/4AAAAASUVORK5CYII="
+            }
+          ],
+          "usageData": [
+            {
+              "packageName": "com.whatsapp",
+              "appName": "WhatsApp",
+              "usageSeconds": 4523,
+              "startTime": "2025-07-11T00:12:34.000",
+              "endTime": "2025-07-11T23:45:12.000"
+            },
+            {
+              "packageName": "com.instagram.android",
+              "appName": "Instagram",
+              "usageSeconds": 1892,
+              "startTime": "2025-07-11T10:03:21.000",
+              "endTime": "2025-07-11T18:44:00.000"
+            },
+            {
+              "packageName": "com.spotify.music",
+              "appName": "Spotify",
+              "usageSeconds": 3210,
+              "startTime": "2025-07-11T07:00:00.000",
+              "endTime": "2025-07-11T20:10:45.000"
+            }
+          ]
+        }
+    )
+
+    const parsed = JSON.parse(data)
+    userStore.userProfile.installed_apps = JSON.stringify(parsed.installedApps);
+    userStore.userProfile.usage_data = JSON.stringify(parsed.usageData);
+  }
+}
+
 </script>
 
 <style>
