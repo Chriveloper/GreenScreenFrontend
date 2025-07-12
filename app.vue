@@ -141,6 +141,9 @@
 <script setup>
 import {ref, computed, onMounted} from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '~/stores/user'
+
+const userStore = useUserStore()
 
 // State for mobile menu
 const mobileMenuOpen = ref(false)
@@ -150,104 +153,16 @@ const route = useRoute()
 
 // Determine if navigation should be shown (hide on auth pages)
 const shouldShowNavigation = computed(() => {
-  return !['/login', '/signup', '/check-email'].includes(route.path)
+  return !['/login', '/signup', '/check-email', '/forgot-password'].includes(route.path)
 })
-
-const { $supabase } = useNuxtApp();
-
-  onMounted(async () => {
-  $supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-      if (session && session.user && session.user.id){
-        localStorage.setItem("user-id", session.user.id)
-      }
-      await loadUserData()
-    }
-  });
-
-  if (typeof localStorage == 'undefined') {
-    return;
-  }
-
-  await checkLoggedIn();
-  await checkEmailAuth();
-});
-
-const checkEmailAuth = async () => {
-  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
-    navigateTo('/signup');
-    return;
-  }
-
-  if (localStorage.getItem('pending_email')) {
-    navigateTo('/check-email');
-  }
-}
-
-const checkLoggedIn = async () => {
-  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
-    navigateTo('/signup');
-    return;
-  }
-
-  const {data} = await $supabase.auth.getSession();
-  if (!data || !data.session) {
-    navigateTo('/signup');
-  }
-  else {
-    console.log(route.name)
-    if (route.name === "login" || route.name === "signup" || route.name === "check-email") {
-      navigateTo("/");
-    }
-  }
-}
-
-//Load userData from database
-const loadUserData = async () => {
-  if (!localStorage.getItem('sb-ofppyhjqqyfqviatnbqr-auth-token')){
-    return;
-  }
-
-  const {data} = await $supabase.auth.getSession();
-  if (!data || !data.session) return;
-
-  const id = localStorage.getItem("user-id")
-
-  if (!id) return
-
-  const { data: userData } = await $supabase
-      .from('userdata')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-  //no User Data Saved
-  if (!userData) {
-    localStorage.setItem("aquarium" ,  "{}")
-    localStorage.setItem("fish" , "{}")
-    localStorage.setItem("decoration" , "{}")
-    localStorage.setItem("pearls" , 0)
-    return;
-  }
-
-  localStorage.setItem("aquarium" ,  JSON.stringify(userData.aquarium))
-  localStorage.setItem("fish" , JSON.stringify(userData.fish))
-  localStorage.setItem("decoration" , JSON.stringify(userData.decoration))
-  localStorage.setItem("pearls" , userData.pearls)
-}
 
 // Logout function
 const logout = async () => {
-  await $supabase.auth.signOut();
-  localStorage.removeItem("aquarium")
-  localStorage.removeItem("fish")
-  localStorage.removeItem("decoration")
-  localStorage.removeItem("pearls")
-  localStorage.removeItem("user-id")
-
-  navigateTo('/signup')
+  const { $supabase } = useNuxtApp()
+  await $supabase.auth.signOut()
+  userStore.clearUserData()
+  navigateTo('/login')
 }
-
 </script>
 
 <style>

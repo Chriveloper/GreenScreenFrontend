@@ -183,6 +183,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useUserStore } from '~/stores/user'
+
+const userStore = useUserStore()
 
 // Timer state
 const focusMinutes = ref(25)
@@ -194,23 +197,22 @@ const sessionGoal = ref('')
 let timerInterval = null
 
 // Pearl system
-const playerPearls = ref(250)
 const showCompletionModal = ref(false)
 const lastPearlReward = ref(0)
 const completedSessionMinutes = ref(0)
 
 // Screen time goals state
 const dailyLimitHours = ref(4)
-const appLimits = ref({
-  'com.android.chrome': 60,
-  'com.instagram.android': 30
-})
 const selectedApp = ref('')
 const newAppLimit = ref('')
 
 // Usage data state
 const todayUsageData = ref([])
 const rawUsageData = ref([])
+
+// Get user data from store
+const playerPearls = computed(() => userStore.pearls)
+const appLimits = computed(() => userStore.appLimits)
 
 // Timer computed properties
 const displayTime = computed(() => {
@@ -276,17 +278,16 @@ const startTimer = () => {
           // Break finished, start new focus session
           isBreak.value = false
           timeLeft.value = focusMinutes.value * 60
+          
           console.log('Break finished! Ready for next focus session.')
         } else {
           // Focus session finished - award pearls
           const pearlReward = calculatePearlReward()
-          playerPearls.value += pearlReward
           lastPearlReward.value = pearlReward
           completedSessionMinutes.value = focusMinutes.value
           
-          // Save pearls and update totals
-          savePearls()
-          updateTotalPearls(pearlReward)
+          // Save session and update pearls in store
+          userStore.addFocusSession(focusMinutes.value, pearlReward)
           
           // Show completion modal
           showCompletionModal.value = true
@@ -336,50 +337,35 @@ const calculatePearlReward = () => {
   return basePearls + bonus
 }
 
-// Save/Load functions
-const savePearls = () => {
-  if (process.client) {
-    localStorage.setItem('playerPearls', playerPearls.value.toString())
-  }
-}
-
-const updateTotalPearls = (earned) => {
-  if (process.client) {
-    const currentTotal = parseInt(localStorage.getItem('totalPearlsEarned') || '0')
-    const newTotal = currentTotal + earned
-    localStorage.setItem('totalPearlsEarned', newTotal.toString())
-  }
-}
-
-const loadPearls = () => {
-  if (process.client) {
-    const savedPearls = localStorage.getItem('playerPearls')
-    if (savedPearls) {
-      playerPearls.value = parseInt(savedPearls)
-    }
-  }
-}
-
 // Screen time methods
-const saveDailyGoal = () => {
-  // Save to localStorage or send to backend
-  localStorage.setItem('dailyScreenTimeLimit', dailyLimitHours.value.toString())
+const saveDailyGoal = async () => {
+  // Update screen time goals in store
+  const goals = { ...userStore.screenTimeGoals, dailyLimit: dailyLimitHours.value * 60 }
+  await userStore.updateScreenTimeGoals(goals)
   console.log(`Daily limit set to ${dailyLimitHours.value} hours`)
 }
 
-const addAppLimit = () => {
+const addAppLimit = async () => {
   if (selectedApp.value && newAppLimit.value) {
-    // Store app limits in minutes (as entered by user)
-    appLimits.value[selectedApp.value] = parseInt(newAppLimit.value)
+    // Create updated limits object
+    const updatedLimits = { ...appLimits.value, [selectedApp.value]: parseInt(newAppLimit.value) }
+    
+    // Update in store
+    await userStore.updateAppLimits(updatedLimits)
+    
+    // Reset form
     selectedApp.value = ''
     newAppLimit.value = ''
-    localStorage.setItem('appLimits', JSON.stringify(appLimits.value))
   }
 }
 
-const removeAppLimit = (packageName) => {
-  delete appLimits.value[packageName]
-  localStorage.setItem('appLimits', JSON.stringify(appLimits.value))
+const removeAppLimit = async (packageName) => {
+  // Create updated limits object without the removed app
+  const updatedLimits = { ...appLimits.value }
+  delete updatedLimits[packageName]
+  
+  // Update in store
+  await userStore.updateAppLimits(updatedLimits)
 }
 
 const formatAppName = (packageName) => {
@@ -440,6 +426,11 @@ const processUsageData = (data) => {
       return appDate === today
     })
     
+    // Save to Supabase if authenticated
+    if (userStore.isLoggedIn) {
+      userStore.saveUsageData(parsed)
+    }
+    
     console.log(`📊 Processed ${todayUsageData.value.length} apps for today`)
   } catch (error) {
     console.error('Error processing usage data:', error)
@@ -457,25 +448,20 @@ const setupNativeCallback = () => {
 }
 
 // Load saved settings
-const loadSettings = () => {
-  if (process.client) {
-    const savedLimit = localStorage.getItem('dailyScreenTimeLimit')
-    if (savedLimit) {
-      dailyLimitHours.value = parseFloat(savedLimit)
-    }
-    
-    const savedAppLimits = localStorage.getItem('appLimits')
-    if (savedAppLimits) {
-      appLimits.value = JSON.parse(savedAppLimits)
+const loadSettings = async () => {
+  if (userStore.isLoggedIn) {
+    // Get screen time goal from store
+    const screenTimeGoals = userStore.screenTimeGoals
+    if (screenTimeGoals?.dailyLimit) {
+      dailyLimitHours.value = screenTimeGoals.dailyLimit / 60 // Convert minutes to hours
     }
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   setupNativeCallback()
-  loadSettings()
+  await loadSettings()
   requestUsageData()
-  loadPearls()
 })
 
 onUnmounted(() => {
