@@ -55,7 +55,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useUserStore } from '~/stores/user';
+
 const { $supabase } = useNuxtApp();
+const userStore = useUserStore();
 
 const email = ref('');
 const password = ref('');
@@ -67,7 +70,7 @@ const handleLogin = async () => {
   loading.value = true;
 
   try {
-    const { error: signInError } = await $supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await $supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value
     });
@@ -84,7 +87,8 @@ const handleLogin = async () => {
       return;
     }
 
-    // Redirect to dashboard on success
+    // Auth state change listener in the plugin will handle user state
+    console.log('Login successful, redirecting to dashboard');
     navigateTo('/');
   } catch (err) {
     console.error('Login error:', err);
