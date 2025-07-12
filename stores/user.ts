@@ -184,40 +184,60 @@ export const useUserStore = defineStore('user', {
     },
     
     async addFocusSession(durationMinutes: number, pearlsEarned: number) {
-      if (!this.user || !this.userProfile) return false;
+      if (!this.user || !this.userProfile) {
+        console.error('No user or user profile found');
+        return false;
+      }
       
       try {
         const { $supabase } = useNuxtApp();
         
-        // Record the focus session
+        if (!$supabase) {
+          console.error('Supabase client not available');
+          return false;
+        }
+        
+        console.log(`Adding focus session: ${durationMinutes} min, ${pearlsEarned} pearls`);
+        console.log('Current pearls:', this.userProfile.pearls);
+        
+        // First log the focus session
         const { error: sessionError } = await $supabase
           .from('focus_sessions')
           .insert({
             user_id: this.user.id,
             duration_minutes: durationMinutes,
             pearls_earned: pearlsEarned,
-            completed: true
+            completed_at: new Date().toISOString()
           });
           
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error('Error recording focus session:', sessionError);
+          // Continue even if logging fails - we still want to give pearls
+        }
+        
+        // Calculate new pearl balance
+        const newPearlBalance = this.userProfile.pearls + pearlsEarned;
         
         // Update pearls in user profile
         const { error: updateError } = await $supabase
           .from('user_data')
           .update({
-            pearls: this.userProfile.pearls + pearlsEarned
+            pearls: newPearlBalance
           })
           .eq('id', this.user.id);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating pearls:', updateError);
+          throw updateError;
+        }
         
         // Update local state
-        this.userProfile.pearls += pearlsEarned;
+        this.userProfile.pearls = newPearlBalance;
         
-        console.log(`Focus session recorded: ${durationMinutes} minutes, ${pearlsEarned} pearls earned`);
+        console.log(`Pearl balance updated: ${this.userProfile.pearls} (+${pearlsEarned})`);
         return true;
       } catch (err) {
-        console.error('Error recording focus session:', err);
+        console.error('Error in addFocusSession:', err);
         return false;
       }
     },
