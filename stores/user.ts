@@ -5,8 +5,6 @@ import { useNuxtApp } from '#app';
 interface UserProfile {
   id: string;
   pearls: number;
-  installed_apps : string;
-  usage_data : string;
   fish: string[];
   decorations: string[];
   aquarium_layout: Record<string, any>;
@@ -32,6 +30,8 @@ export const useUserStore = defineStore('user', {
     user: null as any | null,
     userProfile: null as UserProfile | null,
     loading: false,
+    installed_apps : "" as String,
+    usage_data : "" as String,
   }),
   
   getters: {
@@ -97,8 +97,6 @@ export const useUserStore = defineStore('user', {
         const defaultProfile: UserProfile = {
           id: this.user.id,
           pearls: 50,
-          installed_apps: "",
-          usage_data: "",
           fish: [],
           decorations: [],
           aquarium_layout: {},
