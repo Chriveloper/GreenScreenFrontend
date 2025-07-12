@@ -154,22 +154,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useUserStore } from '~/stores/user'
+import { ref, onMounted, computed, watch } from 'vue';
+import { useUserStore } from '~/stores/user';
 
-const userStore = useUserStore()
-const isLoading = ref(true)
+const userStore = useUserStore();
+const isLoading = ref(true);
 
 // Purchase modal
-const showPurchaseModal = ref(false)
-const purchasedItem = ref(null)
+const showPurchaseModal = ref(false);
+const purchasedItem = ref(null);
 
 // Computed properties from store
-const playerPearls = computed(() => userStore.pearls)
-const ownedFish = computed(() => userStore.fish)
-const ownedDecorations = computed(() => userStore.decorations)
+const playerPearls = computed(() => userStore.pearls);
+const ownedFish = computed(() => userStore.fish || []);
+const ownedDecorations = computed(() => userStore.decorations || []);
 
-// Fish shop items
+// Fish shop items with owned status
 const fishShop = ref([
   {
     id: 'goldfish',
@@ -177,7 +177,8 @@ const fishShop = ref([
     emoji: 'fish_1.gif',
     color: '#FFA726',
     price: 50,
-    description: 'Classic orange goldfish'
+    description: 'Classic orange goldfish',
+    owned: false
   },
   {
     id: 'angelfish',
@@ -185,7 +186,8 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#FFD54F',
     price: 75,
-    description: 'Elegant striped angelfish'
+    description: 'Elegant striped angelfish',
+    owned: false
   },
   {
     id: 'clownfish',
@@ -193,7 +195,8 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#FF7043',
     price: 100,
-    description: 'Colorful reef clownfish'
+    description: 'Colorful reef clownfish',
+    owned: false
   },
   {
     id: 'blue_tang',
@@ -201,7 +204,8 @@ const fishShop = ref([
     emoji: '🐟',
     color: '#42A5F5',
     price: 120,
-    description: 'Beautiful blue tropical fish'
+    description: 'Beautiful blue tropical fish',
+    owned: false
   },
   {
     id: 'royal_gramma',
@@ -209,7 +213,8 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#AB47BC',
     price: 150,
-    description: 'Purple and yellow beauty'
+    description: 'Purple and yellow beauty',
+    owned: false
   },
   {
     id: 'mandarin_fish',
@@ -217,7 +222,8 @@ const fishShop = ref([
     emoji: '🐠',
     color: '#66BB6A',
     price: 200,
-    description: 'Exotic mandarin dragonet'
+    description: 'Exotic mandarin dragonet',
+    owned: false
   },
   {
     id: 'seahorse',
@@ -225,7 +231,8 @@ const fishShop = ref([
     emoji: '🦄',
     color: '#8D6E63',
     price: 300,
-    description: 'Mystical seahorse'
+    description: 'Mystical seahorse',
+    owned: false
   },
   {
     id: 'pufferfish',
@@ -233,9 +240,17 @@ const fishShop = ref([
     emoji: '🐡',
     color: '#FFAB40',
     price: 250,
-    description: 'Spiky pufferfish'
+    description: 'Spiky pufferfish',
+    owned: false
   }
 ])
+
+// Update owned status when ownedFish changes
+watch(ownedFish, (newOwnedFish) => {
+  fishShop.value.forEach(fish => {
+    fish.owned = newOwnedFish.includes(fish.id);
+  });
+}, { immediate: true });
 
 // Plant shop items
 const plantShop = ref([
@@ -245,7 +260,8 @@ const plantShop = ref([
     emoji: '🌿',
     color: '#4CAF50',
     price: 25,
-    description: 'Basic green seaweed'
+    description: 'Basic green seaweed',
+    owned: false
   },
   {
     id: 'coral_pink',
@@ -253,7 +269,8 @@ const plantShop = ref([
     emoji: '🪸',
     color: '#EC407A',
     price: 40,
-    description: 'Beautiful pink coral'
+    description: 'Beautiful pink coral',
+    owned: false
   },
   {
     id: 'treasure_chest',
@@ -261,7 +278,8 @@ const plantShop = ref([
     emoji: '💰',
     color: '#8D6E63',
     price: 150,
-    description: 'Mysterious treasure chest'
+    description: 'Mysterious treasure chest',
+    owned: false
   },
   {
     id: 'shipwreck',
@@ -269,63 +287,87 @@ const plantShop = ref([
     emoji: '🚢',
     color: '#5D4037',
     price: 200,
-    description: 'Ancient sunken ship'
+    description: 'Ancient sunken ship',
+    owned: false
   }
 ])
 
+// Update owned status when ownedDecorations changes
+watch(ownedDecorations, (newOwnedDecorations) => {
+  plantShop.value.forEach(plant => {
+    plant.owned = newOwnedDecorations.includes(plant.id);
+  });
+}, { immediate: true });
+
 // Computed properties to check if items are owned
-const isFishOwned = (id) => ownedFish.value.includes(id)
-const isDecorationOwned = (id) => ownedDecorations.value.includes(id)
+const isFishOwned = (id) => ownedFish.value.includes(id);
+const isDecorationOwned = (id) => ownedDecorations.value.includes(id);
 
 // Purchase functions
 const buyFish = async (fish) => {
   if (playerPearls.value >= fish.price && !isFishOwned(fish.id)) {
-    const success = await userStore.purchaseItem('fish', fish)
+    const success = await userStore.purchaseItem('fish', fish);
     
     if (success) {
-      purchasedItem.value = fish
-      showPurchaseModal.value = true
-      console.log(`Purchased ${fish.name} for ${fish.price} pearls`)
+      // Update the owned status immediately
+      fish.owned = true;
+      purchasedItem.value = fish;
+      showPurchaseModal.value = true;
     }
   }
-}
+};
 
 const buyPlant = async (plant) => {
   if (playerPearls.value >= plant.price && !isDecorationOwned(plant.id)) {
-    const success = await userStore.purchaseItem('decorations', plant)
+    const success = await userStore.purchaseItem('decorations', plant);
     
     if (success) {
-      purchasedItem.value = plant
-      showPurchaseModal.value = true
-      console.log(`Purchased ${plant.name} for ${plant.price} pearls`)
+      // Update the owned status immediately
+      plant.owned = true;
+      purchasedItem.value = plant;
+      showPurchaseModal.value = true;
     }
   }
-}
+};
 
 const closePurchaseModal = () => {
-  showPurchaseModal.value = false
-  purchasedItem.value = null
-}
+  showPurchaseModal.value = false;
+  purchasedItem.value = null;
+};
 
 onMounted(async () => {
   isLoading.value = true;
   
-  // Check login status after a brief delay to ensure auth state is loaded
-  setTimeout(async () => {
-    console.log('Shop page mounted, checking auth state:', userStore.isLoggedIn);
-    
-    if (!userStore.isLoggedIn) {
-      console.log('Not logged in, redirecting to login');
-      navigateTo('/login')
-      return;
-    }
-    
-    // If we don't have user profile data yet, load it
-    if (!userStore.userProfile && userStore.user) {
-      await userStore.loadUserProfile();
-    }
-    
+  try {
+    // Check login status after a brief delay to ensure auth state is loaded
+    setTimeout(async () => {
+      console.log('Shop page mounted, checking auth state:', userStore.isLoggedIn);
+      
+      if (!userStore.isLoggedIn) {
+        console.log('Not logged in, redirecting to login');
+        navigateTo('/login');
+        return;
+      }
+      
+      // If we don't have user profile data yet, load it
+      if (!userStore.userProfile && userStore.user) {
+        await userStore.loadUserProfile();
+      }
+      
+      // Update the owned status for all items
+      fishShop.value.forEach(fish => {
+        fish.owned = ownedFish.value.includes(fish.id);
+      });
+      
+      plantShop.value.forEach(plant => {
+        plant.owned = ownedDecorations.value.includes(plant.id);
+      });
+      
+      isLoading.value = false;
+    }, 300);
+  } catch (error) {
+    console.error('Error in shop setup:', error);
     isLoading.value = false;
-  }, 300);
-})
+  }
+});
 </script>
