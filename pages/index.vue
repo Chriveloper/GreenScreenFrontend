@@ -12,7 +12,7 @@
     <!-- Featured Aquarium Section -->
     <div class="bg-gradient-to-b from-sky-300 to-sky-500 rounded-full shadow-lg p-8 mb-8 min-h-[300px] max-w-[400px] mx-auto relative overflow-hidden aspect-square">
       <div class="flex justify-between items-start mb-4">
-        <h2 class="text-xl font-bold text-white">Agua</h2>
+        <h2 class="text-xl font-bold text-white">Agua Agua</h2>
         <NuxtLink to="/terrarium" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-full text-sm transition">
           View Full Aquarium
         </NuxtLink>
