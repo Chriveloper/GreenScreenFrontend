@@ -12,8 +12,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js and pnpm
+      # IMPROVEMENT: Explicitly set up the Node.js version for consistency
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Or whatever version your project requires
+          cache: 'pnpm' # Caches dependencies for faster builds
+
+      - name: Set up pnpm
         uses: pnpm/action-setup@v3
+        with:
+          version: 8 # Specify pnpm version
 
       - name: Install Dependencies
         run: pnpm install
@@ -25,11 +34,6 @@ jobs:
 
       - name: Deploy with rsync
         run: |
-          # Ensure the target directory exists. The '-p' flag creates parent directories if needed.
+          # This step requires the runner user to have passwordless sudo permissions for mkdir and rsync
           sudo mkdir -p /var/www/greenscreen.chrixel.com
-          
-          # Use rsync to efficiently and safely sync files.
-          # -a: archive mode (preserves permissions, etc.)
-          # -v: verbose
-          # --delete: removes files from the destination that are no longer in the source
           sudo rsync -av --delete .output/public/ /var/www/greenscreen.chrixel.com/
