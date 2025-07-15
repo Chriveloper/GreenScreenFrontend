@@ -1,33 +1,19 @@
-name: Build and Deploy GreenScreenFrontend App
+name: Deploy GreenScreen App
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: self-hosted
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-          run_install: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc' # Or use '20' if you don't have .nvmrc
-          cache: 'pnpm'
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build application
         env:
@@ -38,10 +24,9 @@ jobs:
       - name: Deploy to server
         run: |
           sudo mkdir -p /var/www/greenscreen.chrixel.com
-          sudo rsync -av --delete --exclude='.git' .output/public/ /var/www/greenscreen.chrixel.com/
+          sudo rsync -av --delete .output/public/ /var/www/greenscreen.chrixel.com/
           sudo chown -R www-data:www-data /var/www/greenscreen.chrixel.com
           sudo chmod -R 755 /var/www/greenscreen.chrixel.com
 
-      - name: Restart web server (optional)
+      - name: Reload nginx
         run: sudo systemctl reload nginx
-        continue-on-error: true
