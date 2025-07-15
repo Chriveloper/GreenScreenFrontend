@@ -1,0 +1,35 @@
+name: Build and Deploy GreenScreenFrontend App
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and pnpm
+        uses: pnpm/action-setup@v3
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Application
+        run: |
+          pnpm build
+          pnpm generate
+
+      - name: Deploy with rsync
+        run: |
+          # Ensure the target directory exists. The '-p' flag creates parent directories if needed.
+          sudo mkdir -p /var/www/greenscreen.chrixel.com
+          
+          # Use rsync to efficiently and safely sync files.
+          # -a: archive mode (preserves permissions, etc.)
+          # -v: verbose
+          # --delete: removes files from the destination that are no longer in the source
+          sudo rsync -av --delete .output/public/ /var/www/greenscreen.chrixel.com/
