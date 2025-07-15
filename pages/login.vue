@@ -12,7 +12,7 @@
                 name="email"
                 type="email"
                 autocomplete="email"
-                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
                 required
             />
           </div>
@@ -24,7 +24,7 @@
                 name="password"
                 type="password"
                 autocomplete="current-password"
-                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
                 required
             />
           </div>
@@ -33,17 +33,19 @@
           </div>
           <button
               type="submit"
-              class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700 transition"
+              :disabled="loading"
+              class="w-full bg-sky-600 text-white rounded py-2 hover:bg-sky-700 transition disabled:opacity-70"
           >
-            Sign In
+            <span v-if="loading">Signing in...</span>
+            <span v-else>Sign In</span>
           </button>
         </div>
       </form>
       <div class="mt-4 flex justify-between text-sm">
-        <!-- <NuxtLink class="text-blue-600 hover:underline" to="/forgot-password">
+        <NuxtLink class="text-sky-600 hover:underline" to="/forgot-password">
           Forgot your password?
-        </NuxtLink> -->
-        <NuxtLink class="text-blue-600 hover:underline" to="/signup">
+        </NuxtLink>
+        <NuxtLink class="text-sky-600 hover:underline" to="/signup">
           Don't have an account? Sign up
         </NuxtLink>
       </div>
@@ -51,57 +53,49 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue';
+import { useUserStore } from '~/stores/user';
+
 const { $supabase } = useNuxtApp();
+const userStore = useUserStore();
 
 const email = ref('');
 const password = ref('');
 const error = ref('');
-const router = useRouter();
-
-// check for existing session
-onMounted(async () => {
-  const { data } = await $supabase.auth.getSession();
-  if (data.session) {
-    navigateTo('/');
-  }
-
-  if (typeof localStorage == 'undefined') {
-    return;
-  }
-
-  const pendingEmail = localStorage.getItem('pending_email');
-
-  if (pendingEmail) {
-    navigateTo('/check-email');
-  }
-});
+const loading = ref(false);
 
 const handleLogin = async () => {
   error.value = '';
+  loading.value = true;
 
-  const { data, error: signInError } = await $supabase.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
-  });
+  try {
+    const { data, error: signInError } = await $supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value
+    });
 
-  if (signInError) {
-    if (
-        signInError.message &&
-        signInError.message.toLowerCase().includes('invalid login credentials')
-    ) {
-      error.value = 'Invalid email or password.';
-    } else {
-      error.value = signInError.message;
+    if (signInError) {
+      if (signInError.message.includes('Email not confirmed')) {
+        // Save pending email info and redirect to verification page
+        localStorage.setItem('pending_email', email.value);
+        localStorage.setItem('pending_password', password.value);
+        navigateTo('/check-email');
+      } else {
+        error.value = signInError.message;
+      }
+      return;
     }
-    return;
-  }
 
-  // redirect to the main page
-  navigateTo('/');
+    // Auth state change listener in the plugin will handle user state
+    console.log('Login successful, redirecting to dashboard');
+    navigateTo('/');
+  } catch (err) {
+    console.error('Login error:', err);
+    error.value = 'An unexpected error occurred. Please try again.';
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 

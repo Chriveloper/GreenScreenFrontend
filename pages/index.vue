@@ -1,24 +1,3 @@
-<script setup>
-import { createClient } from '@supabase/supabase-js'
-const config = useRuntimeConfig()
-const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey)
-const instruments = ref([])
-
-async function getInstruments() {
-  const { data } = await supabase.from('instruments').select()
-  instruments.value = data
-}
-
-onMounted(() => {
-  getInstruments()
-})
-</script>
-
-<template>
-  <ul>
-    <li v-for="instrument in instruments" :key="instrument.id">{{ instrument.name }}</li>
-  </ul>
-</template>
 <template>
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
@@ -164,38 +143,20 @@ onMounted(() => {
   </div>
 </template>
 
-<script setup lang="ts">
-  import { ref, onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
-  const { $supabase } = useNuxtApp();
+<script setup>
+import { computed, onMounted } from 'vue';
+import { useUserStore } from '~/stores/user';
 
+const userStore = useUserStore();
 
-  const playerPearls = ref(250)
-  const totalPearlsEarned = ref(475)
+// Use computed properties to access store data
+const playerPearls = computed(() => userStore.pearls);
+const totalPearlsEarned = computed(() => userStore.pearls); // This should be a proper calculation from focus sessions
 
-  const loadPearls = () => {
-    if (process.client) {
-      const savedPearls = localStorage.getItem('playerPearls')
-      if (savedPearls) {
-        playerPearls.value = parseInt(savedPearls)
-      }
-      
-      const savedTotalPearls = localStorage.getItem('totalPearlsEarned')
-      if (savedTotalPearls) {
-        totalPearlsEarned.value = parseInt(savedTotalPearls)
-      }
-    }
+// Check if we need to load user data
+onMounted(async () => {
+  if (userStore.isLoggedIn && !userStore.userProfile) {
+    await userStore.loadUserProfile();
   }
-
-
-  const router = useRouter();
-
-  // check for existing session
-  onMounted(async () => {
-    loadPearls();
-    const {data} = await $supabase.auth.getSession();
-    if (!data.session) {
-      //navigateTo('/signup');
-    }
-  });
+});
 </script>
