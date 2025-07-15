@@ -3,37 +3,45 @@ name: Build and Deploy GreenScreenFrontend App
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # IMPROVEMENT: Explicitly set up the Node.js version for consistency
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Or whatever version your project requires
-          cache: 'pnpm' # Caches dependencies for faster builds
+          node-version-file: '.nvmrc' # Or use '20' if you don't have .nvmrc
+          cache: 'pnpm'
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8 # Specify pnpm version
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Install Dependencies
-        run: pnpm install
+      - name: Build application
+        env:
+          NUXT_PUBLIC_SUPABASE_URL: ${{ secrets.NUXT_PUBLIC_SUPABASE_URL }}
+          NUXT_PUBLIC_SUPABASE_KEY: ${{ secrets.NUXT_PUBLIC_SUPABASE_KEY }}
+        run: pnpm generate
 
-      - name: Build Application
+      - name: Deploy to server
         run: |
-          pnpm build
-          pnpm generate
-
-      - name: Deploy with rsync
-        run: |
-          # This step requires the runner user to have passwordless sudo permissions for mkdir and rsync
           sudo mkdir -p /var/www/greenscreen.chrixel.com
-          sudo rsync -av --delete .output/public/ /var/www/greenscreen.chrixel.com/
+          sudo rsync -av --delete --exclude='.git' .output/public/ /var/www/greenscreen.chrixel.com/
+          sudo chown -R www-data:www-data /var/www/greenscreen.chrixel.com
+          sudo chmod -R 755 /var/www/greenscreen.chrixel.com
+
+      - name: Restart web server (optional)
+        run: sudo systemctl reload nginx
+        continue-on-error: true
