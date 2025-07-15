@@ -1,3 +1,24 @@
+<script setup>
+import { createClient } from '@supabase/supabase-js'
+const config = useRuntimeConfig()
+const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey)
+const instruments = ref([])
+
+async function getInstruments() {
+  const { data } = await supabase.from('instruments').select()
+  instruments.value = data
+}
+
+onMounted(() => {
+  getInstruments()
+})
+</script>
+
+<template>
+  <ul>
+    <li v-for="instrument in instruments" :key="instrument.id">{{ instrument.name }}</li>
+  </ul>
+</template>
 <template>
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
@@ -144,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, inject} from 'vue';
+  import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   const { $supabase } = useNuxtApp();
 
@@ -171,8 +192,6 @@ import {ref, onMounted, inject} from 'vue';
 
   // check for existing session
   onMounted(async () => {
-
-    console.log('Fetched data:', inject('pearls'));
     loadPearls();
     const {data} = await $supabase.auth.getSession();
     if (!data.session) {
