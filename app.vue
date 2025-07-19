@@ -153,23 +153,25 @@ onMounted(async () => {
   requestUsageData()
 })
 
+window.onNativeData = function(data) {
+  console.log("🟢 [Web] Received from native:", data)
+  try {
+    const parsed = JSON.parse(data)
+    userStore.installed_apps = JSON.stringify(parsed.installedApps);
+    userStore.usage_data = JSON.stringify(parsed.usageData);
+  } catch (e) {
+    console.error('Error parsing native data:', e)
+  }
+}
+
+console.log("📤 [Web] Setup complete, ready to receive native data")
+/*
 // Set up the global callback for native data
 const setupNativeCallback = () => {
   if (process.client) {
-    window.onNativeData = function(data) {
-      console.log("🟢 [Web] Received from native:", data)
-      try {
-        const parsed = JSON.parse(data)
-        userStore.installed_apps = JSON.stringify(parsed.installedApps);
-        userStore.usage_data = JSON.stringify(parsed.usageData);
-      } catch (e) {
-        console.error('Error parsing native data:', e)
-      }
-    }
 
-    console.log("📤 [Web] Setup complete, ready to receive native data")
   }
-}
+}*/
 
 // Usage data methods
 const requestUsageData = () => {
