@@ -472,7 +472,7 @@ const processUsageData = (data) => {
 }
 
 // Set up native data callback
-const setupNativeCallback = () => {
+/*const setupNativeCallback = () => {
   if (process.client) {
     window.onNativeData = function(data) {
       console.log("🟢 [Focus] Received usage data from native:", data);
@@ -495,7 +495,7 @@ const setupNativeCallback = () => {
       }
     };
   }
-};
+};*/
 
 // Load saved settings
 const loadSettings = async () => {
