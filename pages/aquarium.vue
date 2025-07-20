@@ -19,86 +19,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Aquarium Tank -->
-      <div class="lg:col-span-3">
-        <div 
-          class="aquarium-tank bg-gradient-to-b from-sky-300 to-sky-500 rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer"
-          :class="{ 'ring-2 ring-yellow-400': editMode }"
-          @click="handleTankClick"
-        >
-          <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg"></div>
-          
-          <!-- Sand/gravel bottom -->
-          <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-b-lg"></div>
-          
-          <!-- Placed Plants -->
-          <div
-            v-for="placedPlant in placedPlants"
-            :key="placedPlant.id"
-            class="absolute cursor-move touch-none select-none"
-            :style="{ 
-              left: placedPlant.x + '%', 
-              top: placedPlant.y + '%',
-              transform: 'translate(-50%, -100%)'
-            }"
-            @mousedown="startDrag(placedPlant, $event)"
-            @touchstart="startDrag(placedPlant, $event)"
-            @click.stop
-          >
-            <img 
-              :src="placedPlant.img" 
-              :alt="placedPlant.name"
-              class="w-16 h-20 object-contain pointer-events-none"
-              style="image-rendering: pixelated;"
-            />
-            <div v-if="editMode" class="absolute -top-2 -right-2">
-              <button
-                @click="removePlant(placedPlant.id)"
-                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold pointer-events-auto"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <!-- Swimming Fish -->
-          <div
-            v-for="fish in swimmesingFish"
-            :key="fish.id"
-            class="absolute transition-all duration-1000 ease-in-out"
-            :style="{ 
-              left: fish.x + '%', 
-              top: fish.y + '%',
-              transform: `translate(-50%, -50%) ${fish.direction === 'left' ? 'scaleX(-1)' : ''}`
-            }"
-          >
-            <img 
-              :src="fish.img" 
-              :alt="fish.name"
-              class="w-12 h-10 object-contain"
-              style="image-rendering: pixelated;"
-            />
-          </div>
-
-          <!-- Bubbles -->
-          <div
-            v-for="bubble in bubbles"
-            :key="bubble.id"
-            class="absolute w-2 h-2 bg-white rounded-full opacity-70 animate-bounce"
-            :style="{ 
-              left: bubble.x + '%', 
-              bottom: bubble.y + 'px',
-              animationDelay: bubble.delay + 's'
-            }"
-          ></div>
-
-          <!-- Edit Mode Instructions -->
-          <div v-if="editMode" class="absolute top-4 left-4 bg-white/90 rounded-lg p-3">
-            <p class="text-sm font-medium text-gray-800">Edit Mode Active</p>
-            <p class="text-xs text-gray-600">• Drag plants to move them</p>
-            <p class="text-xs text-gray-600">• Click × to remove items</p>
-            <p class="text-xs text-gray-600">• Use inventory to add new items</p>
-          </div>
-        </div>
+      <div>
+        <FishTank />
       </div>
 
       <!-- Inventory Sidebar -->
@@ -181,6 +103,7 @@
 </template>
 
 <script setup>
+import FishTank from '~/components/FishTank.vue'
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useUserStore } from '~/stores/user';
 
