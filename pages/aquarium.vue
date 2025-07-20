@@ -259,6 +259,7 @@
 </template>
 
 <script setup>
+import FishTank from '~/components/FishTank.vue'
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useUserStore } from '~/stores/user';
 
