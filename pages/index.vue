@@ -144,19 +144,34 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+// Prevent any server-side rendering issues by deferring all dynamic content
+definePageMeta({
+  ssr: false, // Disable SSR for this page
+});
+
+import { onMounted, ref } from 'vue';
 import { useUserStore } from '~/stores/user';
 
 const userStore = useUserStore();
 
-// Use computed properties to access store data
-const playerPearls = computed(() => userStore.pearls);
-const totalPearlsEarned = computed(() => userStore.pearls); // This should be a proper calculation from focus sessions
+// Initialize with default values
+const playerPearls = ref(0);
+const totalPearlsEarned = ref(0);
 
-// Check if we need to load user data
 onMounted(async () => {
-  if (userStore.isLoggedIn && !userStore.userProfile) {
-    await userStore.loadUserProfile();
+  try {
+    // Only access user store on client after mounting
+    if (userStore.isLoggedIn && !userStore.userProfile) {
+      await userStore.loadUserProfile();
+    }
+    // Update reactive refs after mounting
+    playerPearls.value = userStore.pearls;
+    totalPearlsEarned.value = userStore.pearls;
+  } catch (error) {
+    console.error('Error loading user data on index page:', error);
+    // Keep default values on error
+    playerPearls.value = 0;
+    totalPearlsEarned.value = 0;
   }
 });
 </script>

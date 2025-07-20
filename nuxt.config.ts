@@ -1,10 +1,25 @@
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
-export default
-defineNuxtConfig({
+export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
+  
+  // SSR Configuration for static generation
+  ssr: true,
+  
+  // Static generation configuration
+  nitro: {
+    prerender: {
+      crawlLinks: true,
+      failOnError: false, // Don't fail the build on prerender errors
+      // Skip problematic routes during static generation
+      ignore: [
+        // Skip settings page initially if it has issues
+      ]
+    }
+  },
+  
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',

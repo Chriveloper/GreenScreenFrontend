@@ -230,22 +230,28 @@ const closePurchaseModal = () => {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    setTimeout(async () => {
-      if (!userStore.isLoggedIn) {
-        navigateTo('/login');
-        return;
-      }
-      if (!userStore.userProfile && userStore.user) {
-        await userStore.loadUserProfile();
-      }
-      fishShop.value.forEach(fish => {
-        fish.owned = ownedFish.value.includes(fish.id);
-      });
-      plantShop.value.forEach(plant => {
-        plant.owned = ownedDecorations.value.includes(plant.id);
-      });
+    // Only run auth checks on client side
+    if (process.client) {
+      setTimeout(async () => {
+        if (!userStore.isLoggedIn) {
+          navigateTo('/login');
+          return;
+        }
+        if (!userStore.userProfile && userStore.user) {
+          await userStore.loadUserProfile();
+        }
+        fishShop.value.forEach(fish => {
+          fish.owned = ownedFish.value.includes(fish.id);
+        });
+        plantShop.value.forEach(plant => {
+          plant.owned = ownedDecorations.value.includes(plant.id);
+        });
+        isLoading.value = false;
+      }, 300);
+    } else {
+      // On server side, just stop loading
       isLoading.value = false;
-    }, 300);
+    }
   } catch (error) {
     console.error('Error in shop setup:', error);
     isLoading.value = false;
