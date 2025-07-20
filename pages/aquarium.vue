@@ -34,25 +34,26 @@
           <div
             v-for="placedPlant in placedPlants"
             :key="placedPlant.id"
-            class="absolute cursor-move"
+            class="absolute cursor-move touch-none select-none"
             :style="{ 
               left: placedPlant.x + '%', 
               top: placedPlant.y + '%',
               transform: 'translate(-50%, -100%)'
             }"
             @mousedown="startDrag(placedPlant, $event)"
+            @touchstart="startDrag(placedPlant, $event)"
             @click.stop
           >
             <img 
               :src="placedPlant.img" 
               :alt="placedPlant.name"
-              class="w-16 h-20 object-contain"
+              class="w-16 h-20 object-contain pointer-events-none"
               style="image-rendering: pixelated;"
             />
             <div v-if="editMode" class="absolute -top-2 -right-2">
               <button
                 @click="removePlant(placedPlant.id)"
-                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold"
+                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold pointer-events-auto"
               >
                 ×
               </button>
@@ -338,26 +339,44 @@ const removePlant = (plantInstanceId) => {
 const startDrag = (plant, event) => {
   if (!editMode.value) return;
   
+  // Prevent default behavior
+  event.preventDefault();
+  
   draggedItem.value = plant;
+  
+  // Get the event position (mouse or touch)
+  const clientX = event.type === 'touchstart' ? event.touches[0].clientX : event.clientX;
+  const clientY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
+  
   const rect = event.currentTarget.offsetParent.getBoundingClientRect();
   dragOffset.value = {
-    x: event.clientX - rect.left - (plant.x * rect.width / 100),
-    y: event.clientY - rect.top - (plant.y * rect.height / 100)
+    x: clientX - rect.left - (plant.x * rect.width / 100),
+    y: clientY - rect.top - (plant.y * rect.height / 100)
   };
 
-  document.addEventListener('mousemove', handleDrag);
+  // Add both mouse and touch event listeners
+  document.addEventListener('mousemove', handleDrag, { passive: false });
   document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchmove', handleDrag, { passive: false });
+  document.addEventListener('touchend', stopDrag);
 };
 
 const handleDrag = (event) => {
   if (!draggedItem.value) return;
   
-  const tank = event.target.closest('.bg-gradient-to-b');
+  // Prevent scrolling and default behavior
+  event.preventDefault();
+  
+  // Get the event position (mouse or touch)
+  const clientX = event.type === 'touchmove' ? event.touches[0].clientX : event.clientX;
+  const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
+  
+  const tank = document.querySelector('.bg-gradient-to-b.from-sky-300');
   if (!tank) return;
   
   const rect = tank.getBoundingClientRect();
-  const newX = ((event.clientX - rect.left - dragOffset.value.x) / rect.width) * 100;
-  const newY = ((event.clientY - rect.top - dragOffset.value.y) / rect.height) * 100;
+  const newX = ((clientX - rect.left - dragOffset.value.x) / rect.width) * 100;
+  const newY = ((clientY - rect.top - dragOffset.value.y) / rect.height) * 100;
   
   // Keep plants within tank bounds
   draggedItem.value.x = Math.max(5, Math.min(95, newX));
@@ -367,8 +386,13 @@ const handleDrag = (event) => {
 const stopDrag = () => {
   draggedItem.value = null;
   dragOffset.value = { x: 0, y: 0 };
+  
+  // Remove all event listeners
   document.removeEventListener('mousemove', handleDrag);
   document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', handleDrag);
+  document.removeEventListener('touchend', stopDrag);
+  
   saveAquariumLayout();
 };
 
@@ -524,5 +548,26 @@ onUnmounted(() => {
 
 .cursor-move:active {
   cursor: grabbing;
+}
+
+/* Mobile touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  .cursor-move {
+    cursor: default;
+  }
+  
+  .cursor-move:active {
+    cursor: default;
+  }
+}
+
+/* Prevent text selection during drag */
+.touch-none {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 </style>
