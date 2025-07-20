@@ -156,12 +156,21 @@ const logout = async () => {
   navigateTo('/login')
 }
 
+
+
 onMounted(async () => {
-  // Only run on client side
-  if (process.client) {
-    requestUsageData()
-  }
+  fetch('http://localhost:8080/data')
+      .then(response => response.json())
+      .then(data => {
+        console.log('Received data:', data);
+        //const parsed = JSON.parse(data)
+        console.log(JSON.stringify(data))
+        userStore.installed_apps = JSON.stringify(data.installedApps);
+        userStore.usage_data = JSON.stringify(data.usageData);
+      })
+      .catch(error => console.error('Fetch failed:', error));
 })
+
 
 // Only set up window functions on client side
 if (process.client) {
