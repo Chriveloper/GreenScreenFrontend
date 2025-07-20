@@ -94,8 +94,6 @@
         @click="mobileMenuOpen = false"
     ></div>
 
-    <div v-else class="text-gray-500">{{test}}</div>
-
     <!-- Main Content -->
     <div class="flex-1 flex flex-col lg:ml-0">
       <!-- Top Header with Hamburger (Mobile Only) -->
@@ -136,8 +134,6 @@ const mobileMenuOpen = ref(false)
 
 // Get current route
 const route = useRoute()
-
-const test = ref("test")
 
 // Determine if navigation should be shown (hide on auth pages)
 const shouldShowNavigation = computed(() => {
