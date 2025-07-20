@@ -32,11 +32,29 @@
           :style="getFloorPreviewStyle()"
         ></div>
         
+        <!-- User's Plants from aquarium layout -->
+        <div
+          v-for="plant in previewPlants.slice(0, 3)"
+          :key="plant.id"
+          class="absolute z-20"
+          :style="{ 
+            left: plant.x + '%', 
+            top: plant.y + '%',
+            transform: 'translate(-50%, -100%)'
+          }"
+        >
+          <img 
+            :src="plant.img" 
+            :alt="plant.name"
+            class="w-6 h-8 sm:w-8 sm:h-12 object-contain opacity-90 pixelated"
+          />
+        </div>
+
         <!-- User's Fish from aquarium layout -->
         <div
-          v-for="(fish, index) in previewFish.slice(0, 4)"
+          v-for="(fish, index) in previewFish.slice(0, 3)"
           :key="fish.id"
-          class="absolute transition-all duration-2000 ease-in-out"
+          class="absolute animate-pulse z-15"
           :style="{ 
             left: fish.x + '%', 
             top: fish.y + '%',
@@ -47,27 +65,7 @@
           <img 
             :src="fish.img" 
             :alt="fish.name"
-            class="w-6 h-5 sm:w-8 sm:h-6 object-contain animate-pulse"
-            style="image-rendering: pixelated;"
-          />
-        </div>
-
-        <!-- User's Plants from aquarium layout -->
-        <div
-          v-for="plant in previewPlants.slice(0, 3)"
-          :key="plant.id"
-          class="absolute"
-          :style="{ 
-            left: plant.x + '%', 
-            top: plant.y + '%',
-            transform: 'translate(-50%, -100%)'
-          }"
-        >
-          <img 
-            :src="plant.img" 
-            :alt="plant.name"
-            class="w-8 h-12 sm:w-12 sm:h-16 object-contain opacity-90"
-            style="image-rendering: pixelated;"
+            class="w-6 h-5 sm:w-8 sm:h-6 object-contain animate-pulse pixelated"
           />
         </div>
 

@@ -34,11 +34,11 @@
           ></div>
           
           <!-- Water overlay effect -->
-          <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg pointer-events-none"></div>
+          <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg pointer-events-none z-5"></div>
           
           <!-- Floor/substrate -->
           <div 
-            class="absolute bottom-0 left-0 right-0 h-16 rounded-b-lg pixelated-bg"
+            class="absolute bottom-0 left-0 right-0 h-20 rounded-b-lg pixelated-bg z-10"
             :style="getFloorStyle()"
           ></div>
           
@@ -46,12 +46,8 @@
           <div
             v-for="placedPlant in placedPlants"
             :key="placedPlant.id"
-            class="absolute cursor-move touch-none select-none z-20"
-            :style="{ 
-              left: placedPlant.x + '%', 
-              top: placedPlant.y + '%',
-              transform: 'translate(-50%, -100%)'
-            }"
+            class="absolute cursor-move touch-none select-none z-20 plant-container"
+            :style="getPlantStyle(placedPlant)"
             @mousedown="startDrag(placedPlant, $event)"
             @touchstart="startDrag(placedPlant, $event)"
             @click.stop
@@ -59,13 +55,13 @@
             <img 
               :src="placedPlant.img" 
               :alt="placedPlant.name"
-              class="w-16 h-20 object-contain pointer-events-none"
-              style="image-rendering: pixelated;"
+              :class="getPlantImageClass(placedPlant.plantId)"
+              class="object-contain pointer-events-none pixelated"
             />
-            <div v-if="editMode" class="absolute -top-2 -right-2">
+            <div v-if="editMode" class="absolute -top-2 -right-2 z-30">
               <button
                 @click="removePlant(placedPlant.id)"
-                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold pointer-events-auto"
+                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold pointer-events-auto shadow-lg"
               >
                 ×
               </button>
@@ -74,20 +70,15 @@
 
           <!-- Swimming Fish -->
           <div
-            v-for="fish in swimmesingFish"
+            v-for="fish in activeFish"
             :key="fish.id"
-            class="absolute transition-all duration-1000 ease-in-out z-10"
-            :style="{ 
-              left: fish.x + '%', 
-              top: fish.y + '%',
-              transform: `translate(-50%, -50%) ${fish.direction === 'left' ? 'scaleX(-1)' : ''}`
-            }"
+            class="absolute transition-all duration-1000 ease-in-out z-15 fish-container"
+            :style="getFishStyle(fish)"
           >
             <img 
               :src="fish.img" 
               :alt="fish.name"
-              class="w-12 h-10 object-contain"
-              style="image-rendering: pixelated;"
+              class="w-12 h-10 object-contain pixelated"
             />
           </div>
 
@@ -95,12 +86,8 @@
           <div
             v-for="bubble in bubbles"
             :key="bubble.id"
-            class="absolute w-2 h-2 bg-white rounded-full opacity-70 animate-bounce z-5"
-            :style="{ 
-              left: bubble.x + '%', 
-              bottom: bubble.y + 'px',
-              animationDelay: bubble.delay + 's'
-            }"
+            class="absolute w-2 h-2 bg-white rounded-full opacity-70 animate-bounce z-25"
+            :style="getBubbleStyle(bubble)"
           ></div>
 
           <!-- Edit Mode Instructions -->
@@ -425,19 +412,78 @@ const availableFrames = ref([
   }
 ]);
 
-// Style getters
+// Plant sizing and positioning functions
+const getPlantImageClass = (plantId) => {
+  // Categorize plants by size for consistent sizing
+  const longPlants = ['plant_long_1', 'plant_long_2', 'plant_long_3', 'plant_long_4'];
+  const mediumPlants = ['plant1', 'plant2', 'plant3', 'plant4', 'plant5', 'plant6', 'plant7', 'plant8'];
+  const smallPlants = ['plant9', 'plant10', 'plant11', 'plant12', 'plant13', 'plant14', 'plant15'];
+  const decorations = ['shell_1'];
+  
+  if (longPlants.includes(plantId)) {
+    return 'w-16 h-24'; // Tall plants
+  } else if (mediumPlants.includes(plantId)) {
+    return 'w-12 h-16'; // Medium plants
+  } else if (smallPlants.includes(plantId)) {
+    return 'w-10 h-12'; // Small plants
+  } else if (decorations.includes(plantId)) {
+    return 'w-8 h-8'; // Decorations
+  }
+  
+  return 'w-12 h-16'; // Default size
+};
+
+const getPlantStyle = (plant) => {
+  return { 
+    left: plant.x + '%', 
+    top: plant.y + '%',
+    transform: 'translate(-50%, -100%)', // Anchor at bottom center
+    zIndex: Math.floor(plant.y) + 20 // Dynamic z-index based on y position for depth
+  };
+};
+
+const getFishStyle = (fish) => {
+  return { 
+    left: (fish.swimX || fish.x) + '%', 
+    top: (fish.swimY || fish.y) + '%',
+    transform: `translate(-50%, -50%) ${fish.direction === 'left' ? 'scaleX(-1)' : ''}`,
+    zIndex: Math.floor((fish.swimY || fish.y)) + 15 // Dynamic z-index for depth
+  };
+};
+
+const getBubbleStyle = (bubble) => {
+  return { 
+    left: bubble.x + '%', 
+    bottom: bubble.y + 'px',
+    animationDelay: bubble.delay + 's',
+    zIndex: 25
+  };
+};
+
+// Style getters with improved sizing
 const getBackgroundStyle = () => {
   const bg = availableBackgrounds.value.find(b => b.id === selectedBackground.value);
   if (bg && bg.image) {
-    return `background-image: url('${bg.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+    return `
+      background-image: url('${bg.image}'); 
+      background-size: cover; 
+      background-position: center; 
+      background-repeat: no-repeat;
+      min-height: 500px;
+    `;
   }
-  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
+  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7); min-height: 500px;';
 };
 
 const getFloorStyle = () => {
   const floor = availableFloors.value.find(f => f.id === selectedFloor.value);
   if (floor && floor.image) {
-    return `background-image: url('${floor.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+    return `
+      background-image: url('${floor.image}'); 
+      background-size: cover; 
+      background-position: center bottom; 
+      background-repeat: no-repeat;
+    `;
   }
   return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
@@ -445,7 +491,12 @@ const getFloorStyle = () => {
 const getFrameStyle = () => {
   const frame = availableFrames.value.find(f => f.id === selectedFrame.value);
   if (frame && frame.image) {
-    return `background-image: url('${frame.image}'); background-size: contain; background-repeat: no-repeat; background-position: center;`;
+    return `
+      background-image: url('${frame.image}'); 
+      background-size: 100% 100%; 
+      background-repeat: no-repeat; 
+      background-position: center;
+    `;
   }
   return '';
 };
@@ -580,13 +631,14 @@ const addPlantToTank = (plant) => {
     return;
   }
 
+  // Better placement algorithm
   const newPlant = {
     id: `${plant.id}_${Date.now()}`,
     plantId: plant.id,
     name: plant.name,
     img: plant.img,
-    x: Math.random() * 80 + 10, // Random placement
-    y: Math.random() * 60 + 20,
+    x: Math.random() * 60 + 20, // Keep plants away from edges (20-80% range)
+    y: Math.random() * 40 + 40,  // Place in lower portion of tank (40-80% range)
   };
 
   placedPlants.value.push(newPlant);
@@ -669,13 +721,28 @@ const handleTankClick = (event) => {
   // Could implement click-to-place functionality here
 };
 
-// Fish swimming animation
+// Improved fish initialization with consistent sizing
+const initializeFish = () => {
+  const ownedFish = userStore.ownedFish || [];
+  console.log('Initializing fish from owned fish:', ownedFish);
+  
+  activeFish.value = ownedFish.map(fish => ({
+    ...fish,
+    swimX: Math.random() * 60 + 20, // Keep fish in central area
+    swimY: Math.random() * 50 + 15, // Upper portion of tank
+    targetX: Math.random() * 60 + 20,
+    targetY: Math.random() * 50 + 15,
+    direction: Math.random() > 0.5 ? 'right' : 'left'
+  }));
+};
+
+// Improved fish animation with better boundaries
 const animateFish = () => {
   activeFish.value.forEach(fish => {
     // Initialize target positions if not set
     if (!fish.targetX || !fish.targetY) {
-      fish.targetX = Math.random() * 80 + 10;
-      fish.targetY = Math.random() * 60 + 20;
+      fish.targetX = Math.random() * 60 + 20; // 20-80% range
+      fish.targetY = Math.random() * 50 + 15; // 15-65% range
     }
     
     // Calculate distance to target
@@ -684,12 +751,12 @@ const animateFish = () => {
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
     
     // If close to target, pick a new random target
-    if (distance < 5) {
-      fish.targetX = Math.random() * 80 + 10;
-      fish.targetY = Math.random() * 60 + 20;
+    if (distance < 3) {
+      fish.targetX = Math.random() * 60 + 20;
+      fish.targetY = Math.random() * 50 + 15;
     } else {
-      // Move towards target
-      const speed = 0.3 + Math.random() * 0.4;
+      // Move towards target with consistent speed
+      const speed = 0.4;
       const moveX = (deltaX / distance) * speed;
       const moveY = (deltaY / distance) * speed;
       
@@ -700,30 +767,30 @@ const animateFish = () => {
       fish.direction = moveX > 0 ? 'right' : 'left';
     }
     
-    // Keep fish within bounds
-    fish.swimX = Math.max(10, Math.min(90, fish.swimX));
-    fish.swimY = Math.max(20, Math.min(75, fish.swimY));
+    // Keep fish within proper bounds
+    fish.swimX = Math.max(15, Math.min(85, fish.swimX));
+    fish.swimY = Math.max(10, Math.min(70, fish.swimY));
     
-    // Occasional random direction change (for more natural movement)
-    if (Math.random() < 0.01) {
-      fish.targetX = Math.random() * 80 + 10;
-      fish.targetY = Math.random() * 60 + 20;
+    // Occasional random direction change
+    if (Math.random() < 0.008) {
+      fish.targetX = Math.random() * 60 + 20;
+      fish.targetY = Math.random() * 50 + 15;
     }
   });
 };
 
-// Bubble generation
+// Improved bubble generation with better positioning
 const generateBubbles = () => {
-  if (bubbles.value.length < 5) {
+  if (bubbles.value.length < 6) {
     bubbles.value.push({
-      id: Date.now(),
-      x: Math.random() * 100,
-      y: Math.random() * 20,
-      delay: Math.random() * 2
+      id: Date.now() + Math.random(),
+      x: Math.random() * 80 + 10, // Keep bubbles away from edges
+      y: Math.random() * 30 + 10,
+      delay: Math.random() * 3
     });
   }
   
-  // Remove old bubbles
+  // Remove old bubbles that have floated up
   bubbles.value = bubbles.value.filter((bubble, index) => index < 8);
 };
 
@@ -851,11 +918,51 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
-/* Pixelated rendering for backgrounds, tiles, and frames */
-.pixelated-bg {
+/* Pixelated rendering for all pixel art elements */
+.pixelated, .pixelated-bg {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+}
+
+/* Container positioning and sizing */
+.aquarium-tank {
+  aspect-ratio: 16/10;
+  max-width: 100%;
+  position: relative;
+}
+
+.plant-container {
+  transition: transform 0.1s ease-out;
+}
+
+.fish-container {
+  will-change: transform, left, top;
+}
+
+/* Consistent z-index layers */
+.z-5 { z-index: 5; }
+.z-10 { z-index: 10; }
+.z-15 { z-index: 15; }
+.z-20 { z-index: 20; }
+.z-25 { z-index: 25; }
+.z-30 { z-index: 30; }
+.z-40 { z-index: 40; }
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .aquarium-tank {
+    min-height: 300px;
+    aspect-ratio: 4/3;
+  }
+  
+  .plant-container img {
+    transform: scale(0.8);
+  }
+  
+  .fish-container img {
+    transform: scale(0.8);
+  }
 }
 
 /* Mobile touch improvements */
@@ -879,9 +986,23 @@ onUnmounted(() => {
   user-select: none;
 }
 
-/* Z-index layers */
-.z-5 { z-index: 5; }
-.z-10 { z-index: 10; }
-.z-20 { z-index: 20; }
-.z-30 { z-index: 30; }
+/* Smooth animations */
+.fish-container {
+  transition: left 1s ease-in-out, top 1s ease-in-out;
+}
+
+@keyframes float-up {
+  from {
+    transform: translateY(0) scale(0.5);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(-100px) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-bounce {
+  animation: float-up 4s linear infinite;
+}
 </style>
