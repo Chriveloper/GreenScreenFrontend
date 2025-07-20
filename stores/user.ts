@@ -36,7 +36,11 @@ export const useUserStore = defineStore('user', {
   }),
   
   getters: {
-    isLoggedIn: (state) => !!state.user,
+    isLoggedIn: (state) => {
+      // Prevent SSR issues during static generation
+      if (process.server) return false;
+      return !!state.user;
+    },
     pearls: (state) => state.userProfile?.pearls || 0,
     fish: (state) => state.userProfile?.fish || [],
     decorations: (state) => state.userProfile?.decorations || [],
@@ -51,7 +55,7 @@ export const useUserStore = defineStore('user', {
     },
     
     async loadUserProfile() {
-      if (!this.user) return null;
+      if (!this.user || process.server) return null;
       
       this.loading = true;
       console.log('Loading user profile for:', this.user.id);
@@ -93,7 +97,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async createUserProfile() {
-      if (!this.user) return null;
+      if (!this.user || process.server) return null;
       
       try {
         const { $supabase } = useNuxtApp();
@@ -126,7 +130,7 @@ export const useUserStore = defineStore('user', {
     },
     
     async purchaseItem(type: 'fish' | 'decorations', item: PurchasableItem) {
-      if (!this.user || !this.userProfile) return false;
+      if (!this.user || !this.userProfile || process.server) return false;
       
       // Check if user has enough pearls
       if (this.pearls < item.price) {
@@ -192,8 +196,8 @@ export const useUserStore = defineStore('user', {
     },
     
     async addFocusSession(durationMinutes: number, pearlsEarned: number) {
-      if (!this.user || !this.userProfile) {
-        console.error('No user or user profile found');
+      if (!this.user || !this.userProfile || process.server) {
+        console.error('No user or user profile found, or running on server');
         return false;
       }
       
@@ -252,7 +256,7 @@ export const useUserStore = defineStore('user', {
     },
     
     async updateScreenTimeGoals(goals: { dailyLimit: number }) {
-      if (!this.user || !this.userProfile) return false;
+      if (!this.user || !this.userProfile || process.server) return false;
       
       try {
         const { $supabase } = useNuxtApp();
@@ -276,7 +280,7 @@ export const useUserStore = defineStore('user', {
     },
     
     async updateAppLimits(limits: Record<string, number>) {
-      if (!this.user || !this.userProfile) return false;
+      if (!this.user || !this.userProfile || process.server) return false;
       
       try {
         const { $supabase } = useNuxtApp();

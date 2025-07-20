@@ -5,6 +5,9 @@ export default defineNuxtPlugin({
   name: 'auth-plugin',
   enforce: 'post', // Makes this plugin run after other plugins
   async setup(nuxtApp) {
+    // Only run on client side
+    if (process.server) return;
+    
     // Wait until Supabase is available in the nuxtApp
     const userStore = useUserStore();
     

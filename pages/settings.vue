@@ -46,9 +46,9 @@
                   <option value="">Select an app</option>
                   <option 
                     v-for="app in availableApps" 
-                    :key="app.packageName" 
-                    :value="app.packageName"
-                    v-if="!appLimits[app.packageName]"
+                    :key="app?.packageName || ''" 
+                    :value="app?.packageName"
+                    v-if="app && app.packageName && !appLimits[app.packageName]"
                   >
                     {{ app.appName }}
                   </option>
@@ -113,6 +113,11 @@
 </template>
 
 <script setup>
+// Disable SSR for this page to avoid hydration issues
+definePageMeta({
+  ssr: false,
+});
+
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '~/stores/user'
 
@@ -125,14 +130,20 @@ const newAppLimit = ref('')
 const availableApps = ref([])
 
 // Computed properties
-const appLimits = computed(() => userStore.appLimits)
+const appLimits = computed(() => {
+  if (process.server) return {}
+  return userStore.appLimits
+})
 
 // Load installed apps from store
 const loadInstalledApps = () => {
+  if (process.server) return
   try {
-    if (userStore.installed_apps) {
+    if (userStore.installed_apps && typeof userStore.installed_apps === 'string') {
       const parsed = JSON.parse(userStore.installed_apps)
-      availableApps.value = parsed || []
+      availableApps.value = Array.isArray(parsed) ? parsed.filter(app => app && app.packageName && app.appName) : []
+    } else {
+      availableApps.value = []
     }
   } catch (error) {
     console.error('Error parsing installed apps:', error)
@@ -142,6 +153,7 @@ const loadInstalledApps = () => {
 
 // Load settings from store
 const loadSettings = () => {
+  if (process.server) return
   if (userStore.userProfile?.screen_time_goals?.dailyLimit) {
     // Convert minutes to hours
     dailyLimitHours.value = userStore.userProfile.screen_time_goals.dailyLimit / 60
@@ -150,6 +162,7 @@ const loadSettings = () => {
 
 // Save daily screen time goal
 const saveDailyGoal = async () => {
+  if (process.server) return false
   // Convert hours to minutes for storage
   const goals = { dailyLimit: Math.round(dailyLimitHours.value * 60) }
   const success = await userStore.updateScreenTimeGoals(goals)
@@ -158,10 +171,12 @@ const saveDailyGoal = async () => {
     // Show success message or notification
     console.log(`Daily limit set to ${dailyLimitHours.value} hours`)
   }
+  return success
 }
 
 // Add an app limit
 const addAppLimit = async () => {
+  if (process.server) return false
   if (selectedApp.value && newAppLimit.value) {
     // Create updated limits object with the new limit
     const updatedLimits = { 
@@ -177,32 +192,41 @@ const addAppLimit = async () => {
       selectedApp.value = ''
       newAppLimit.value = ''
     }
+    return success
   }
+  return false
 }
 
 // Remove an app limit
 const removeAppLimit = async (packageName) => {
+  if (process.server) return false
   // Create updated limits object without the removed app
   const updatedLimits = { ...appLimits.value }
   delete updatedLimits[packageName]
   
   // Update in store
-  await userStore.updateAppLimits(updatedLimits)
+  return await userStore.updateAppLimits(updatedLimits)
 }
 
 // Format app name for display
 const formatAppName = (packageName) => {
-  const app = availableApps.value.find(app => app.packageName === packageName)
+  if (!availableApps.value || !Array.isArray(availableApps.value)) {
+    return packageName
+  }
+  const app = availableApps.value.find(app => app && app.packageName === packageName)
   return app ? app.appName : packageName
 }
 
 // Save all settings
 const saveSettings = async () => {
+  if (process.server) return false
   await saveDailyGoal()
   // Add any other settings saves here
 }
 
 onMounted(() => {
+  if (process.server) return
+  
   loadInstalledApps()
   loadSettings()
   

@@ -149,18 +149,23 @@ const logout = async () => {
 }
 
 onMounted(async () => {
-  setupNativeCallback()
-  requestUsageData()
+  // Only run on client side
+  if (process.client) {
+    requestUsageData()
+  }
 })
 
-window.onNativeData = function(data) {
-  console.log("🟢 [Web] Received from native:", data)
-  try {
-    const parsed = JSON.parse(data)
-    userStore.installed_apps = JSON.stringify(parsed.installedApps);
-    userStore.usage_data = JSON.stringify(parsed.usageData);
-  } catch (e) {
-    console.error('Error parsing native data:', e)
+// Only set up window functions on client side
+if (process.client) {
+  window.onNativeData = function(data) {
+    console.log("🟢 [Web] Received from native:", data)
+    try {
+      const parsed = JSON.parse(data)
+      userStore.installed_apps = JSON.stringify(parsed.installedApps);
+      userStore.usage_data = JSON.stringify(parsed.usageData);
+    } catch (e) {
+      console.error('Error parsing native data:', e)
+    }
   }
 }
 
