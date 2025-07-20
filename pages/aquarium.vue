@@ -21,20 +21,32 @@
       <!-- Aquarium Tank -->
       <div class="lg:col-span-3">
         <div 
-          class="aquarium-tank bg-gradient-to-b from-sky-300 to-sky-500 rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer"
+          class="aquarium-tank rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer"
           :class="{ 'ring-2 ring-yellow-400': editMode }"
+          :style="getBackgroundStyle()"
           @click="handleTankClick"
         >
-          <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg"></div>
+          <!-- Tank frame overlay (optional) -->
+          <div 
+            v-if="selectedFrame !== 'none'"
+            class="absolute inset-0 pointer-events-none z-40"
+            :style="getFrameStyle()"
+          ></div>
           
-          <!-- Sand/gravel bottom -->
-          <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-b-lg"></div>
+          <!-- Water overlay effect -->
+          <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg pointer-events-none"></div>
+          
+          <!-- Floor/substrate -->
+          <div 
+            class="absolute bottom-0 left-0 right-0 h-16 rounded-b-lg"
+            :style="getFloorStyle()"
+          ></div>
           
           <!-- Placed Plants -->
           <div
             v-for="placedPlant in placedPlants"
             :key="placedPlant.id"
-            class="absolute cursor-move touch-none select-none"
+            class="absolute cursor-move touch-none select-none z-20"
             :style="{ 
               left: placedPlant.x + '%', 
               top: placedPlant.y + '%',
@@ -64,7 +76,7 @@
           <div
             v-for="fish in swimmesingFish"
             :key="fish.id"
-            class="absolute transition-all duration-1000 ease-in-out"
+            class="absolute transition-all duration-1000 ease-in-out z-10"
             :style="{ 
               left: fish.x + '%', 
               top: fish.y + '%',
@@ -83,7 +95,7 @@
           <div
             v-for="bubble in bubbles"
             :key="bubble.id"
-            class="absolute w-2 h-2 bg-white rounded-full opacity-70 animate-bounce"
+            class="absolute w-2 h-2 bg-white rounded-full opacity-70 animate-bounce z-5"
             :style="{ 
               left: bubble.x + '%', 
               bottom: bubble.y + 'px',
@@ -92,18 +104,19 @@
           ></div>
 
           <!-- Edit Mode Instructions -->
-          <div v-if="editMode" class="absolute top-4 left-4 bg-white/90 rounded-lg p-3">
+          <div v-if="editMode" class="absolute top-4 left-4 bg-white/90 rounded-lg p-3 z-30">
             <p class="text-sm font-medium text-gray-800">Edit Mode Active</p>
             <p class="text-xs text-gray-600">• Drag plants to move them</p>
             <p class="text-xs text-gray-600">• Click × to remove items</p>
             <p class="text-xs text-gray-600">• Use inventory to add new items</p>
+            <p class="text-xs text-gray-600">• Customize background & floor</p>
           </div>
         </div>
       </div>
 
       <!-- Inventory Sidebar -->
       <div class="lg:col-span-1">
-        <div class="bg-white rounded-lg shadow-lg p-4">
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
           <h2 class="text-lg font-semibold mb-4 text-gray-800">Inventory</h2>
           
           <!-- Fish Inventory -->
@@ -131,7 +144,7 @@
           </div>
 
           <!-- Plants Inventory -->
-          <div>
+          <div class="mb-6">
             <h3 class="text-md font-medium mb-3 text-green-700 flex items-center">
               <span class="text-lg mr-2">🌿</span>
               Plants & Decorations
@@ -157,8 +170,73 @@
           </div>
         </div>
 
+        <!-- Customization Panel -->
+        <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
+          <h3 class="text-md font-semibold mb-3 text-gray-800">Customize Tank</h3>
+          
+          <!-- Background Selection -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-2 text-gray-700">Background</h4>
+            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+              <div
+                v-for="bg in availableBackgrounds"
+                :key="bg.id"
+                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden"
+                :class="selectedBackground === bg.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
+                @click="selectBackground(bg.id)"
+                :title="bg.name"
+              >
+                <div 
+                  class="w-full h-full"
+                  :style="bg.preview"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floor Selection -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-2 text-gray-700">Floor Tiles</h4>
+            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+              <div
+                v-for="floor in availableFloors"
+                :key="floor.id"
+                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden"
+                :class="selectedFloor === floor.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
+                @click="selectFloor(floor.id)"
+                :title="floor.name"
+              >
+                <div 
+                  class="w-full h-full"
+                  :style="floor.preview"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Frame Selection -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-2 text-gray-700">Tank Frame</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <div
+                v-for="frame in availableFrames"
+                :key="frame.id"
+                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden"
+                :class="selectedFrame === frame.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
+                @click="selectFrame(frame.id)"
+                :title="frame.name"
+              >
+                <div 
+                  class="w-full h-full bg-sky-100"
+                  :style="frame.preview"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Quick Stats -->
-        <div class="bg-white rounded-lg shadow-lg p-4 mt-4">
+        <div class="bg-white rounded-lg shadow-lg p-4">
           <h3 class="text-md font-semibold mb-3 text-gray-800">Tank Stats</h3>
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
@@ -197,12 +275,195 @@ const activeFish = ref([]);
 const bubbles = ref([]);
 const draggedItem = ref(null);
 const dragOffset = ref({ x: 0, y: 0 });
+const selectedBackground = ref('default');
+const selectedFloor = ref('sand');
+const selectedFrame = ref('none');
 
 // Animation intervals
 let fishAnimationInterval = null;
 let bubbleInterval = null;
 
 const playerPearls = computed(() => userStore.pearls);
+
+// Available backgrounds, floors, and frames
+const availableBackgrounds = ref([
+  { 
+    id: 'default', 
+    name: 'Deep Blue',
+    preview: 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);'
+  },
+  { 
+    id: 'background_1a', 
+    name: 'Ocean Deep',
+    image: '/resources/backgrounds/background_1a.png',
+    preview: 'background-image: url("/resources/backgrounds/background_1a.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_1b', 
+    name: 'Ocean Medium',
+    image: '/resources/backgrounds/background_1b.png',
+    preview: 'background-image: url("/resources/backgrounds/background_1b.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_1c', 
+    name: 'Ocean Light',
+    image: '/resources/backgrounds/background_1c.png',
+    preview: 'background-image: url("/resources/backgrounds/background_1c.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_2a', 
+    name: 'Coral Deep',
+    image: '/resources/backgrounds/background_2a.png',
+    preview: 'background-image: url("/resources/backgrounds/background_2a.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_2b', 
+    name: 'Coral Medium',
+    image: '/resources/backgrounds/background_2b.png',
+    preview: 'background-image: url("/resources/backgrounds/background_2b.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_2c', 
+    name: 'Coral Light',
+    image: '/resources/backgrounds/background_2c.png',
+    preview: 'background-image: url("/resources/backgrounds/background_2c.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_3a', 
+    name: 'Tropical Deep',
+    image: '/resources/backgrounds/background_3a.png',
+    preview: 'background-image: url("/resources/backgrounds/background_3a.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_3b', 
+    name: 'Tropical Medium',
+    image: '/resources/backgrounds/background_3b.png',
+    preview: 'background-image: url("/resources/backgrounds/background_3b.png"); background-size: cover;'
+  },
+  { 
+    id: 'background_3c', 
+    name: 'Tropical Light',
+    image: '/resources/backgrounds/background_3c.png',
+    preview: 'background-image: url("/resources/backgrounds/background_3c.png"); background-size: cover;'
+  }
+]);
+
+const availableFloors = ref([
+  { 
+    id: 'sand', 
+    name: 'Sand',
+    preview: 'background: linear-gradient(to top, #fbbf24, #f59e0b);'
+  },
+  { 
+    id: 'tiles_1', 
+    name: 'Blue Tiles',
+    image: '/resources/floor_tiles/tiles_1.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_1.png"); background-size: cover;'
+  },
+  { 
+    id: 'tiles_10', 
+    name: 'Stone Tiles',
+    image: '/resources/floor_tiles/tiles_10.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_10.png"); background-size: cover;'
+  },
+  { 
+    id: 'tiles_10b', 
+    name: 'Stone Tiles Alt',
+    image: '/resources/floor_tiles/tiles_10b.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_10b.png"); background-size: cover;'
+  },
+  { 
+    id: 'tiles_10c', 
+    name: 'Stone Tiles Light',
+    image: '/resources/floor_tiles/tiles_10c.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_10c.png"); background-size: cover;'
+  },
+  { 
+    id: 'tiles_11', 
+    name: 'Dark Tiles',
+    image: '/resources/floor_tiles/tiles_11.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_11.png"); background-size: cover;'
+  },
+  { 
+    id: 'tiles_11b', 
+    name: 'Dark Tiles Alt',
+    image: '/resources/floor_tiles/tiles_11b.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_11b.png"); background-size: cover;'
+  },
+  { 
+    id: 'tiles_11c', 
+    name: 'Dark Tiles Light',
+    image: '/resources/floor_tiles/tiles_11c.png',
+    preview: 'background-image: url("/resources/floor_tiles/tiles_11c.png"); background-size: cover;'
+  }
+]);
+
+const availableFrames = ref([
+  { 
+    id: 'none', 
+    name: 'No Frame',
+    preview: 'background: transparent;'
+  },
+  { 
+    id: 'fishtank_1', 
+    name: 'Classic Frame',
+    image: '/resources/fishtank_1.png',
+    preview: 'background-image: url("/resources/fishtank_1.png"); background-size: contain; background-repeat: no-repeat; background-position: center;'
+  },
+  { 
+    id: 'fishtank_2', 
+    name: 'Modern Frame',
+    image: '/resources/fishtank_2.png',
+    preview: 'background-image: url("/resources/fishtank_2.png"); background-size: contain; background-repeat: no-repeat; background-position: center;'
+  },
+  { 
+    id: 'fishtank_3', 
+    name: 'Elegant Frame',
+    image: '/resources/fishtank_3.png',
+    preview: 'background-image: url("/resources/fishtank_3.png"); background-size: contain; background-repeat: no-repeat; background-position: center;'
+  }
+]);
+
+// Style getters
+const getBackgroundStyle = () => {
+  const bg = availableBackgrounds.value.find(b => b.id === selectedBackground.value);
+  if (bg && bg.image) {
+    return `background-image: url('${bg.image}'); background-size: cover; background-position: center;`;
+  }
+  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
+};
+
+const getFloorStyle = () => {
+  const floor = availableFloors.value.find(f => f.id === selectedFloor.value);
+  if (floor && floor.image) {
+    return `background-image: url('${floor.image}'); background-size: cover; background-position: center;`;
+  }
+  return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
+};
+
+const getFrameStyle = () => {
+  const frame = availableFrames.value.find(f => f.id === selectedFrame.value);
+  if (frame && frame.image) {
+    return `background-image: url('${frame.image}'); background-size: contain; background-repeat: no-repeat; background-position: center;`;
+  }
+  return '';
+};
+
+// Customization functions
+const selectBackground = (backgroundId) => {
+  selectedBackground.value = backgroundId;
+  saveAquariumLayout();
+};
+
+const selectFloor = (floorId) => {
+  selectedFloor.value = floorId;
+  saveAquariumLayout();
+};
+
+const selectFrame = (frameId) => {
+  selectedFrame.value = frameId;
+  saveAquariumLayout();
+};
 
 // Fish and plant data with swimming behavior
 const swimmesingFish = computed(() => {
@@ -379,6 +640,7 @@ const handleDrag = (event) => {
   if (!tank) return;
   
   const rect = tank.getBoundingClientRect();
+  
   const newX = ((clientX - rect.left - dragOffset.value.x) / rect.width) * 100;
   const newY = ((clientY - rect.top - dragOffset.value.y) / rect.height) * 100;
   
@@ -475,7 +737,10 @@ const saveAquariumLayout = async () => {
       targetX: f.targetX || Math.random() * 80 + 10,
       targetY: f.targetY || Math.random() * 50 + 20,
       direction: f.direction || 'right' 
-    }))
+    })),
+    background: selectedBackground.value,
+    floor: selectedFloor.value,
+    frame: selectedFrame.value
   };
   
   console.log('Saving aquarium layout:', layout);
@@ -501,6 +766,19 @@ const loadAquariumLayout = () => {
       placedPlants.value = layout.plants;
       console.log('Loaded plants:', placedPlants.value.length);
     }
+    
+    if (layout.background) {
+      selectedBackground.value = layout.background;
+    }
+    
+    if (layout.floor) {
+      selectedFloor.value = layout.floor;
+    }
+    
+    if (layout.frame) {
+      selectedFrame.value = layout.frame;
+    }
+    
     if (layout.fish) {
       const fishData = [
         { id: 'goldfish', name: 'Goldfish', img: '/resources/fish/fish_1.gif', color: '#FFA726' },
@@ -592,4 +870,10 @@ onUnmounted(() => {
   -ms-user-select: none;
   user-select: none;
 }
+
+/* Z-index layers */
+.z-5 { z-index: 5; }
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+.z-30 { z-index: 30; }
 </style>

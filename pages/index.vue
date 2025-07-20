@@ -19,12 +19,18 @@
       </div>
       
       <!-- Aquarium Tank Preview -->
-      <div class="bg-gradient-to-b from-sky-300 to-sky-600 rounded-lg shadow-inner p-4 h-48 sm:h-64 relative overflow-hidden">
-        <!-- Background water effect -->
+      <div 
+        class="rounded-lg shadow-inner p-4 h-48 sm:h-64 relative overflow-hidden"
+        :style="getAquariumPreviewStyle()"
+      >
+        <!-- Water overlay effect -->
         <div class="absolute inset-0 bg-blue-400 bg-opacity-30 rounded-lg"></div>
         
-        <!-- Sand bottom -->
-        <div class="absolute bottom-0 left-0 right-0 h-8 sm:h-12 bg-gradient-to-t from-yellow-600 to-yellow-500 rounded-b-lg"></div>
+        <!-- Floor -->
+        <div 
+          class="absolute bottom-0 left-0 right-0 h-8 sm:h-12 rounded-b-lg"
+          :style="getFloorPreviewStyle()"
+        ></div>
         
         <!-- User's Fish from aquarium layout -->
         <div
@@ -105,30 +111,46 @@
         </div>
 
         <!-- Light reflection effect -->
-        <div class="absolute top-0 left-1/4 right-1/4 h-6 sm:h-8 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg"></div>
+        <div class="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg"></div>
       </div>
     </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      <!-- Stats Card -->
-      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
-        <h2 class="text-lg font-semibold mb-4 text-sky-700">Focus Stats</h2>
-        <div class="space-y-3">
-          <div class="flex justify-between">
-            <span class="text-gray-600">Sessions Today</span>
-            <span class="text-2xl font-bold text-sky-500">{{ todaySessions }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">Total Hours</span>
-            <span class="text-2xl font-bold text-sky-500">{{ totalHours }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">Pearls Earned</span>
-            <span class="text-2xl font-bold text-yellow-500">{{ totalPearlsEarned }}</span>
-          </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Sessions -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-400">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Today's Sessions</span>
+          <span class="text-2xl font-bold text-green-500">{{ todaySessions }}</span>
         </div>
       </div>
       
+      <!-- Total Hours -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-purple-400">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Total Hours</span>
+          <span class="text-2xl font-bold text-purple-500">{{ totalHours }}</span>
+        </div>
+      </div>
+      
+      <!-- Current Pearls -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-yellow-400">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Current Pearls</span>
+          <span class="text-2xl font-bold text-yellow-500">{{ playerPearls }}</span>
+        </div>
+      </div>
+      
+      <!-- Total Pearls Earned -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Pearls Earned</span>
+          <span class="text-2xl font-bold text-yellow-500">{{ totalPearlsEarned }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Recent Activity -->
       <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
         <h2 class="text-lg font-semibold mb-4 text-sky-700">Recent Activity</h2>
@@ -162,22 +184,26 @@
           <p class="text-sm">No fish yet!</p>
           <p class="text-xs">Visit the shop to start your collection</p>
         </div>
-        <NuxtLink to="/shop" class="block text-center text-sky-600 hover:text-sky-700 text-sm mt-3 font-medium">
+        <NuxtLink to="/shop" class="block text-center bg-sky-50 text-sky-600 hover:bg-sky-100 py-2 rounded-md text-sm font-medium transition mt-3">
           Visit Shop →
         </NuxtLink>
       </div>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <NuxtLink to="/focus" class="block bg-sky-600 hover:bg-sky-700 text-white font-bold py-4 px-6 rounded-lg text-center transition transform hover:scale-105">
-        🎯 Start Focus Session
-      </NuxtLink>
-      <NuxtLink to="/shop" class="block bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-4 px-6 rounded-lg text-center transition transform hover:scale-105">
-        🛒 Visit Shop
-      </NuxtLink>
-      <NuxtLink to="/aquarium" class="block bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-6 rounded-lg text-center transition transform hover:scale-105">
-        🐠 Visit Aquarium
-      </NuxtLink>
+
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-400">
+        <h2 class="text-lg font-semibold mb-4 text-green-700">Quick Actions</h2>
+        <div class="space-y-3">
+          <NuxtLink to="/timer" class="w-full bg-green-100 hover:bg-green-200 text-green-700 py-3 px-4 rounded-md text-center font-medium transition block">
+            🎯 Start Focus Session
+          </NuxtLink>
+          <NuxtLink to="/aquarium" class="w-full bg-sky-100 hover:bg-sky-200 text-sky-700 py-3 px-4 rounded-md text-center font-medium transition block">
+            🐠 Manage Aquarium
+          </NuxtLink>
+          <NuxtLink to="/shop" class="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-700 py-3 px-4 rounded-md text-center font-medium transition block">
+            🛒 Visit Shop
+          </NuxtLink>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -265,6 +291,33 @@ const tankHealth = computed(() => {
   return Math.min(100, Math.max(60, Math.round(75 + (ratio * 25))));
 });
 
+// Style getters for aquarium preview
+const getAquariumPreviewStyle = () => {
+  const layout = userStore.aquariumLayout;
+  const backgroundId = layout?.background || 'default';
+  
+  // Check if it's one of the image backgrounds
+  if (backgroundId.startsWith('background_')) {
+    return `background-image: url("/resources/backgrounds/${backgroundId}.png"); background-size: cover; background-position: center;`;
+  }
+  
+  // Default gradient background
+  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
+};
+
+const getFloorPreviewStyle = () => {
+  const layout = userStore.aquariumLayout;
+  const floorId = layout?.floor || 'sand';
+  
+  // Check if it's one of the tile floors
+  if (floorId.startsWith('tiles_')) {
+    return `background-image: url("/resources/floor_tiles/${floorId}.png"); background-size: cover; background-position: center;`;
+  }
+  
+  // Default sand gradient
+  return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
+};
+
 const recentActivities = ref([
   { id: 1, color: 'bg-green-500', text: 'Completed 25-min focus session' },
   { id: 2, color: 'bg-yellow-500', text: 'Earned 25 pearls' },
@@ -277,6 +330,7 @@ onMounted(async () => {
     if (userStore.isLoggedIn && !userStore.userProfile) {
       await userStore.loadUserProfile();
     }
+    
     // Update reactive refs after mounting
     playerPearls.value = userStore.pearls;
     totalPearlsEarned.value = userStore.pearls;
