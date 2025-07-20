@@ -44,6 +44,7 @@ export const useUserStore = defineStore('user', {
     pearls: (state) => state.userProfile?.pearls || 0,
     fish: (state) => state.userProfile?.fish || [],
     decorations: (state) => state.userProfile?.decorations || [],
+    aquariumLayout: (state) => state.userProfile?.aquarium_layout || {},
     screenTimeGoals: (state) => state.userProfile?.screen_time_goals || { dailyLimit: 240 },
     appLimits: (state) => state.userProfile?.app_limits || {},
   },
@@ -331,6 +332,34 @@ export const useUserStore = defineStore('user', {
         return true;
       } catch (err) {
         console.error('Error saving usage data:', err);
+        return false;
+      }
+    },
+    
+    async updateAquariumLayout(layout: Record<string, any>) {
+      if (!this.user || !this.userProfile || process.server) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        console.log('Updating aquarium layout for user:', this.user.id);
+        console.log('Layout data:', layout);
+        
+        const { error } = await supabase
+          .from('user_data')
+          .update({
+            aquarium_layout: layout
+          })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        this.userProfile.aquarium_layout = layout;
+        console.log('Aquarium layout updated successfully');
+        return true;
+      } catch (err) {
+        console.error('Error updating aquarium layout:', err);
         return false;
       }
     },
