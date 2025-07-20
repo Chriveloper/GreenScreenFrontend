@@ -20,7 +20,7 @@
       
       <!-- Aquarium Tank Preview -->
       <div 
-        class="rounded-lg shadow-inner p-4 h-48 sm:h-64 relative overflow-hidden"
+        class="rounded-lg shadow-inner p-4 h-48 sm:h-64 relative overflow-hidden pixelated-bg"
         :style="getAquariumPreviewStyle()"
       >
         <!-- Water overlay effect -->
@@ -28,7 +28,7 @@
         
         <!-- Floor -->
         <div 
-          class="absolute bottom-0 left-0 right-0 h-8 sm:h-12 rounded-b-lg"
+          class="absolute bottom-0 left-0 right-0 h-8 sm:h-12 rounded-b-lg pixelated-bg"
           :style="getFloorPreviewStyle()"
         ></div>
         
@@ -346,3 +346,12 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+/* Pixelated rendering for preview backgrounds and tiles */
+.pixelated-bg {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+</style>

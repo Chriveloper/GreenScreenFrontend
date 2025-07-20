@@ -21,7 +21,7 @@
       <!-- Aquarium Tank -->
       <div class="lg:col-span-3">
         <div 
-          class="aquarium-tank rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer"
+          class="aquarium-tank rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer pixelated-bg"
           :class="{ 'ring-2 ring-yellow-400': editMode }"
           :style="getBackgroundStyle()"
           @click="handleTankClick"
@@ -29,7 +29,7 @@
           <!-- Tank frame overlay (optional) -->
           <div 
             v-if="selectedFrame !== 'none'"
-            class="absolute inset-0 pointer-events-none z-40"
+            class="absolute inset-0 pointer-events-none z-40 pixelated-bg"
             :style="getFrameStyle()"
           ></div>
           
@@ -38,7 +38,7 @@
           
           <!-- Floor/substrate -->
           <div 
-            class="absolute bottom-0 left-0 right-0 h-16 rounded-b-lg"
+            class="absolute bottom-0 left-0 right-0 h-16 rounded-b-lg pixelated-bg"
             :style="getFloorStyle()"
           ></div>
           
@@ -181,13 +181,13 @@
               <div
                 v-for="bg in availableBackgrounds"
                 :key="bg.id"
-                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden"
+                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden pixelated-bg"
                 :class="selectedBackground === bg.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
                 @click="selectBackground(bg.id)"
                 :title="bg.name"
               >
                 <div 
-                  class="w-full h-full"
+                  class="w-full h-full pixelated-bg"
                   :style="bg.preview"
                 ></div>
               </div>
@@ -201,13 +201,13 @@
               <div
                 v-for="floor in availableFloors"
                 :key="floor.id"
-                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden"
+                class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden pixelated-bg"
                 :class="selectedFloor === floor.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
                 @click="selectFloor(floor.id)"
                 :title="floor.name"
               >
                 <div 
-                  class="w-full h-full"
+                  class="w-full h-full pixelated-bg"
                   :style="floor.preview"
                 ></div>
               </div>
@@ -227,7 +227,7 @@
                 :title="frame.name"
               >
                 <div 
-                  class="w-full h-full bg-sky-100"
+                  class="w-full h-full bg-sky-100 pixelated-bg"
                   :style="frame.preview"
                 ></div>
               </div>
@@ -429,7 +429,7 @@ const availableFrames = ref([
 const getBackgroundStyle = () => {
   const bg = availableBackgrounds.value.find(b => b.id === selectedBackground.value);
   if (bg && bg.image) {
-    return `background-image: url('${bg.image}'); background-size: cover; background-position: center;`;
+    return `background-image: url('${bg.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
   }
   return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
 };
@@ -437,7 +437,7 @@ const getBackgroundStyle = () => {
 const getFloorStyle = () => {
   const floor = availableFloors.value.find(f => f.id === selectedFloor.value);
   if (floor && floor.image) {
-    return `background-image: url('${floor.image}'); background-size: cover; background-position: center;`;
+    return `background-image: url('${floor.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
   }
   return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
@@ -849,6 +849,13 @@ onUnmounted(() => {
 
 .cursor-move:active {
   cursor: grabbing;
+}
+
+/* Pixelated rendering for backgrounds, tiles, and frames */
+.pixelated-bg {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 /* Mobile touch improvements */
