@@ -15,6 +15,7 @@ interface UserProfile {
   app_limits: Record<string, number>;
   created_at?: string;
   updated_at?: string;
+  last_reward_collected: string;
 }
 
 interface PurchasableItem {
@@ -42,6 +43,7 @@ export const useUserStore = defineStore('user', {
     decorations: (state) => state.userProfile?.decorations || [],
     screenTimeGoals: (state) => state.userProfile?.screen_time_goals || { dailyLimit: 240 },
     appLimits: (state) => state.userProfile?.app_limits || {},
+    last_reward_collected: (state) => state.userProfile?.last_reward_collected || "1970-01-01",
   },
   
   actions: {
@@ -106,7 +108,8 @@ export const useUserStore = defineStore('user', {
           decorations: [],
           aquarium_layout: {},
           screen_time_goals: { dailyLimit: 240 },
-          app_limits: {}
+          app_limits: {},
+          last_reward_collected: "1970-01-01",
         };
         
         const { data, error } = await supabase

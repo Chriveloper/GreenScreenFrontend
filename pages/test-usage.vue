@@ -67,6 +67,7 @@
 import {computed, onMounted, ref} from 'vue'
 import {useUserStore} from '@/stores/user'
 
+
 const userStore = useUserStore()
 
 const parsedUsageData = ref([])
@@ -97,9 +98,9 @@ const loadUsageDataFromStore = () => {
 
 onMounted(() => {
   loadUsageDataFromStore()
-
   // Optional: listen to changes if store updates dynamically
   watch(() => userStore.usage_data, loadUsageDataFromStore)
+  watch(() => userStore.installed_apps, loadUsageDataFromStore)
 })
 
 // Computed properties
