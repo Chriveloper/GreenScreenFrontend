@@ -21,7 +21,7 @@
       <!-- Aquarium Tank -->
       <div class="lg:col-span-3">
         <div 
-          class="bg-gradient-to-b from-sky-300 to-sky-500 rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer"
+          class="aquarium-tank bg-gradient-to-b from-sky-300 to-sky-500 rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer"
           :class="{ 'ring-2 ring-yellow-400': editMode }"
           @click="handleTankClick"
         >
@@ -290,13 +290,17 @@ const toggleFish = (fish) => {
     activeFish.value.splice(fishIndex, 1);
   } else {
     // Add fish to tank
+    const startX = Math.random() * 80 + 10;
+    const startY = Math.random() * 50 + 20;
     activeFish.value.push({
       id: fish.id,
       name: fish.name,
       img: fish.img,
       color: fish.color,
-      swimX: Math.random() * 80 + 10,
-      swimY: Math.random() * 50 + 20,
+      swimX: startX,
+      swimY: startY,
+      targetX: Math.random() * 80 + 10,
+      targetY: Math.random() * 50 + 20,
       direction: Math.random() > 0.5 ? 'right' : 'left'
     });
   }
@@ -371,7 +375,7 @@ const handleDrag = (event) => {
   const clientX = event.type === 'touchmove' ? event.touches[0].clientX : event.clientX;
   const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
   
-  const tank = document.querySelector('.bg-gradient-to-b.from-sky-300');
+  const tank = document.querySelector('.aquarium-tank');
   if (!tank) return;
   
   const rect = tank.getBoundingClientRect();
@@ -405,29 +409,43 @@ const handleTankClick = (event) => {
 // Fish swimming animation
 const animateFish = () => {
   activeFish.value.forEach(fish => {
-    // Random movement
-    const speed = 0.5 + Math.random() * 0.5;
-    let newX = fish.swimX + (fish.direction === 'right' ? speed : -speed);
-    
-    // Bounce off walls
-    if (newX <= 10) {
-      fish.direction = 'right';
-      newX = 10;
-    } else if (newX >= 90) {
-      fish.direction = 'left';
-      newX = 90;
+    // Initialize target positions if not set
+    if (!fish.targetX || !fish.targetY) {
+      fish.targetX = Math.random() * 80 + 10;
+      fish.targetY = Math.random() * 60 + 20;
     }
     
-    // Occasional direction change
-    if (Math.random() < 0.02) {
-      fish.direction = fish.direction === 'right' ? 'left' : 'right';
+    // Calculate distance to target
+    const deltaX = fish.targetX - fish.swimX;
+    const deltaY = fish.targetY - fish.swimY;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // If close to target, pick a new random target
+    if (distance < 5) {
+      fish.targetX = Math.random() * 80 + 10;
+      fish.targetY = Math.random() * 60 + 20;
+    } else {
+      // Move towards target
+      const speed = 0.3 + Math.random() * 0.4;
+      const moveX = (deltaX / distance) * speed;
+      const moveY = (deltaY / distance) * speed;
+      
+      fish.swimX += moveX;
+      fish.swimY += moveY;
+      
+      // Update direction based on movement
+      fish.direction = moveX > 0 ? 'right' : 'left';
     }
     
-    // Slight vertical movement
-    fish.swimY += (Math.random() - 0.5) * 0.3;
-    fish.swimY = Math.max(20, Math.min(70, fish.swimY));
+    // Keep fish within bounds
+    fish.swimX = Math.max(10, Math.min(90, fish.swimX));
+    fish.swimY = Math.max(20, Math.min(75, fish.swimY));
     
-    fish.swimX = newX;
+    // Occasional random direction change (for more natural movement)
+    if (Math.random() < 0.01) {
+      fish.targetX = Math.random() * 80 + 10;
+      fish.targetY = Math.random() * 60 + 20;
+    }
   });
 };
 
@@ -454,6 +472,8 @@ const saveAquariumLayout = async () => {
       id: f.id, 
       swimX: f.swimX || 50, 
       swimY: f.swimY || 50, 
+      targetX: f.targetX || Math.random() * 80 + 10,
+      targetY: f.targetY || Math.random() * 50 + 20,
       direction: f.direction || 'right' 
     }))
   };
@@ -494,7 +514,9 @@ const loadAquariumLayout = () => {
         const fishTemplate = fishData.find(f => f.id === savedFish.id);
         return {
           ...fishTemplate,
-          ...savedFish
+          ...savedFish,
+          targetX: savedFish.targetX || Math.random() * 80 + 10,
+          targetY: savedFish.targetY || Math.random() * 50 + 20
         };
       }).filter(fish => fish.name); // Filter out invalid fish
       console.log('Loaded fish:', activeFish.value.length);

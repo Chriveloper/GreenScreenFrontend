@@ -10,84 +10,102 @@
     </div>
     
     <!-- Featured Aquarium Section -->
-    <div class="bg-gradient-to-b from-sky-300 to-sky-500 rounded-full shadow-lg p-8 mb-8 min-h-[300px] max-w-[400px] mx-auto relative overflow-hidden aspect-square">
-      <div class="flex justify-between items-start mb-4">
-        <h2 class="text-xl font-bold text-white">My Aquarium</h2>
-        <NuxtLink to="/aquarium" class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-full text-sm transition">
-          View Full Aquarium
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8 border-t-4 border-sky-400">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">My Aquarium</h2>
+        <NuxtLink to="/aquarium" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md text-sm transition font-medium">
+          View Aquarium →
         </NuxtLink>
       </div>
       
-      <!-- User's Fish from aquarium layout -->
-      <div
-        v-for="(fish, index) in previewFish.slice(0, 3)"
-        :key="fish.id"
-        class="absolute animate-pulse"
-        :style="{ 
-          left: fish.x + '%', 
-          top: fish.y + '%',
-          animationDelay: (index * 0.8) + 's'
-        }"
-      >
-        <img 
-          :src="fish.img" 
-          :alt="fish.name"
-          class="w-5 h-4 object-contain"
-          style="image-rendering: pixelated;"
-        />
-      </div>
-
-      <!-- User's Plants from aquarium layout -->
-      <div
-        v-for="plant in previewPlants.slice(0, 2)"
-        :key="plant.id"
-        class="absolute"
-        :style="{ 
-          left: plant.x + '%', 
-          top: plant.y + '%',
-          transform: 'translate(-50%, -100%)'
-        }"
-      >
-        <img 
-          :src="plant.img" 
-          :alt="plant.name"
-          class="w-8 h-10 object-contain opacity-90"
-          style="image-rendering: pixelated;"
-        />
-      </div>
-
-      <!-- Default decorative elements if no user items -->
-      <div v-if="previewFish.length === 0 && previewPlants.length === 0">
-        <!-- Default fish -->
-        <div class="absolute top-16 left-1/4 animate-pulse">
-          <div class="w-6 h-4 bg-orange-400 rounded-full relative">
-            <div class="absolute -right-1 top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-2 border-l-orange-400 border-t-1 border-t-transparent border-b-1 border-b-transparent"></div>
-          </div>
-        </div>
+      <!-- Aquarium Tank Preview -->
+      <div class="bg-gradient-to-b from-sky-300 to-sky-600 rounded-lg shadow-inner p-4 h-48 sm:h-64 relative overflow-hidden">
+        <!-- Background water effect -->
+        <div class="absolute inset-0 bg-blue-400 bg-opacity-30 rounded-lg"></div>
         
-        <!-- Default coral -->
-        <div class="absolute bottom-8 left-1/5">
-          <div class="w-8 h-12 bg-pink-400 rounded-t-full relative">
-            <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-6 h-3 bg-pink-300 rounded-full"></div>
+        <!-- Sand bottom -->
+        <div class="absolute bottom-0 left-0 right-0 h-8 sm:h-12 bg-gradient-to-t from-yellow-600 to-yellow-500 rounded-b-lg"></div>
+        
+        <!-- User's Fish from aquarium layout -->
+        <div
+          v-for="(fish, index) in previewFish.slice(0, 4)"
+          :key="fish.id"
+          class="absolute transition-all duration-2000 ease-in-out"
+          :style="{ 
+            left: fish.x + '%', 
+            top: fish.y + '%',
+            transform: `translate(-50%, -50%) ${fish.direction === 'left' ? 'scaleX(-1)' : ''}`,
+            animationDelay: (index * 0.5) + 's'
+          }"
+        >
+          <img 
+            :src="fish.img" 
+            :alt="fish.name"
+            class="w-6 h-5 sm:w-8 sm:h-6 object-contain animate-pulse"
+            style="image-rendering: pixelated;"
+          />
+        </div>
+
+        <!-- User's Plants from aquarium layout -->
+        <div
+          v-for="plant in previewPlants.slice(0, 3)"
+          :key="plant.id"
+          class="absolute"
+          :style="{ 
+            left: plant.x + '%', 
+            top: plant.y + '%',
+            transform: 'translate(-50%, -100%)'
+          }"
+        >
+          <img 
+            :src="plant.img" 
+            :alt="plant.name"
+            class="w-8 h-12 sm:w-12 sm:h-16 object-contain opacity-90"
+            style="image-rendering: pixelated;"
+          />
+        </div>
+
+        <!-- Default decorative elements if no user items -->
+        <div v-if="previewFish.length === 0 && previewPlants.length === 0" class="absolute inset-0 flex items-center justify-center">
+          <div class="text-center">
+            <div class="text-4xl sm:text-6xl mb-2">🐠</div>
+            <p class="text-white font-medium text-sm sm:text-base">Your aquarium is empty</p>
+            <p class="text-white/80 text-xs sm:text-sm">Visit the shop to add fish and plants!</p>
           </div>
         </div>
-      </div>
 
-      <!-- Bubbles -->
-      <div class="absolute bottom-12 left-1/2 w-1.5 h-1.5 bg-white rounded-full opacity-70 animate-bounce"></div>
-      <div class="absolute bottom-16 left-1/2 w-1 h-1 bg-white rounded-full opacity-50 animate-bounce" style="animation-delay: 0.5s;"></div>
-      
-      <!-- Sand/gravel bottom -->
-      <div class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-b-full"></div>
-      
-      <!-- Tank stats overlay -->
-      <div class="absolute bottom-4 left-4 bg-white/90 rounded-lg p-3">
-        <p class="text-xs font-medium text-gray-700 mb-1">Tank Status</p>
-        <div class="flex items-center space-x-2">
-          <span class="text-xs text-gray-600">🐠 {{ userFishCount }}</span>
-          <span class="text-xs text-gray-600">🌿 {{ userPlantsCount }}</span>
+        <!-- Animated Bubbles -->
+        <div class="absolute bottom-12 sm:bottom-16 left-1/4 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full opacity-60 animate-bounce" style="animation-duration: 3s;"></div>
+        <div class="absolute bottom-14 sm:bottom-20 left-1/3 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-white rounded-full opacity-70 animate-bounce" style="animation-delay: 1s; animation-duration: 2.5s;"></div>
+        <div class="absolute bottom-10 sm:bottom-14 right-1/3 w-1 h-1 bg-white rounded-full opacity-50 animate-bounce" style="animation-delay: 2s; animation-duration: 2s;"></div>
+        
+        <!-- Tank stats overlay -->
+        <div class="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/95 rounded-lg p-2 sm:p-3 shadow-sm">
+          <p class="text-xs font-medium text-gray-700 mb-1 sm:mb-2">Tank Status</p>
+          <div class="grid grid-cols-2 gap-1 sm:gap-2 text-xs">
+            <div class="flex items-center">
+              <span class="text-blue-500 mr-1">🐠</span>
+              <span class="font-medium">{{ userFishCount }}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="text-green-500 mr-1">🌿</span>
+              <span class="font-medium">{{ userPlantsCount }}</span>
+            </div>
+          </div>
+          <div class="mt-1 sm:mt-2 flex items-center">
+            <div class="flex-1 bg-gray-200 rounded-full h-1.5 sm:h-2 mr-1 sm:mr-2">
+              <div 
+                class="h-1.5 sm:h-2 rounded-full transition-all duration-500"
+                :class="tankHealth >= 80 ? 'bg-green-500' : tankHealth >= 60 ? 'bg-yellow-500' : 'bg-red-500'"
+                :style="{ width: tankHealth + '%' }"
+              ></div>
+            </div>
+            <span class="text-xs font-medium">{{ tankHealth }}%</span>
+          </div>
         </div>
-        <p class="text-xs text-green-600 mt-1">Health: {{ tankHealth }}%</p>
+
+        <!-- Light reflection effect -->
+        <div class="absolute top-0 left-1/4 right-1/4 h-6 sm:h-8 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg"></div>
       </div>
     </div>
     
@@ -212,6 +230,7 @@ const previewFish = computed(() => {
         ...fishTemplate,
         x: savedFish.swimX || 30,
         y: savedFish.swimY || 40,
+        direction: savedFish.direction || 'right',
         id: savedFish.id
       };
     }).filter(fish => fish.name);
