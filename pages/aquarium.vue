@@ -796,7 +796,8 @@ const generateBubbles = () => {
 
 // Save and load aquarium layout
 const saveAquariumLayout = async () => {
-  const layout = {
+  // Create a new object with JSON.parse/stringify to remove Proxy references
+  const layout = JSON.parse(JSON.stringify({
     plants: placedPlants.value,
     fish: activeFish.value.map(f => ({ 
       id: f.id, 
@@ -809,7 +810,7 @@ const saveAquariumLayout = async () => {
     background: selectedBackground.value,
     floor: selectedFloor.value,
     frame: selectedFrame.value
-  };
+  }));
   
   console.log('Saving aquarium layout:', layout);
   

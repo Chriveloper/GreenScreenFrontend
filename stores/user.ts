@@ -434,5 +434,36 @@ export const useUserStore = defineStore('user', {
         return null;
       }
     },
-  },
+
+    async updateAquariumLayout(layout: Record<string, any>) {
+      if (!this.user || process.server) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        // Update the aquarium_layout field in the database
+        const { error } = await supabase
+          .from('user_data')
+          .update({
+            aquarium_layout: layout,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        if (this.userProfile) {
+          this.userProfile.aquarium_layout = layout;
+        }
+        
+        console.log('Aquarium layout updated successfully');
+        return true;
+      } catch (err) {
+        console.error('Error updating aquarium layout:', err);
+        return false;
+      }
+    },
+  }
 });
