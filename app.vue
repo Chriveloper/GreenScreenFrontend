@@ -137,10 +137,10 @@
       </main>
     </div>
 
-    <!-- Add these components at the root level -->
-    <ToastNotification ref="toast" />
-    <LinearProgress ref="progress" />
-    <ConfirmDialog ref="dialog" />
+    <!-- Add these components at the root level - with correct refs -->
+    <ToastNotification ref="toastRef" />
+    <LinearProgress ref="progressRef" />
+    <ConfirmDialog ref="dialogRef" />
   </div>
 </template>
 
@@ -160,6 +160,16 @@ const mobileMenuOpen = ref(false)
 // Get current route
 const route = useRoute()
 
+// Define refs for the components
+const toastRef = ref(null);
+const progressRef = ref(null);
+const dialogRef = ref(null);
+
+// Provide these refs to descendants
+provide('toast', toastRef);
+provide('progress', progressRef);
+provide('dialog', dialogRef);
+
 // Determine if navigation should be shown (hide on auth pages)
 const shouldShowNavigation = computed(() => {
   return !['/login', '/signup', '/check-email', '/forgot-password'].includes(route.path)
@@ -173,30 +183,27 @@ const logout = async () => {
   navigateTo('/login')
 }
 
-
-
 onMounted(async () => {
   fetch('http://localhost:8080/data')
-      .then(response => response.json())
-      .then(data => {
-        console.log('Received data:', data);
-        //const parsed = JSON.parse(data)
-        console.log(JSON.stringify(data))
-        userStore.installed_apps = JSON.stringify(data.installedApps);
-        userStore.usage_data = JSON.stringify(data.usageData);
-      })
-      .catch(error => console.error('Fetch failed:', error));
-})
-
-// Create global properties for easier access from anywhere
-provide('toast', ref(null));
-provide('progress', ref(null));
-provide('dialog', ref(null));
-
-// Example usage in mounted hook
-onMounted(() => {
-  const toast = ref.value.toast;
-  toast.showToast('Welcome to Bluescreen!', 'info');
+    .then(response => response.json())
+    .then(data => {
+      console.log('Received data:', data);
+      console.log(JSON.stringify(data))
+      userStore.installed_apps = JSON.stringify(data.installedApps);
+      userStore.usage_data = JSON.stringify(data.usageData);
+      
+      // Display welcome toast after data is loaded
+      if (toastRef.value) {
+        toastRef.value.showToast('Welcome to Bluescreen!', 'info');
+      }
+    })
+    .catch(error => {
+      console.error('Fetch failed:', error);
+      // Still try to show welcome toast even if data fetch fails
+      if (toastRef.value) {
+        toastRef.value.showToast('Welcome to Bluescreen!', 'info');
+      }
+    });
 })
 
 // Only set up window functions on client side
