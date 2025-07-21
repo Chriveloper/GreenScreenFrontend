@@ -165,22 +165,22 @@
         </div>
         
         <!-- Friend's Aquarium Display -->
-        <div class="aspect-video bg-gradient-to-b from-sky-200 to-sky-400 rounded-lg relative overflow-hidden">
+        <div v-if="loadingFriendAquarium" class="h-64 flex items-center justify-center">
+          <div class="spinner w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <div v-else-if="!selectedFriend.aquarium_layout" class="h-64 flex items-center justify-center bg-gray-100 rounded-lg">
+          <div class="text-center">
+            <p class="text-lg text-gray-500">This aquarium is private or empty</p>
+          </div>
+        </div>
+        <div v-else class="aspect-video bg-gradient-to-b from-sky-200 to-sky-400 rounded-lg relative overflow-hidden">
           <!-- This would be similar to your aquarium display but read-only -->
           <div class="w-full h-full relative">
-            <!-- Fish -->
-            <div
-              v-for="fish in friendAquariumFish"
-              :key="fish.id"
-              class="absolute transition-all duration-1000 ease-in-out"
-              :style="getFishStyle(fish)"
-            >
-              <img 
-                :src="fish.img" 
-                :alt="fish.name"
-                class="w-12 h-10 object-contain pixelated"
-              />
-            </div>
+            <!-- Background -->
+            <div class="absolute inset-0 pixelated-bg" :style="getFriendBackgroundStyle()"></div>
+            
+            <!-- Floor -->
+            <div class="absolute bottom-0 left-0 right-0 h-20 pixelated-bg" :style="getFriendFloorStyle()"></div>
             
             <!-- Plants -->
             <div
@@ -193,6 +193,20 @@
                 :src="plant.img" 
                 :alt="plant.name"
                 class="w-16 h-20 object-contain pixelated"
+              />
+            </div>
+            
+            <!-- Fish -->
+            <div
+              v-for="fish in friendAquariumFish"
+              :key="fish.id"
+              class="absolute transition-all duration-1000 ease-in-out"
+              :style="getFishStyle(fish)"
+            >
+              <img 
+                :src="fish.img" 
+                :alt="fish.name"
+                class="w-12 h-10 object-contain pixelated"
               />
             </div>
           </div>
@@ -212,6 +226,9 @@ const searchQuery = ref('');
 const searchResults = ref([]);
 const searching = ref(false);
 const selectedFriend = ref(null);
+const loadingFriendAquarium = ref(false);
+const friendAquariumFish = ref([]);
+const friendAquariumPlants = ref([]);
 const errorMessage = ref('');
 const message = ref('');
 const messageType = ref('success');
@@ -354,13 +371,6 @@ const removeFriend = async (friendId) => {
   }
 };
 
-const viewFriendAquarium = async (friend) => {
-  const profile = await userStore.getFriendProfile(friend.id);
-  if (profile) {
-    selectedFriend.value = { ...friend, ...profile };
-  }
-};
-
 const getFishStyle = (fish) => {
   return {
     left: `${fish.swimX || fish.x}%`,
@@ -374,6 +384,88 @@ const getPlantStyle = (plant) => {
     left: `${plant.x}%`,
     top: `${plant.y}%`,
   };
+};
+
+const getFriendBackgroundStyle = () => {
+  if (!selectedFriend.value?.aquarium_layout?.background) return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
+  
+  const bgId = selectedFriend.value.aquarium_layout.background;
+  if (bgId.includes('background_')) {
+    return `background-image: url("/resources/backgrounds/${bgId}.png"); background-size: cover; background-position: center;`;
+  }
+  
+  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
+};
+
+const getFriendFloorStyle = () => {
+  if (!selectedFriend.value?.aquarium_layout?.floor) return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
+  
+  const floorId = selectedFriend.value.aquarium_layout.floor;
+  if (floorId.includes('tiles_')) {
+    return `background-image: url("/resources/floor_tiles/${floorId}.png"); background-size: cover; background-position: center;`;
+  }
+  
+  return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
+};
+
+const viewFriendAquarium = async (friend) => {
+  loadingFriendAquarium.value = true;
+  selectedFriend.value = { ...friend };
+  friendAquariumFish.value = [];
+  friendAquariumPlants.value = [];
+  
+  try {
+    const profile = await userStore.getFriendProfile(friend.id);
+    if (profile) {
+      selectedFriend.value = { ...friend, ...profile };
+      
+      // Process fish data if available
+      if (profile.aquarium_layout?.fish) {
+        // Map of fish data
+        const fishData = {
+          goldfish: { name: 'Goldfish', img: '/resources/fish/fish_1.gif' },
+          angelfish: { name: 'Angelfish', img: '/resources/fish/fish_2.gif' },
+          clownfish: { name: 'Clownfish', img: '/resources/fish/fish_3.gif' },
+          blue_tang: { name: 'Blue Tang', img: '/resources/fish/fish_4.gif' },
+          royal_gramma: { name: 'Royal Gramma', img: '/resources/fish/fish_5.gif' }
+        };
+        
+        friendAquariumFish.value = profile.aquarium_layout.fish.map(fish => {
+          const template = fishData[fish.id] || { name: 'Unknown Fish', img: '/resources/fish/fish_1.gif' };
+          return {
+            ...fish,
+            ...template,
+            direction: fish.direction || 'right'
+          };
+        });
+      }
+      
+      // Process plants data if available
+      if (profile.aquarium_layout?.plants) {
+        // Map of plant data
+        const plantData = {
+          plant1: { name: 'Java Moss', img: '/resources/plants/plant_1.png' },
+          plant2: { name: 'Amazon Sword', img: '/resources/plants/plant_2.png' },
+          plant3: { name: 'Anubias', img: '/resources/plants/plant_3.png' },
+          plant4: { name: 'Water Wisteria', img: '/resources/plants/plant_4.png' },
+          plant5: { name: 'Hornwort', img: '/resources/plants/plant_5.png' }
+        };
+        
+        friendAquariumPlants.value = profile.aquarium_layout.plants.map(plant => {
+          const template = plantData[plant.plantId] || { name: 'Unknown Plant', img: '/resources/plants/plant_1.png' };
+          return {
+            ...plant,
+            ...template
+          };
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error loading friend aquarium:', error);
+    addDebugLog(`ERROR loading friend aquarium: ${error.message}`);
+  } finally {
+    loadingFriendAquarium.value = false;
+  }
 };
 
 onMounted(async () => {

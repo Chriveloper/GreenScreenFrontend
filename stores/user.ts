@@ -393,5 +393,46 @@ export const useUserStore = defineStore('user', {
         console.error('Error loading friends:', err);
       }
     },
+    
+    async getFriendProfile(friendId: string) {
+      if (!this.user || process.server) return null;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        // First, check if this user is actually a friend
+        const isFriend = this.friendsList.some(f => f.id === friendId);
+        if (!isFriend) {
+          console.error('Not friends with this user');
+          return null;
+        }
+        
+        // Get the friend's profile data
+        const { data, error } = await supabase
+          .from('user_data')
+          .select('id, username, display_name, pearls, aquarium_layout, fish, decorations, privacy_settings')
+          .eq('id', friendId)
+          .single();
+          
+        if (error) throw error;
+        
+        // Check privacy settings
+        if (data.privacy_settings) {
+          if (data.privacy_settings.aquarium_visibility === 'private') {
+            data.aquarium_layout = null; // Don't show private aquariums
+          }
+          
+          if (data.privacy_settings.pearls_visibility === 'private') {
+            data.pearls = null; // Don't show private pearl counts
+          }
+        }
+        
+        return data;
+      } catch (err) {
+        console.error('Error getting friend profile:', err);
+        return null;
+      }
+    },
   },
 });
