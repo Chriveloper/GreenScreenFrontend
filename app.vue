@@ -206,82 +206,61 @@ onMounted(async () => {
     });
 })
 
-// Only set up window functions on client side
-if (process.client) {
-  window.onNativeData = function(data) {
-    console.log("🟢 [Web] Received from native:", data)
-    try {
-      const parsed = JSON.parse(data)
-      userStore.installed_apps = JSON.stringify(parsed.installedApps);
-      userStore.usage_data = JSON.stringify(parsed.usageData);
-    } catch (e) {
-      console.error('Error parsing native data:', e)
+export async function checkLimitsExceeded() {
+  const userStore = useUserStore();
+
+  if (!userStore.userProfile) return false;
+
+  const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
+  if (lastRewardDate >= yesterday) {
+    // Reward already collected yesterday or today
+    return false;
+  }
+
+  // Fetch usage data from backend
+  const response = await fetch('http://localhost:8080/data');
+  const data = await response.json();
+
+  userStore.installed_apps = JSON.stringify(data.installedApps);
+  userStore.usage_data = JSON.stringify(data.usageData);
+
+  const usageData = data.usageData;
+
+  const dailyLimitHours = userStore.userProfile.screen_time_goals.dailyLimit;
+  const appLimits = userStore.userProfile.app_limits;
+
+  let totalUsageSeconds = 0;
+  const appUsageSeconds = {};
+
+  for (const entry of usageData) {
+    totalUsageSeconds += entry.usageSeconds;
+    if (!appUsageSeconds[entry.packageName]) {
+      appUsageSeconds[entry.packageName] = 0;
+    }
+    appUsageSeconds[entry.packageName] += entry.usageSeconds;
+  }
+
+  const totalUsageHours = totalUsageSeconds / 3600;
+  if (totalUsageHours > dailyLimitHours) {
+    console.log(`Daily limit of ${dailyLimitHours} hours exceeded with ${totalUsageHours.toFixed(2)} hours.`);
+    return true;
+  }
+
+  for (const packageName in appLimits) {
+    const limitHours = appLimits[packageName];
+    const appSeconds = appUsageSeconds[packageName] || 0;
+    const appHours = appSeconds / 3600;
+    if (appHours > limitHours) {
+      console.log(`App ${packageName} limit of ${limitHours} hours exceeded with ${appHours.toFixed(2)} hours.`);
+      return true;
     }
   }
-}
 
-console.log("📤 [Web] Setup complete, ready to receive native data")
-/*
-// Set up the global callback for native data
-const setupNativeCallback = () => {
-  if (process.client) {
-
-  }
-}*/
-
-// Usage data methods
-const requestUsageData = () => {
-  if (process.client && typeof fetchNativeData !== 'undefined') {
-    console.log("📤 [Focus] Requesting usage data...")
-    fetchNativeData.postMessage('request_device_data')
-  } else {
-    console.log('⚠️ Native data channel not available - using sample data')
-    // Use sample data for development (in seconds)
-    const data = JSON.stringify({
-          "installedApps": [
-            {
-              "packageName": "com.whatsapp",
-              "appName": "WhatsApp",
-            },
-            {
-              "packageName": "com.instagram.android",
-              "appName": "Instagram",
-            },
-            {
-              "packageName": "com.spotify.music",
-              "appName": "Spotify",
-            }
-          ],
-          "usageData": [
-            {
-              "packageName": "com.whatsapp",
-              "appName": "WhatsApp",
-              "usageSeconds": 4523,
-              "startTime": "2025-07-11T00:12:34.000",
-              "endTime": "2025-07-11T23:45:12.000"
-            },
-            {
-              "packageName": "com.instagram.android",
-              "appName": "Instagram",
-              "usageSeconds": 1892,
-              "startTime": "2025-07-11T10:03:21.000",
-              "endTime": "2025-07-11T18:44:00.000"
-            },
-            {
-              "packageName": "com.spotify.music",
-              "appName": "Spotify",
-              "usageSeconds": 3210,
-              "startTime": "2025-07-11T07:00:00.000",
-              "endTime": "2025-07-11T20:10:45.000"
-            }
-          ]
-        }
-    )
-
-    const parsed = JSON.parse(data)
-    userStore.installed_apps = JSON.stringify(parsed.installedApps);
-    userStore.usage_data = JSON.stringify(parsed.usageData);
-  }
+  return false;
 }
 
 </script>
