@@ -49,11 +49,18 @@
               <div class="text-sm text-gray-500">@{{ user.username }}</div>
             </div>
             <button
-              v-if="!isRequestSent(user.id) && !isFriend(user.id)"
+              v-if="!isRequestSent(user.id) && !isFriend(user.id) && !hasIncomingRequestFrom(user.id)"
               @click="sendFriendRequest(user.id)"
               class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded text-sm transition"
             >
               Add Friend
+            </button>
+            <button
+              v-else-if="hasIncomingRequestFrom(user.id)"
+              @click="acceptIncomingRequest(user.id)"
+              class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition"
+            >
+              Accept Request
             </button>
             <span v-else-if="isRequestSent(user.id)" class="text-sm text-gray-500">
               Request Sent
@@ -84,13 +91,13 @@
           </div>
           <div class="space-x-2">
             <button
-              @click="respondToRequest(request.id, 'accepted')"
+              @click="respondToRequest(request.friendship_id, 'accepted')"
               class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition"
             >
               Accept
             </button>
             <button
-              @click="respondToRequest(request.id, 'declined')"
+              @click="respondToRequest(request.friendship_id, 'declined')"
               class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition"
             >
               Decline
@@ -274,6 +281,21 @@ const isFriend = (userId) => {
   return friendIds.value.includes(userId);
 };
 
+// Add this helper method to check for incoming requests
+const hasIncomingRequestFrom = (userId) => {
+  return incomingRequests.value.some(req => req.id === userId);
+};
+
+// Add this helper to accept an incoming request directly from search
+const acceptIncomingRequest = async (userId) => {
+  const request = incomingRequests.value.find(req => req.id === userId);
+  if (request && request.friendship_id) {
+    await respondToRequest(request.friendship_id, 'accepted');
+    // Refresh search results
+    await performSearch();
+  }
+};
+
 const showMessage = (text, type = 'success') => {
   message.value = text;
   messageType.value = type;
@@ -302,13 +324,25 @@ const sendFriendRequest = async (userId) => {
 
 const respondToRequest = async (friendshipId, response) => {
   try {
+    addDebugLog(`Responding to request ${friendshipId} with "${response}"`);
+    
+    if (!friendshipId) {
+      addDebugLog('ERROR: Missing friendship ID!');
+      showError(`Cannot ${response} - missing friendship ID`);
+      return;
+    }
+    
     const success = await userStore.respondToFriendRequest(friendshipId, response);
+    
     if (success) {
+      addDebugLog(`Successfully ${response} friend request`);
       showMessage(`Friend request ${response}!`, 'success');
     } else {
+      addDebugLog(`Failed to ${response} friend request`);
       showError(`Failed to ${response} friend request. Please try again.`);
     }
   } catch (error) {
+    addDebugLog(`ERROR: ${error.message}`);
     console.error('Error responding to friend request:', error);
     showError('An error occurred while responding to the friend request.');
   }

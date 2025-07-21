@@ -235,6 +235,30 @@ export const useUserStore = defineStore('user', {
         const { $supabase } = useNuxtApp();
         const supabase = $supabase as SupabaseClient;
         
+        // First check if a friendship already exists between these users
+        const { data: existingFriendship, error: checkError } = await supabase
+          .from('friendships')
+          .select('*')
+          .or(
+            `and(requester_id.eq.${this.user.id},addressee_id.eq.${userId}),` +
+            `and(requester_id.eq.${userId},addressee_id.eq.${this.user.id})`
+          )
+          .maybeSingle();
+          
+        if (checkError) throw checkError;
+        
+        // If a friendship already exists
+        if (existingFriendship) {
+          // If the other user already sent a request to us, auto-accept it
+          if (existingFriendship.requester_id === userId && existingFriendship.status === 'pending') {
+            return await this.respondToFriendRequest(existingFriendship.id, 'accepted');
+          }
+          
+          // Otherwise, a request is already pending or they're already friends
+          return true; // Return success, but don't create a duplicate
+        }
+        
+        // No existing friendship, create a new request
         const { error } = await supabase
           .from('friendships')
           .insert({
