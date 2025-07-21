@@ -1,0 +1,48 @@
+/* Button and interactive element animations */
+.btn-press {
+  @apply transform transition-transform duration-100;
+}
+.btn-press:active {
+  @apply scale-95;
+}
+
+/* Link hover effects */
+.link-hover {
+  @apply relative;
+}
+.link-hover::after {
+  content: '';
+  @apply absolute left-0 bottom-0 w-0 h-0.5 bg-current transition-all duration-200;
+}
+.link-hover:hover::after {
+  @apply w-full;
+}
+
+@keyframes success-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes error-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-5px);
+  }
+  40%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-success {
+  animation: success-pulse 1.5s ease-in-out;
+}
+
+.animate-error {
+  animation: error-shake 0.5s ease-in-out;
+}

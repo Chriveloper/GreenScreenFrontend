@@ -4,70 +4,92 @@
       <h1 class="text-2xl font-bold mb-6 text-center">Log In</h1>
       <form @submit.prevent="handleLogin">
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium mb-1" for="email">Email</label>
-            <input
-                v-model="email"
-                id="email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-                required
-            />
+          <FormInput
+            id="email"
+            label="Email"
+            v-model="email"
+            type="email"
+            placeholder="Enter your email"
+            :error="errors.email"
+            required
+          />
+          
+          <FormInput
+            id="password"
+            label="Password"
+            v-model="password"
+            type="password"
+            placeholder="Enter your password"
+            :error="errors.password"
+            required
+          />
+          
+          <div v-if="globalError" class="bg-red-100 text-red-700 p-3 rounded text-sm">
+            {{ globalError }}
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1" for="password">Password</label>
-            <input
-                v-model="password"
-                id="password"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-                required
-            />
-          </div>
-          <div v-if="error" class="bg-red-100 text-red-700 p-2 rounded text-sm">
-            {{ error }}
-          </div>
-          <button
-              type="submit"
-              :disabled="loading"
-              class="w-full bg-sky-600 text-white rounded py-2 hover:bg-sky-700 transition disabled:opacity-70"
+          
+          <ActionButton
+            type="submit"
+            :loading="loading"
+            loadingText="Logging in..."
+            variant="primary"
+            class="w-full"
           >
-            <span v-if="loading">Signing in...</span>
-            <span v-else>Sign In</span>
-          </button>
+            Log In
+          </ActionButton>
         </div>
       </form>
-      <div class="mt-4 flex justify-between text-sm">
-        <NuxtLink class="text-sky-600 hover:underline" to="/forgot-password">
-          Forgot your password?
-        </NuxtLink>
-        <NuxtLink class="text-sky-600 hover:underline" to="/signup">
-          Don't have an account? Sign up
-        </NuxtLink>
-      </div>
+      <p class="mt-4 text-center text-sm">
+        Don't have an account?
+        <NuxtLink class="text-sky-600 hover:underline link-hover" to="/signup">Sign up</NuxtLink>
+      </p>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
+<script setup>
+import { ref, inject } from 'vue';
 import { useUserStore } from '~/stores/user';
+import FormInput from '~/components/FormInput.vue';
+import ActionButton from '~/components/ActionButton.vue';
 
 const { $supabase } = useNuxtApp();
 const userStore = useUserStore();
+const toast = inject('toast');
+const progress = inject('progress');
 
 const email = ref('');
 const password = ref('');
-const error = ref('');
+const errors = ref({});
+const globalError = ref('');
 const loading = ref(false);
 
+const validateForm = () => {
+  errors.value = {};
+  let isValid = true;
+  
+  if (!email.value) {
+    errors.value.email = 'Email is required';
+    isValid = false;
+  } else if (!/\S+@\S+\.\S+/.test(email.value)) {
+    errors.value.email = 'Please enter a valid email';
+    isValid = false;
+  }
+  
+  if (!password.value) {
+    errors.value.password = 'Password is required';
+    isValid = false;
+  }
+  
+  return isValid;
+};
+
 const handleLogin = async () => {
-  error.value = '';
+  if (!validateForm()) return;
+  
+  globalError.value = '';
   loading.value = true;
+  progress.value.startLoading();
 
   try {
     const { data, error: signInError } = await $supabase.auth.signInWithPassword({
@@ -80,21 +102,24 @@ const handleLogin = async () => {
         // Save pending email info and redirect to verification page
         localStorage.setItem('pending_email', email.value);
         localStorage.setItem('pending_password', password.value);
+        toast.value.showToast('Please verify your email to continue', 'info');
         navigateTo('/check-email');
       } else {
-        error.value = signInError.message;
+        globalError.value = signInError.message;
+        toast.value.showToast('Login failed: ' + signInError.message, 'error');
       }
       return;
     }
 
-    // Auth state change listener in the plugin will handle user state
-    console.log('Login successful, redirecting to dashboard');
+    toast.value.showToast('Login successful! Welcome back.', 'success');
     navigateTo('/');
   } catch (err) {
     console.error('Login error:', err);
-    error.value = 'An unexpected error occurred. Please try again.';
+    globalError.value = 'An unexpected error occurred. Please try again.';
+    toast.value.showToast('Login failed: ' + (err.message || 'Unknown error'), 'error');
   } finally {
     loading.value = false;
+    progress.value.stopLoading();
   }
 };
 </script>

@@ -130,17 +130,27 @@
       <!-- Main Content Area -->
       <main class="flex-grow">
         <NuxtLayout>
-          <NuxtPage />
+          <transition name="page" mode="out-in">
+            <NuxtPage />
+          </transition>
         </NuxtLayout>
       </main>
     </div>
+
+    <!-- Add these components at the root level -->
+    <ToastNotification ref="toast" />
+    <LinearProgress ref="progress" />
+    <ConfirmDialog ref="dialog" />
   </div>
 </template>
 
 <script setup>
-import {ref, computed, onMounted} from 'vue'
+import {ref, computed, onMounted, provide} from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '~/stores/user'
+import ToastNotification from '~/components/ToastNotification.vue';
+import LinearProgress from '~/components/LinearProgress.vue';
+import ConfirmDialog from '~/components/ConfirmDialog.vue';
 
 const userStore = useUserStore()
 
@@ -178,6 +188,16 @@ onMounted(async () => {
       .catch(error => console.error('Fetch failed:', error));
 })
 
+// Create global properties for easier access from anywhere
+provide('toast', ref(null));
+provide('progress', ref(null));
+provide('dialog', ref(null));
+
+// Example usage in mounted hook
+onMounted(() => {
+  const toast = ref.value.toast;
+  toast.showToast('Welcome to Bluescreen!', 'info');
+})
 
 // Only set up window functions on client side
 if (process.client) {
@@ -262,5 +282,15 @@ const requestUsageData = () => {
 <style>
 body {
   @apply antialiased text-gray-800;
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 </style>
