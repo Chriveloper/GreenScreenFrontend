@@ -28,30 +28,37 @@
           </li>
           <li>
             <NuxtLink to="/timer" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/timer' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
-              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               Focus Timer
             </NuxtLink>
           </li>
           <li>
-            <NuxtLink to="/focus" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/focus' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
-              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-              Focus
-            </NuxtLink>
-          </li>
-          <!-- <li>
-            <NuxtLink to="/terrarium" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/terrarium' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
+            <NuxtLink to="/aquarium" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/aquarium' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L9 7v3m-3 0v6m-1-6a2 2 0 012-2h3" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
               Aquarium
             </NuxtLink>
-          </li> -->
+          </li>
           <li>
-            <NuxtLink to="/aquarium" class="flex items-center text-gray-700 hover:text-sky-600 transition px-4 py-2">
+            <NuxtLink to="/friends" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/friends' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
               </svg>
-              My Aquarium
+              Friends
+              <span v-if="userStore.incomingRequests.length > 0" class="bg-red-500 text-white text-xs rounded-full px-1 ml-auto">
+                {{ userStore.incomingRequests.length }}
+              </span>
+            </NuxtLink>
+          </li>
+          <li>
+            <NuxtLink to="/profile" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/profile' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Profile
             </NuxtLink>
           </li>
           <li>
