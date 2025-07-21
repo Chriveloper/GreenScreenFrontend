@@ -7,100 +7,108 @@
       <button @click="debug.log = ''" class="text-xs text-gray-600 mt-2">Clear</button>
     </div>
 
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-sky-600">Friends</h1>
-      <div class="flex items-center bg-white rounded-lg shadow px-4 py-2 border-t-4 border-yellow-400">
-        <span class="text-2xl mr-2">🐚</span>
-        <span class="text-lg font-bold text-yellow-600">{{ playerPearls }}</span>
-        <span class="text-sm text-gray-600 ml-1">Pearls</span>
+    <!-- Header with Pearl Count -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8 border-t-4 border-sky-400">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Friends</h1>
+          <p class="text-gray-600 mt-1">Connect with friends and view their aquariums</p>
+        </div>
+        <div class="text-right">
+          <div class="flex items-center text-yellow-500 mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="font-bold">{{ playerPearls }}</span>
+          </div>
+          <span class="text-xs text-gray-500">Your Pearls</span>
+        </div>
       </div>
     </div>
 
     <!-- Search Users -->
-    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-4">Find Friends</h2>
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Find Friends</h2>
       
-      <div class="relative">
+      <div class="flex space-x-4">
         <input
           v-model="searchQuery"
           @input="handleSearch"
           type="text"
           placeholder="Search by username or display name..."
-          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
           :disabled="searching"
         />
-        <div v-if="searching" class="absolute right-3 top-2.5">
-          <div class="spinner w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <button
+          @click="searchUsers"
+          :disabled="searching || !searchQuery.trim()"
+          class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-md font-medium transition"
+        >
+          {{ searching ? 'Searching...' : 'Search' }}
+        </button>
       </div>
 
       <!-- Search Results -->
       <div v-if="searchQuery.length >= 2" class="mt-4">
-        <div v-if="searching" class="text-center py-4 text-gray-500">
-          Searching...
+        <div v-if="searching" class="flex justify-center py-4">
+          <div class="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-        <div v-else-if="searchResults.length === 0" class="text-center py-4 text-gray-500">
-          No users found matching "{{ searchQuery }}"
-        </div>
-        <div v-else class="divide-y">
-          <div v-for="user in searchResults" :key="user.id" class="py-3 flex items-center justify-between">
+        <div v-else-if="searchResults.length > 0" class="space-y-3">
+          <div v-for="user in searchResults" :key="user.id"
+               class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition">
             <div>
-              <div class="font-medium">{{ user.display_name || 'User' }}</div>
-              <div class="text-sm text-gray-500">@{{ user.username }}</div>
+              <p class="font-medium">{{ user.display_name || user.username }}</p>
+              <p class="text-sm text-gray-500">@{{ user.username }}</p>
             </div>
             <button
-              v-if="!isRequestSent(user.id) && !isFriend(user.id) && !hasIncomingRequestFrom(user.id)"
-              @click="sendFriendRequest(user.id)"
-              class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded text-sm transition"
+              v-if="!friendIds.includes(user.id) && !sentRequestIds.includes(user.id)"
+              @click="sendRequest(user.id)"
+              :disabled="sendingRequest"
+              class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition"
             >
-              Add Friend
+              {{ sendingRequest ? 'Sending...' : 'Send Request' }}
             </button>
-            <button
-              v-else-if="hasIncomingRequestFrom(user.id)"
-              @click="acceptIncomingRequest(user.id)"
-              class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition"
-            >
-              Accept Request
-            </button>
-            <span v-else-if="isRequestSent(user.id)" class="text-sm text-gray-500">
+            <span v-else-if="sentRequestIds.includes(user.id)" class="text-yellow-600 text-sm font-medium">
               Request Sent
             </span>
-            <span v-else class="text-sm text-green-500">
-              Already Friends
+            <span v-else class="text-green-600 text-sm font-medium">
+              ✓ Friends
             </span>
           </div>
+        </div>
+        <div v-else-if="searchQuery.length >= 2" class="text-center text-gray-500 py-4">
+          No users found matching "{{ searchQuery }}"
         </div>
       </div>
     </div>
 
-    <!-- Pending Friend Requests -->
-    <div v-if="incomingRequests.length > 0" class="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 class="text-lg font-semibold mb-4 flex items-center">
-        Friend Requests
-        <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-2">{{ incomingRequests.length }}</span>
-      </h2>
+    <!-- Incoming Friend Requests -->
+    <div v-if="incomingRequests.length > 0" class="bg-white rounded-lg shadow p-6 mb-8">
+      <h3 class="text-md font-semibold text-gray-900 mb-4">Friend Requests</h3>
       <div class="space-y-3">
         <div
           v-for="request in incomingRequests"
-          :key="request.id"
-          class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+          :key="request.friendship_id"
+          class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition"
         >
           <div>
             <h3 class="font-medium">{{ request.display_name || request.username }}</h3>
             <p class="text-sm text-gray-600">@{{ request.username }}</p>
           </div>
-          <div class="space-x-2">
+          <div class="flex space-x-2">
             <button
               @click="respondToRequest(request.friendship_id, 'accepted')"
-              class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition"
+              :disabled="processingRequest"
+              class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
             >
-              Accept
+              {{ processingRequest ? 'Processing...' : 'Accept' }}
             </button>
             <button
               @click="respondToRequest(request.friendship_id, 'declined')"
-              class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition"
+              :disabled="processingRequest"
+              class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
             >
-              Decline
+              {{ processingRequest ? 'Processing...' : 'Decline' }}
             </button>
           </div>
         </div>
@@ -108,45 +116,49 @@
     </div>
 
     <!-- Friends List -->
-    <div class="bg-white rounded-lg shadow-lg p-6">
-      <h2 class="text-lg font-semibold mb-4">My Friends ({{ friendsList.length }})</h2>
-      <div v-if="friendsList.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Friends ({{ friendsList.length }})</h2>
+      <div v-if="friendsList.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
           v-for="friend in friendsList"
           :key="friend.id"
-          class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+          class="p-4 border rounded-lg hover:bg-gray-50 transition"
         >
           <div class="flex items-center justify-between mb-3">
             <div>
               <h3 class="font-medium">{{ friend.display_name || friend.username }}</h3>
               <p class="text-sm text-gray-600">@{{ friend.username }}</p>
             </div>
-            <div v-if="friend.pearls !== null" class="flex items-center text-yellow-600">
-              <span class="text-lg mr-1">🐚</span>
-              <span class="font-bold">{{ friend.pearls }}</span>
+            <div v-if="friend.pearls !== null" class="flex items-center text-yellow-500 text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ friend.pearls }}
             </div>
           </div>
           
           <div class="flex space-x-2">
             <button
               @click="viewFriendAquarium(friend)"
-              :disabled="!friend.aquarium_layout"
-              class="flex-1 bg-sky-600 hover:bg-sky-700 text-white py-1 px-2 rounded text-sm font-medium transition disabled:opacity-50"
+              :disabled="loadingFriendAquarium || !friend.aquarium_layout"
+              class="flex-1 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition"
             >
-              View Aquarium
+              {{ loadingFriendAquarium ? 'Loading...' : 'View Aquarium' }}
             </button>
             <button
               @click="removeFriend(friend.id)"
-              class="bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded text-sm font-medium transition"
+              :disabled="processingRequest"
+              class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
             >
               Remove
             </button>
           </div>
         </div>
       </div>
-      <p v-else class="text-gray-500 text-center py-8">
-        No friends yet. Search for users above to add friends!
-      </p>
+      <div v-else class="text-center text-gray-500 py-8">
+        <p class="text-lg mb-2">No friends yet!</p>
+        <p class="text-sm">Search for users above to add friends!</p>
+      </div>
     </div>
 
     <!-- Friend Aquarium Modal -->
@@ -166,7 +178,7 @@
         
         <!-- Friend's Aquarium Display -->
         <div v-if="loadingFriendAquarium" class="h-64 flex items-center justify-center">
-          <div class="spinner w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+          <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
         <div v-else-if="!selectedFriend.aquarium_layout" class="h-64 flex items-center justify-center bg-gray-100 rounded-lg">
           <div class="text-center">
@@ -177,10 +189,10 @@
           <!-- This would be similar to your aquarium display but read-only -->
           <div class="w-full h-full relative">
             <!-- Background -->
-            <div class="absolute inset-0 pixelated-bg" :style="getFriendBackgroundStyle()"></div>
+            <div class="absolute inset-0 pixelated" :style="getFriendBackgroundStyle()"></div>
             
             <!-- Floor -->
-            <div class="absolute bottom-0 left-0 right-0 h-20 pixelated-bg" :style="getFriendFloorStyle()"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-20 pixelated" :style="getFriendFloorStyle()"></div>
             
             <!-- Plants -->
             <div
@@ -213,6 +225,17 @@
         </div>
       </div>
     </div>
+
+    <!-- Success/Error Messages -->
+    <div v-if="message" class="fixed bottom-4 right-4 z-50">
+      <div class="p-4 rounded-md shadow-lg max-w-sm" :class="{
+        'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
+        'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
+        'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'
+      }">
+        {{ message }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -225,14 +248,16 @@ const userStore = useUserStore();
 const searchQuery = ref('');
 const searchResults = ref([]);
 const searching = ref(false);
+const sendingRequest = ref(false);
+const processingRequest = ref(false);
 const selectedFriend = ref(null);
 const loadingFriendAquarium = ref(false);
 const friendAquariumFish = ref([]);
 const friendAquariumPlants = ref([]);
-const errorMessage = ref('');
 const message = ref('');
 const messageType = ref('success');
 
+// Computed properties for user data
 const playerPearls = computed(() => userStore.pearls);
 const friendsList = computed(() => userStore.friendsList);
 const incomingRequests = computed(() => userStore.incomingRequests);
@@ -245,13 +270,23 @@ const debug = ref({
   log: ''
 });
 
+// Add a debug log message
 const addDebugLog = (message) => {
   const timestamp = new Date().toLocaleTimeString();
   debug.value.log = `[${timestamp}] ${message}\n${debug.value.log}`;
   console.log(message);
 };
 
-// KEEP ONLY ONE debounce function
+// Show message helper
+const showMessage = (text, type = 'success') => {
+  message.value = text;
+  messageType.value = type;
+  setTimeout(() => {
+    message.value = '';
+  }, 3000);
+};
+
+// Debounce function
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -262,115 +297,107 @@ function debounce(func, wait) {
 }
 
 // Create a debounced search function
-const handleSearch = debounce(async () => {
-  console.log("Search query:", searchQuery.value);
-  if (searchQuery.value.length >= 2) {
-    await performSearch();
+const debouncedSearch = debounce(() => {
+  if (searchQuery.value.trim().length >= 2) {
+    searchUsers();
   } else {
     searchResults.value = [];
   }
 }, 300);
 
-const performSearch = async () => {
-  if (!searchQuery.value.trim()) return;
+// Handle search input
+const handleSearch = () => {
+  debouncedSearch();
+};
+
+// Search for users
+const searchUsers = async () => {
+  if (searchQuery.value.trim().length < 2) {
+    searchResults.value = [];
+    return;
+  }
   
   searching.value = true;
-  searchResults.value = []; // Clear previous results
+  addDebugLog(`Searching for: ${searchQuery.value}`);
   
   try {
-    addDebugLog(`Performing search for: "${searchQuery.value}"`);
     const results = await userStore.searchUsers(searchQuery.value);
-    addDebugLog(`Search results: ${results.length} users found`);
-    searchResults.value = results;
+    searchResults.value = results || [];
+    addDebugLog(`Found ${searchResults.value.length} users`);
+    
+    if (searchResults.value.length === 0) {
+      showMessage('No users found', 'info');
+    }
   } catch (error) {
-    addDebugLog(`ERROR: ${error.message}`);
-    errorMessage.value = "Failed to search for users. Please try again.";
+    addDebugLog(`Search error: ${error.message}`);
+    showMessage('Search failed. Please try again.', 'error');
   } finally {
     searching.value = false;
   }
 };
 
-const isRequestSent = (userId) => {
-  return sentRequestIds.value.includes(userId);
-};
-
-const isFriend = (userId) => {
-  return friendIds.value.includes(userId);
-};
-
-// Add this helper method to check for incoming requests
-const hasIncomingRequestFrom = (userId) => {
-  return incomingRequests.value.some(req => req.id === userId);
-};
-
-// Add this helper to accept an incoming request directly from search
-const acceptIncomingRequest = async (userId) => {
-  const request = incomingRequests.value.find(req => req.id === userId);
-  if (request && request.friendship_id) {
-    await respondToRequest(request.friendship_id, 'accepted');
-    // Refresh search results
-    await performSearch();
-  }
-};
-
-const showMessage = (text, type = 'success') => {
-  message.value = text;
-  messageType.value = type;
-  setTimeout(() => {
-    message.value = '';
-  }, 5000);
-};
-
-const sendFriendRequest = async (userId) => {
+// Send a friend request
+const sendRequest = async (userId) => {
+  sendingRequest.value = true;
+  addDebugLog(`Sending friend request to user: ${userId}`);
+  
   try {
     const success = await userStore.sendFriendRequest(userId);
     if (success) {
-      const userIndex = searchResults.value.findIndex(u => u.id === userId);
-      if (userIndex >= 0) {
-        searchResults.value.splice(userIndex, 1);
-      }
-      showMessage('Friend request sent successfully!', 'success');
+      addDebugLog('Friend request sent successfully');
+      showMessage('Friend request sent!', 'success');
+      // Refresh search results to show updated state
+      await searchUsers();
     } else {
-      showError('Failed to send friend request. Please try again.');
+      addDebugLog('Failed to send friend request');
+      showMessage('Failed to send friend request', 'error');
     }
   } catch (error) {
-    console.error('Error sending friend request:', error);
-    showError('An error occurred while sending the friend request.');
+    addDebugLog(`Friend request error: ${error.message}`);
+    showMessage('Failed to send friend request', 'error');
+  } finally {
+    sendingRequest.value = false;
   }
 };
 
+// Respond to a friend request
 const respondToRequest = async (friendshipId, response) => {
+  processingRequest.value = true;
+  addDebugLog(`Responding to friendship ${friendshipId} with: ${response}`);
+  
   try {
-    addDebugLog(`Responding to request ${friendshipId} with "${response}"`);
-    
-    if (!friendshipId) {
-      addDebugLog('ERROR: Missing friendship ID!');
-      showError(`Cannot ${response} - missing friendship ID`);
-      return;
-    }
-    
     const success = await userStore.respondToFriendRequest(friendshipId, response);
-    
     if (success) {
-      addDebugLog(`Successfully ${response} friend request`);
-      showMessage(`Friend request ${response}!`, 'success');
+      addDebugLog(`Friend request ${response} successfully`);
+      showMessage(`Friend request ${response}!`, response === 'accepted' ? 'success' : 'info');
     } else {
       addDebugLog(`Failed to ${response} friend request`);
-      showError(`Failed to ${response} friend request. Please try again.`);
+      showMessage(`Failed to ${response} friend request`, 'error');
     }
   } catch (error) {
     addDebugLog(`ERROR: ${error.message}`);
-    console.error('Error responding to friend request:', error);
-    showError('An error occurred while responding to the friend request.');
+    showMessage('An error occurred while responding to the friend request.', 'error');
+  } finally {
+    processingRequest.value = false;
   }
 };
 
+// Remove a friend
 const removeFriend = async (friendId) => {
   if (confirm('Are you sure you want to remove this friend?')) {
-    await userStore.removeFriend(friendId);
+    processingRequest.value = true;
+    try {
+      await userStore.removeFriend(friendId);
+      showMessage('Friend removed', 'info');
+    } catch (error) {
+      showMessage('Failed to remove friend', 'error');
+    } finally {
+      processingRequest.value = false;
+    }
   }
 };
 
+// Get CSS styles for fish animation
 const getFishStyle = (fish) => {
   return {
     left: `${fish.swimX || fish.x}%`,
@@ -379,6 +406,7 @@ const getFishStyle = (fish) => {
   };
 };
 
+// Get CSS styles for plant positioning
 const getPlantStyle = (plant) => {
   return {
     left: `${plant.x}%`,
@@ -386,6 +414,7 @@ const getPlantStyle = (plant) => {
   };
 };
 
+// Get background style for friend's aquarium
 const getFriendBackgroundStyle = () => {
   if (!selectedFriend.value?.aquarium_layout?.background) return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
   
@@ -397,6 +426,7 @@ const getFriendBackgroundStyle = () => {
   return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
 };
 
+// Get floor style for friend's aquarium
 const getFriendFloorStyle = () => {
   if (!selectedFriend.value?.aquarium_layout?.floor) return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
   
@@ -408,6 +438,7 @@ const getFriendFloorStyle = () => {
   return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
 
+// View a friend's aquarium
 const viewFriendAquarium = async (friend) => {
   loadingFriendAquarium.value = true;
   selectedFriend.value = { ...friend };
@@ -463,11 +494,13 @@ const viewFriendAquarium = async (friend) => {
   } catch (error) {
     console.error('Error loading friend aquarium:', error);
     addDebugLog(`ERROR loading friend aquarium: ${error.message}`);
+    showMessage('Unable to load friend\'s aquarium', 'error');
   } finally {
     loadingFriendAquarium.value = false;
   }
 };
 
+// On component mount, load friends data
 onMounted(async () => {
   if (!userStore.isLoggedIn) {
     await navigateTo('/login');
@@ -492,6 +525,7 @@ onMounted(async () => {
 }
 
 .spinner {
+  border-color: #3b82f6;
   border-top-color: transparent;
 }
 </style>

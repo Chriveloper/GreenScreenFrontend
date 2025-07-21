@@ -1,18 +1,29 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-sky-600">My Aquarium</h1>
-      <div class="flex items-center space-x-4">
-        <button
-          @click="toggleEditMode"
-          class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium transition"
-        >
-          {{ editMode ? 'Exit Edit Mode' : 'Edit Aquarium' }}
-        </button>
-        <div class="flex items-center bg-white rounded-lg shadow px-4 py-2 border-t-4 border-yellow-400">
-          <span class="text-2xl mr-2">🐚</span>
-          <span class="text-lg font-bold text-yellow-600">{{ playerPearls }}</span>
-          <span class="text-sm text-gray-600 ml-1">Pearls</span>
+    <!-- Header with consistent pearl display -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8 border-t-4 border-sky-400">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">My Aquarium</h1>
+          <p class="text-gray-600 mt-1">Manage your underwater paradise</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <button
+            @click="toggleEditMode"
+            :disabled="loading"
+            class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md font-medium transition"
+          >
+            {{ loading ? 'Loading...' : (editMode ? 'Exit Edit Mode' : 'Edit Aquarium') }}
+          </button>
+          <div class="text-right">
+            <div class="flex items-center text-yellow-500 mb-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-2xl font-bold">{{ playerPearls }}</span>
+            </div>
+            <span class="text-sm text-gray-500">Available Pearls</span>
+          </div>
         </div>
       </div>
     </div>
@@ -26,7 +37,7 @@
           :style="getBackgroundStyle()"
           @click="handleTankClick"
         >
-          <!-- Tank frame overlay (optional) -->
+          <!-- Tank frame overlay -->
           <div 
             v-if="selectedFrame !== 'none'"
             class="absolute inset-0 pointer-events-none z-40 pixelated-bg"
@@ -41,30 +52,26 @@
             class="absolute bottom-0 left-0 right-0 h-20 rounded-b-lg pixelated-bg z-10"
             :style="getFloorStyle()"
           ></div>
-          
+
           <!-- Placed Plants -->
           <div
-            v-for="placedPlant in placedPlants"
-            :key="placedPlant.id"
-            class="absolute cursor-move touch-none select-none z-20 plant-container"
-            :style="getPlantStyle(placedPlant)"
-            @mousedown="startDrag(placedPlant, $event)"
-            @touchstart="startDrag(placedPlant, $event)"
-            @click.stop
+            v-for="plant in placedPlants"
+            :key="plant.id"
+            class="absolute cursor-move z-20 plant-container"
+            :class="{ 'hover:scale-110': editMode }"
+            :style="getPlantStyle(plant)"
+            @mousedown="startDrag(plant, $event)"
+            @touchstart="startDrag(plant, $event)"
           >
             <img 
-              :src="placedPlant.img" 
-              :alt="placedPlant.name"
-              :class="getPlantImageClass(placedPlant.plantId)"
-              class="object-contain pointer-events-none pixelated"
+              :src="plant.img" 
+              :alt="plant.name"
+              class="w-16 h-20 object-contain pixelated"
             />
-            <div v-if="editMode" class="absolute -top-2 -right-2 z-30">
-              <button
-                @click="removePlant(placedPlant.id)"
-                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold pointer-events-auto shadow-lg"
-              >
-                ×
-              </button>
+            <div v-if="editMode" 
+                 class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs cursor-pointer hover:bg-red-600 transition"
+                 @click.stop="removePlant(plant.id)">
+              ×
             </div>
           </div>
 
@@ -97,6 +104,11 @@
             <p class="text-xs text-gray-600">• Click × to remove items</p>
             <p class="text-xs text-gray-600">• Use inventory to add new items</p>
             <p class="text-xs text-gray-600">• Customize background & floor</p>
+          </div>
+
+          <!-- Loading overlay -->
+          <div v-if="loading" class="absolute inset-0 bg-white/50 flex items-center justify-center z-50">
+            <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
       </div>
@@ -134,7 +146,7 @@
           <div class="mb-6">
             <h3 class="text-md font-medium mb-3 text-green-700 flex items-center">
               <span class="text-lg mr-2">🌿</span>
-              Plants & Decorations
+              Plant Collection
             </h3>
             <div class="grid grid-cols-2 gap-2">
               <div
@@ -144,11 +156,9 @@
                 :class="{ 'opacity-50': getPlantUsageCount(plant.id) >= plant.maxQuantity }"
                 @click="addPlantToTank(plant)"
               >
-                <img :src="plant.img" :alt="plant.name" class="w-8 h-10 mx-auto mb-1 object-contain" style="image-rendering: pixelated;" />
+                <img :src="plant.img" :alt="plant.name" class="w-8 h-8 mx-auto mb-1 object-contain" style="image-rendering: pixelated;" />
                 <p class="text-xs font-medium">{{ plant.name }}</p>
-                <p class="text-xs text-gray-500">
-                  {{ getPlantUsageCount(plant.id) }}/{{ plant.maxQuantity }} placed
-                </p>
+                <p class="text-xs text-gray-500">{{ getPlantUsageCount(plant.id) }}/{{ plant.maxQuantity }}</p>
               </div>
             </div>
             <p v-if="ownedPlants.length === 0" class="text-sm text-gray-500 text-center py-4">
@@ -169,60 +179,60 @@
                 v-for="bg in availableBackgrounds"
                 :key="bg.id"
                 class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden pixelated-bg"
-                :class="selectedBackground === bg.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
+                :class="{ 'border-sky-500 ring-2 ring-sky-200': selectedBackground === bg.id }"
+                :style="bg.preview"
                 @click="selectBackground(bg.id)"
-                :title="bg.name"
               >
-                <div 
-                  class="w-full h-full pixelated-bg"
-                  :style="bg.preview"
-                ></div>
+                <div class="w-full h-full flex items-end justify-center text-xs font-bold text-white bg-black/20">
+                  {{ bg.name }}
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Floor Selection -->
           <div class="mb-4">
-            <h4 class="text-sm font-medium mb-2 text-gray-700">Floor Tiles</h4>
+            <h4 class="text-sm font-medium mb-2 text-gray-700">Floor</h4>
             <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
               <div
                 v-for="floor in availableFloors"
                 :key="floor.id"
                 class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden pixelated-bg"
-                :class="selectedFloor === floor.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
+                :class="{ 'border-yellow-500 ring-2 ring-yellow-200': selectedFloor === floor.id }"
+                :style="floor.preview"
                 @click="selectFloor(floor.id)"
-                :title="floor.name"
               >
-                <div 
-                  class="w-full h-full pixelated-bg"
-                  :style="floor.preview"
-                ></div>
+                <div class="w-full h-full flex items-end justify-center text-xs font-bold text-white bg-black/20">
+                  {{ floor.name }}
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Frame Selection -->
           <div class="mb-4">
-            <h4 class="text-sm font-medium mb-2 text-gray-700">Tank Frame</h4>
-            <div class="grid grid-cols-2 gap-2">
+            <h4 class="text-sm font-medium mb-2 text-gray-700">Frame</h4>
+            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
               <div
                 v-for="frame in availableFrames"
                 :key="frame.id"
                 class="aspect-square border-2 rounded-lg cursor-pointer hover:scale-105 transition overflow-hidden"
-                :class="selectedFrame === frame.id ? 'border-sky-500 ring-2 ring-sky-200' : 'border-gray-200'"
+                :class="{ 'border-purple-500 ring-2 ring-purple-200': selectedFrame === frame.id }"
                 @click="selectFrame(frame.id)"
-                :title="frame.name"
               >
-                <div 
-                  class="w-full h-full bg-sky-100 pixelated-bg"
-                  :style="frame.preview"
-                ></div>
+                <div v-if="frame.preview" 
+                     class="w-full h-full pixelated-bg"
+                     :style="frame.preview">
+                </div>
+                <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <span class="text-xs font-medium text-gray-500">{{ frame.name }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Quick Stats -->
+        <!-- Tank Stats -->
         <div class="bg-white rounded-lg shadow-lg p-4">
           <h3 class="text-md font-semibold mb-3 text-gray-800">Tank Stats</h3>
           <div class="space-y-2">
@@ -242,11 +252,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Success/Error Messages -->
+    <div v-if="message" class="fixed bottom-4 right-4 z-50">
+      <div class="p-4 rounded-md shadow-lg max-w-sm" :class="{
+        'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
+        'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
+        'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'
+      }">
+        {{ message }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import FishTank from '~/components/FishTank.vue'
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useUserStore } from '~/stores/user';
 
@@ -258,6 +278,9 @@ const userStore = useUserStore();
 
 // Reactive state
 const editMode = ref(false);
+const loading = ref(false);
+const message = ref('');
+const messageType = ref('success');
 const placedPlants = ref([]);
 const activeFish = ref([]);
 const bubbles = ref([]);
@@ -272,6 +295,15 @@ let fishAnimationInterval = null;
 let bubbleInterval = null;
 
 const playerPearls = computed(() => userStore.pearls);
+
+// Show message helper
+const showMessage = (text, type = 'success') => {
+  message.value = text;
+  messageType.value = type;
+  setTimeout(() => {
+    message.value = '';
+  }, 3000);
+};
 
 // Available backgrounds, floors, and frames
 const availableBackgrounds = ref([
@@ -501,32 +533,6 @@ const getFrameStyle = () => {
   return '';
 };
 
-// Customization functions
-const selectBackground = (backgroundId) => {
-  selectedBackground.value = backgroundId;
-  saveAquariumLayout();
-};
-
-const selectFloor = (floorId) => {
-  selectedFloor.value = floorId;
-  saveAquariumLayout();
-};
-
-const selectFrame = (frameId) => {
-  selectedFrame.value = frameId;
-  saveAquariumLayout();
-};
-
-// Fish and plant data with swimming behavior
-const swimmesingFish = computed(() => {
-  return activeFish.value.map(fish => ({
-    ...fish,
-    x: fish.swimX || 20,
-    y: fish.swimY || 50,
-    direction: fish.direction || 'right'
-  }));
-});
-
 // Get owned items from store
 const ownedFish = computed(() => {
   const fishData = [
@@ -588,155 +594,202 @@ const getPlantUsageCount = (plantId) => {
 };
 
 // Toggle edit mode
-const toggleEditMode = () => {
-  editMode.value = !editMode.value;
-  if (!editMode.value) {
-    saveAquariumLayout();
+const toggleEditMode = async () => {
+  if (loading.value) return;
+  
+  loading.value = true;
+  try {
+    editMode.value = !editMode.value;
+    if (!editMode.value) {
+      await saveAquariumLayout();
+      showMessage('Aquarium layout saved!', 'success');
+    } else {
+      showMessage('Edit mode activated - drag plants to rearrange!', 'info');
+    }
+  } catch (error) {
+    console.error('Toggle edit mode error:', error);
+    showMessage('Failed to toggle edit mode', 'error');
+  } finally {
+    loading.value = false;
   }
 };
 
-// Fish management
-const toggleFish = (fish) => {
-  const fishIndex = activeFish.value.findIndex(f => f.id === fish.id);
-  if (fishIndex >= 0) {
-    // Remove fish from tank
-    activeFish.value.splice(fishIndex, 1);
-  } else {
-    // Add fish to tank
-    const startX = Math.random() * 80 + 10;
-    const startY = Math.random() * 50 + 20;
-    activeFish.value.push({
-      id: fish.id,
-      name: fish.name,
-      img: fish.img,
-      color: fish.color,
-      swimX: startX,
-      swimY: startY,
-      targetX: Math.random() * 80 + 10,
-      targetY: Math.random() * 50 + 20,
-      direction: Math.random() > 0.5 ? 'right' : 'left'
-    });
+// Enhanced save function with feedback
+const saveAquariumLayout = async () => {
+  const layout = JSON.parse(JSON.stringify({
+    plants: placedPlants.value,
+    fish: activeFish.value.map(f => ({ 
+      id: f.id, 
+      swimX: f.swimX || 50, 
+      swimY: f.swimY || 50, 
+      targetX: f.targetX || Math.random() * 80 + 10,
+      targetY: f.targetY || Math.random() * 50 + 20,
+      direction: f.direction || 'right' 
+    })),
+    background: selectedBackground.value,
+    floor: selectedFloor.value,
+    frame: selectedFrame.value
+  }));
+  
+  try {
+    const success = await userStore.updateAquariumLayout(layout);
+    if (!success) {
+      throw new Error('Failed to save layout');
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save aquarium layout:', error);
+    showMessage('Failed to save aquarium layout', 'error');
+    throw error;
   }
-  saveAquariumLayout();
 };
 
-// Plant management
-const addPlantToTank = (plant) => {
-  if (!editMode.value) {
-    editMode.value = true;
+// Enhanced fish toggle with feedback
+const toggleFish = async (fish) => {
+  if (loading.value) return;
+  
+  loading.value = true;
+  try {
+    const fishIndex = activeFish.value.findIndex(f => f.id === fish.id);
+    if (fishIndex >= 0) {
+      // Remove fish from tank
+      activeFish.value.splice(fishIndex, 1);
+      showMessage(`${fish.name} removed from tank`, 'info');
+    } else {
+      // Add fish to tank
+      const startX = Math.random() * 60 + 20;
+      const startY = Math.random() * 50 + 15;
+      activeFish.value.push({
+        id: fish.id,
+        name: fish.name,
+        img: fish.img,
+        color: fish.color,
+        swimX: startX,
+        swimY: startY,
+        targetX: Math.random() * 60 + 20,
+        targetY: Math.random() * 50 + 15,
+        direction: Math.random() > 0.5 ? 'right' : 'left'
+      });
+      showMessage(`${fish.name} added to tank`, 'success');
+    }
+    await saveAquariumLayout();
+  } catch (error) {
+    console.error('Toggle fish error:', error);
+    showMessage('Failed to update fish', 'error');
+  } finally {
+    loading.value = false;
   }
+};
+
+// Enhanced plant management with feedback
+const addPlantToTank = async (plant) => {
+  if (loading.value) return;
   
   const usageCount = getPlantUsageCount(plant.id);
   if (usageCount >= plant.maxQuantity) {
+    showMessage(`Maximum ${plant.name} already placed (${plant.maxQuantity})`, 'info');
     return;
   }
 
-  // Better placement algorithm
-  const newPlant = {
-    id: `${plant.id}_${Date.now()}`,
-    plantId: plant.id,
-    name: plant.name,
-    img: plant.img,
-    x: Math.random() * 60 + 20, // Keep plants away from edges (20-80% range)
-    y: Math.random() * 40 + 40,  // Place in lower portion of tank (40-80% range)
-  };
-
-  placedPlants.value.push(newPlant);
-  saveAquariumLayout();
-};
-
-const removePlant = (plantInstanceId) => {
-  const index = placedPlants.value.findIndex(p => p.id === plantInstanceId);
-  if (index >= 0) {
-    placedPlants.value.splice(index, 1);
-    saveAquariumLayout();
+  loading.value = true;
+  try {
+    if (!editMode.value) {
+      editMode.value = true;
+    }
+    
+    const newPlant = {
+      id: `${plant.id}_${Date.now()}`,
+      plantId: plant.id,
+      name: plant.name,
+      img: plant.img,
+      x: Math.random() * 60 + 20,
+      y: Math.random() * 40 + 40
+    };
+    
+    placedPlants.value.push(newPlant);
+    await saveAquariumLayout();
+    showMessage(`${plant.name} added to tank`, 'success');
+  } catch (error) {
+    console.error('Add plant error:', error);
+    showMessage('Failed to add plant', 'error');
+  } finally {
+    loading.value = false;
   }
 };
 
-// Drag and drop functionality
-const startDrag = (plant, event) => {
-  if (!editMode.value) return;
+// Enhanced remove plant with feedback
+const removePlant = async (plantId) => {
+  if (loading.value) return;
   
-  // Prevent default behavior
-  event.preventDefault();
-  
-  draggedItem.value = plant;
-  
-  // Get the event position (mouse or touch)
-  const clientX = event.type === 'touchstart' ? event.touches[0].clientX : event.clientX;
-  const clientY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
-  
-  const rect = event.currentTarget.offsetParent.getBoundingClientRect();
-  dragOffset.value = {
-    x: clientX - rect.left - (plant.x * rect.width / 100),
-    y: clientY - rect.top - (plant.y * rect.height / 100)
-  };
-
-  // Add both mouse and touch event listeners
-  document.addEventListener('mousemove', handleDrag, { passive: false });
-  document.addEventListener('mouseup', stopDrag);
-  document.addEventListener('touchmove', handleDrag, { passive: false });
-  document.addEventListener('touchend', stopDrag);
+  loading.value = true;
+  try {
+    const plant = placedPlants.value.find(p => p.id === plantId);
+    const plantName = plant?.name || 'Plant';
+    
+    placedPlants.value = placedPlants.value.filter(p => p.id !== plantId);
+    await saveAquariumLayout();
+    showMessage(`${plantName} removed`, 'info');
+  } catch (error) {
+    console.error('Remove plant error:', error);
+    showMessage('Failed to remove plant', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
-const handleDrag = (event) => {
-  if (!draggedItem.value) return;
+// Enhanced customization functions with feedback
+const selectBackground = async (backgroundId) => {
+  if (loading.value) return;
   
-  // Prevent scrolling and default behavior
-  event.preventDefault();
-  
-  // Get the event position (mouse or touch)
-  const clientX = event.type === 'touchmove' ? event.touches[0].clientX : event.clientX;
-  const clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
-  
-  const tank = document.querySelector('.aquarium-tank');
-  if (!tank) return;
-  
-  const rect = tank.getBoundingClientRect();
-  
-  const newX = ((clientX - rect.left - dragOffset.value.x) / rect.width) * 100;
-  const newY = ((clientY - rect.top - dragOffset.value.y) / rect.height) * 100;
-  
-  // Keep plants within tank bounds
-  draggedItem.value.x = Math.max(5, Math.min(95, newX));
-  draggedItem.value.y = Math.max(10, Math.min(80, newY));
+  loading.value = true;
+  try {
+    selectedBackground.value = backgroundId;
+    await saveAquariumLayout();
+    const bgName = availableBackgrounds.value.find(b => b.id === backgroundId)?.name || 'Background';
+    showMessage(`${bgName} selected`, 'success');
+  } catch (error) {
+    console.error('Select background error:', error);
+    showMessage('Failed to change background', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
-const stopDrag = () => {
-  draggedItem.value = null;
-  dragOffset.value = { x: 0, y: 0 };
+const selectFloor = async (floorId) => {
+  if (loading.value) return;
   
-  // Remove all event listeners
-  document.removeEventListener('mousemove', handleDrag);
-  document.removeEventListener('mouseup', stopDrag);
-  document.removeEventListener('touchmove', handleDrag);
-  document.removeEventListener('touchend', stopDrag);
-  
-  saveAquariumLayout();
+  loading.value = true;
+  try {
+    selectedFloor.value = floorId;
+    await saveAquariumLayout();
+    const floorName = availableFloors.value.find(f => f.id === floorId)?.name || 'Floor';
+    showMessage(`${floorName} selected`, 'success');
+  } catch (error) {
+    console.error('Select floor error:', error);
+    showMessage('Failed to change floor', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
-// Tank click handler for edit mode
-const handleTankClick = (event) => {
-  if (!editMode.value || draggedItem.value) return;
-  // Could implement click-to-place functionality here
-};
-
-// Improved fish initialization with consistent sizing
-const initializeFish = () => {
-  const ownedFish = userStore.ownedFish || [];
-  console.log('Initializing fish from owned fish:', ownedFish);
+const selectFrame = async (frameId) => {
+  if (loading.value) return;
   
-  activeFish.value = ownedFish.map(fish => ({
-    ...fish,
-    swimX: Math.random() * 60 + 20, // Keep fish in central area
-    swimY: Math.random() * 50 + 15, // Upper portion of tank
-    targetX: Math.random() * 60 + 20,
-    targetY: Math.random() * 50 + 15,
-    direction: Math.random() > 0.5 ? 'right' : 'left'
-  }));
+  loading.value = true;
+  try {
+    selectedFrame.value = frameId;
+    await saveAquariumLayout();
+    const frameName = availableFrames.value.find(f => f.id === frameId)?.name || 'Frame';
+    showMessage(`${frameName} selected`, 'success');
+  } catch (error) {
+    console.error('Select frame error:', error);
+    showMessage('Failed to change frame', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
-// Improved fish animation with better boundaries
+// Fish swimming and bubble generation logic
 const animateFish = () => {
   activeFish.value.forEach(fish => {
     // Initialize target positions if not set
@@ -779,7 +832,6 @@ const animateFish = () => {
   });
 };
 
-// Improved bubble generation with better positioning
 const generateBubbles = () => {
   if (bubbles.value.length < 6) {
     bubbles.value.push({
@@ -792,38 +844,6 @@ const generateBubbles = () => {
   
   // Remove old bubbles that have floated up
   bubbles.value = bubbles.value.filter((bubble, index) => index < 8);
-};
-
-// Save and load aquarium layout
-const saveAquariumLayout = async () => {
-  // Create a new object with JSON.parse/stringify to remove Proxy references
-  const layout = JSON.parse(JSON.stringify({
-    plants: placedPlants.value,
-    fish: activeFish.value.map(f => ({ 
-      id: f.id, 
-      swimX: f.swimX || 50, 
-      swimY: f.swimY || 50, 
-      targetX: f.targetX || Math.random() * 80 + 10,
-      targetY: f.targetY || Math.random() * 50 + 20,
-      direction: f.direction || 'right' 
-    })),
-    background: selectedBackground.value,
-    floor: selectedFloor.value,
-    frame: selectedFrame.value
-  }));
-  
-  console.log('Saving aquarium layout:', layout);
-  
-  try {
-    const success = await userStore.updateAquariumLayout(layout);
-    if (success) {
-      console.log('Layout saved successfully');
-    } else {
-      console.error('Failed to save layout');
-    }
-  } catch (error) {
-    console.error('Failed to save aquarium layout:', error);
-  }
 };
 
 const loadAquariumLayout = () => {
@@ -873,30 +893,89 @@ const loadAquariumLayout = () => {
   }
 };
 
+// Handle tank click for adding items
+const handleTankClick = (event) => {
+  // Only handle clicks in edit mode
+  if (!editMode.value) return;
+  
+  // This function can be extended to handle tank interactions
+};
+
+// Drag functionality for moving plants (basic implementation)
+const startDrag = (plant, event) => {
+  if (!editMode.value) return;
+  
+  draggedItem.value = plant;
+  
+  // Calculate offset from mouse/touch to element center
+  const rect = event.target.getBoundingClientRect();
+  const tankRect = event.target.closest('.aquarium-tank').getBoundingClientRect();
+  
+  dragOffset.value = {
+    x: (event.clientX || event.touches?.[0]?.clientX) - rect.left - rect.width / 2,
+    y: (event.clientY || event.touches?.[0]?.clientY) - rect.top - rect.height / 2
+  };
+  
+  // Add event listeners for drag
+  document.addEventListener('mousemove', handleDrag);
+  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('touchmove', handleDrag);
+  document.addEventListener('touchend', stopDrag);
+};
+
+const handleDrag = (event) => {
+  if (!draggedItem.value) return;
+  
+  const tankRect = document.querySelector('.aquarium-tank').getBoundingClientRect();
+  const clientX = event.clientX || event.touches?.[0]?.clientX;
+  const clientY = event.clientY || event.touches?.[0]?.clientY;
+  
+  const newX = ((clientX - tankRect.left - dragOffset.value.x) / tankRect.width) * 100;
+  const newY = ((clientY - tankRect.top - dragOffset.value.y) / tankRect.height) * 100;
+  
+  // Keep within bounds
+  draggedItem.value.x = Math.max(5, Math.min(95, newX));
+  draggedItem.value.y = Math.max(10, Math.min(90, newY));
+};
+
+const stopDrag = () => {
+  if (draggedItem.value) {
+    saveAquariumLayout();
+    draggedItem.value = null;
+  }
+  
+  // Remove event listeners
+  document.removeEventListener('mousemove', handleDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', handleDrag);
+  document.removeEventListener('touchend', stopDrag);
+};
+
 onMounted(async () => {
+  if (!userStore.isLoggedIn) {
+    await navigateTo('/login');
+    return;
+  }
+  
+  loading.value = true;
   try {
-    if (!userStore.isLoggedIn) {
-      await navigateTo('/login');
-      return;
-    }
-    
-    // Make sure user profile is loaded before trying to load layout
     if (!userStore.userProfile) {
-      console.log('Loading user profile...');
       await userStore.loadUserProfile();
     }
     
-    // Load the aquarium layout after profile is ready
     loadAquariumLayout();
     
     // Start animations
     fishAnimationInterval = setInterval(animateFish, 100);
     bubbleInterval = setInterval(generateBubbles, 3000);
-    
-    // Generate initial bubbles
     generateBubbles();
+    
+    showMessage('Aquarium loaded successfully!', 'success');
   } catch (error) {
     console.error('Failed to initialize aquarium:', error);
+    showMessage('Failed to load aquarium', 'error');
+  } finally {
+    loading.value = false;
   }
 });
 
@@ -907,6 +986,12 @@ onUnmounted(() => {
   if (bubbleInterval) {
     clearInterval(bubbleInterval);
   }
+  
+  // Clean up drag event listeners
+  document.removeEventListener('mousemove', handleDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', handleDrag);
+  document.removeEventListener('touchend', stopDrag);
 });
 </script>
 
