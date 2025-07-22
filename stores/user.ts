@@ -22,16 +22,16 @@ interface UserProfile {
   };
   created_at?: string;
   updated_at?: string;
-  last_reward_collected : string;
+  last_reward_collected: string;
 }
 
 interface PurchasableItem {
   id: string;
   name: string;
-  emoji: string;
-  color: string;
+  emoji?: string;
+  color?: string;
   price: number;
-  description: string;
+  description?: string;
 }
 
 interface Friend {
@@ -142,7 +142,7 @@ export const useUserStore = defineStore('user', {
           fish: [],
           decorations: [],
           aquarium_layout: {},
-          screen_time_goals: { dailyLimit: 4 },
+          screen_time_goals: { dailyLimit: 240 },
           app_limits: {},
           privacy_settings: {
             aquarium_visibility: 'friends',
@@ -189,6 +189,226 @@ export const useUserStore = defineStore('user', {
         console.error('Error updating user profile:', err);
         return false;
       }
+    },
+    
+    // RESTORED: Original purchase function (for backwards compatibility)
+    async purchaseItem(type: 'fish' | 'decorations', item: PurchasableItem) {
+      if (!this.user || !this.userProfile || process.server) return false;
+      
+      // Check if user has enough pearls
+      if (this.pearls < item.price) {
+        console.error('Not enough pearls to purchase item');
+        return false;
+      }
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        // Get current collections
+        const currentFish = [...this.fish];
+        const currentDecorations = [...this.decorations];
+        const currentPearls = this.pearls;
+        
+        // Update the appropriate collection
+        if (type === 'fish') {
+          // Check if already owned
+          if (currentFish.includes(item.id)) {
+            console.log('Fish already owned');
+            return false;
+          }
+          currentFish.push(item.id);
+        } else if (type === 'decorations') {
+          // Check if already owned
+          if (currentDecorations.includes(item.id)) {
+            console.log('Decoration already owned');
+            return false;
+          }
+          currentDecorations.push(item.id);
+        } else {
+          console.error('Invalid item type');
+          return false;
+        }
+        
+        // Update in database
+        const { error } = await supabase
+          .from('user_data')
+          .update({
+            pearls: currentPearls - item.price,
+            fish: type === 'fish' ? currentFish : this.fish,
+            decorations: type === 'decorations' ? currentDecorations : this.decorations
+          })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.pearls = currentPearls - item.price;
+        if (type === 'fish') {
+          this.userProfile.fish = currentFish;
+        } else {
+          this.userProfile.decorations = currentDecorations;
+        }
+        
+        console.log(`Purchased ${item.name} for ${item.price} pearls`);
+        return true;
+      } catch (err) {
+        console.error('Error purchasing item:', err);
+        return false;
+      }
+    },
+    
+    // RESTORED: This is a critical function that was missing
+    async addFocusSession(durationMinutes: number, pearlsEarned: number) {
+      if (!this.user || !this.userProfile || process.server) {
+        console.error('No user or user profile found, or running on server');
+        return false;
+      }
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        if (!supabase) {
+          console.error('Supabase client not available');
+          return false;
+        }
+        
+        console.log(`Adding focus session: ${durationMinutes} min, ${pearlsEarned} pearls`);
+        console.log('Current pearls:', this.userProfile.pearls);
+        
+        // First log the focus session
+        const { error: sessionError } = await supabase
+          .from('focus_sessions')
+          .insert({
+            user_id: this.user.id,
+            duration_minutes: durationMinutes,
+            pearls_earned: pearlsEarned,
+            completed_at: new Date().toISOString()
+          });
+          
+        if (sessionError) {
+          console.error('Error recording focus session:', sessionError);
+          // Continue even if logging fails - we still want to give pearls
+        }
+        
+        // Calculate new pearl balance
+        const newPearlBalance = this.userProfile.pearls + pearlsEarned;
+        
+        // Update pearls in user profile
+        const { error: updateError } = await supabase
+          .from('user_data')
+          .update({
+            pearls: newPearlBalance
+          })
+          .eq('id', this.user.id);
+          
+        if (updateError) {
+          console.error('Error updating pearls:', updateError);
+          throw updateError;
+        }
+        
+        // Update local state
+        this.userProfile.pearls = newPearlBalance;
+        
+        console.log(`Pearl balance updated: ${this.userProfile.pearls} (+${pearlsEarned})`);
+        return true;
+      } catch (err) {
+        console.error('Error in addFocusSession:', err);
+        return false;
+      }
+    },
+    
+    // RESTORED: Screen time goals function
+    async updateScreenTimeGoals(goals: { dailyLimit: number }) {
+      if (!this.user || !this.userProfile || process.server) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        const { error } = await supabase
+          .from('user_data')
+          .update({ screen_time_goals: goals })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.screen_time_goals = goals;
+        console.log('Screen time goals updated:', goals);
+        return true;
+      } catch (err) {
+        console.error('Error updating screen time goals:', err);
+        return false;
+      }
+    },
+    
+    // RESTORED: App limits function
+    async updateAppLimits(limits: Record<string, number>) {
+      if (!this.user || !this.userProfile || process.server) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        const { error } = await supabase
+          .from('user_data')
+          .update({ app_limits: limits })
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        this.userProfile.app_limits = limits;
+        console.log('App limits updated:', limits);
+        return true;
+      } catch (err) {
+        console.error('Error updating app limits:', err);
+        return false;
+      }
+    },
+    
+    // RESTORED: Save usage data function
+    async saveUsageData(usageData: any[]) {
+      if (!this.user) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        // Format data for insertion
+        const formattedData = usageData.map(app => ({
+          user_id: this.user!.id,
+          date: new Date(app.startTime).toISOString().split('T')[0],
+          app_name: app.appName,
+          package_name: app.packageName,
+          usage_seconds: app.usage,
+          start_time: app.startTime,
+          end_time: app.endTime
+        }));
+        
+        const { error } = await supabase
+          .from('usage_data')
+          .insert(formattedData);
+          
+        if (error) throw error;
+        
+        console.log('Usage data saved successfully');
+        return true;
+      } catch (err) {
+        console.error('Error saving usage data:', err);
+        return false;
+      }
+    },
+    
+    // RESTORED: Clear user data function
+    clearUserData() {
+      this.user = null;
+      this.userProfile = null;
+      this.friends = [];
+      this.pendingRequests = [];
+      this.sentRequests = [];
     },
 
     async searchUsers(query: string) {
@@ -467,5 +687,154 @@ export const useUserStore = defineStore('user', {
         return false;
       }
     },
+
+    async purchaseShopItem(item: any, type: 'fish' | 'plant' | 'decoration', price: number) {
+      if (!this.user || process.server) return false;
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        // Check if user has enough pearls
+        if (!this.userProfile || this.userProfile.pearls < price) {
+          console.error('Not enough pearls to purchase item');
+          return false;
+        }
+        
+        // Prepare the update
+        let updateData: any = {
+          pearls: this.userProfile.pearls - price,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Add item to the appropriate collection
+        if (type === 'fish') {
+          const fishId = item.id.replace('fish_', '');
+          const fishCollection = [...(this.userProfile.fish || [])];
+          if (!fishCollection.includes(fishId)) {
+            fishCollection.push(fishId);
+            updateData.fish = fishCollection;
+          }
+        } else if (type === 'plant') {
+          const plantId = item.id.replace('plant_', 'plant');
+          const decorCollection = [...(this.userProfile.decorations || [])];
+          if (!decorCollection.includes(plantId)) {
+            decorCollection.push(plantId);
+            updateData.decorations = decorCollection;
+          }
+        } else if (type === 'decoration') {
+          const decoId = item.id.replace('deco_', 'shell_');
+          const decorCollection = [...(this.userProfile.decorations || [])];
+          if (!decorCollection.includes(decoId)) {
+            decorCollection.push(decoId);
+            updateData.decorations = decorCollection;
+          }
+        }
+        
+        // Update the user's profile in the database
+        const { error } = await supabase
+          .from('user_data')
+          .update(updateData)
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        if (this.userProfile) {
+          this.userProfile.pearls = updateData.pearls;
+          if (updateData.fish) this.userProfile.fish = updateData.fish;
+          if (updateData.decorations) this.userProfile.decorations = updateData.decorations;
+        }
+        
+        console.log(`Successfully purchased ${item.name}`);
+        return true;
+      } catch (err) {
+        console.error('Error purchasing item:', err);
+        return false;
+      }
+    },
+    
+    /**
+     * Check if user is eligible for a daily reward
+     * @returns boolean indicating if user can collect a reward
+     */
+    canCollectDailyReward(): boolean {
+      if (!this.userProfile) return false;
+      
+      const lastCollected = new Date(this.userProfile.last_reward_collected);
+      const today = new Date();
+      
+      // Reset hours to compare dates only
+      lastCollected.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      
+      // User can collect reward if they haven't already collected today
+      return lastCollected < today;
+    },
+    
+    /**
+     * Calculate reward amount based on streak or other factors
+     * @returns number of pearls to award
+     */
+    calculateDailyReward(): number {
+      // Implement reward calculation logic
+      // For example, base reward + streak bonus
+      const baseReward = 10;
+      const streakBonus = this.getDailyRewardStreak() * 2;
+      
+      return baseReward + streakBonus;
+    },
+    
+    /**
+     * Get the current login streak
+     * @returns number of consecutive days with rewards collected
+     */
+    getDailyRewardStreak(): number {
+      // Implement streak calculation
+      // This would need to track consecutive days
+      return 0; // Placeholder
+    },
+    
+    /**
+     * Collect daily reward and update user profile
+     * @returns boolean indicating success
+     */
+    async collectDailyReward(): Promise<boolean> {
+      if (!this.user || !this.userProfile || !this.canCollectDailyReward()) {
+        return false;
+      }
+      
+      try {
+        const { $supabase } = useNuxtApp();
+        const supabase = $supabase as SupabaseClient;
+        
+        const rewardAmount = this.calculateDailyReward();
+        const today = new Date().toISOString();
+        
+        const updateData = {
+          pearls: this.userProfile.pearls + rewardAmount,
+          last_reward_collected: today,
+          updated_at: today
+        };
+        
+        const { error } = await supabase
+          .from('user_data')
+          .update(updateData)
+          .eq('id', this.user.id);
+          
+        if (error) throw error;
+        
+        // Update local state
+        if (this.userProfile) {
+          this.userProfile.pearls = updateData.pearls;
+          this.userProfile.last_reward_collected = today;
+        }
+        
+        return true;
+      } catch (err) {
+        console.error('Error collecting daily reward:', err);
+        return false;
+      }
+    }
   }
 });

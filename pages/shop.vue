@@ -153,21 +153,25 @@ const playerPearls = computed(() => userStore.pearls);
 
 // Sample items - replace with actual data
 const availableFish = ref([
-  { id: 'fish_1', name: 'Goldfish', img: '/resources/fish/fish_1.png', price: 50 },
-  { id: 'fish_2', name: 'Clownfish', img: '/resources/fish/fish_2.png', price: 75 },
-  { id: 'fish_3', name: 'Angelfish', img: '/resources/fish/fish_3.png', price: 100 },
+  { id: 'fish_1', name: 'Goldfish', img: '/resources/fish/fish_1.gif', price: 50 },
+  { id: 'fish_2', name: 'Angelfish', img: '/resources/fish/fish_2.gif', price: 75 },
+  { id: 'fish_3', name: 'Clownfish', img: '/resources/fish/fish_3.gif', price: 100 },
+  { id: 'fish_4', name: 'Blue Tang', img: '/resources/fish/fish_4.gif', price: 125 },
+  { id: 'fish_5', name: 'Royal Gramma', img: '/resources/fish/fish_5.gif', price: 150 },
 ]);
 
 const availablePlants = ref([
-  { id: 'plant_1', name: 'Seaweed', img: '/resources/plants/plant_1.png', price: 25 },
-  { id: 'plant_2', name: 'Coral', img: '/resources/plants/plant_2.png', price: 40 },
-  { id: 'plant_3', name: 'Anemone', img: '/resources/plants/plant_3.png', price: 60 },
+  { id: 'plant_1', name: 'Java Moss', img: '/resources/plants/plant_1.png', price: 25 },
+  { id: 'plant_2', name: 'Amazon Sword', img: '/resources/plants/plant_2.png', price: 40 },
+  { id: 'plant_3', name: 'Anubias', img: '/resources/plants/plant_3.png', price: 60 },
+  { id: 'plant_4', name: 'Water Wisteria', img: '/resources/plants/plant_4.png', price: 35 },
+  { id: 'plant_5', name: 'Hornwort', img: '/resources/plants/plant_5.png', price: 45 },
 ]);
 
 const availableDecorations = ref([
-  { id: 'deco_1', name: 'Treasure Chest', img: '/resources/decorations/chest.png', price: 150 },
-  { id: 'deco_2', name: 'Castle', img: '/resources/decorations/castle.png', price: 200 },
-  { id: 'deco_3', name: 'Rocks', img: '/resources/decorations/rocks.png', price: 80 },
+  { id: 'deco_1', name: 'Shell', img: '/resources/plants/shell_1.png', price: 30 },
+  { id: 'deco_2', name: 'Sponge', img: '/resources/plants/sponge_1.png', price: 35 },
+  { id: 'deco_3', name: 'Tall Lotus', img: '/resources/plants/plant_long_1.png', price: 50 },
 ]);
 
 const purchaseItem = async (item, type) => {
