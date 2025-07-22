@@ -22,6 +22,7 @@ interface UserProfile {
   };
   created_at?: string;
   updated_at?: string;
+  last_reward_collected : string;
 }
 
 interface PurchasableItem {
@@ -141,13 +142,14 @@ export const useUserStore = defineStore('user', {
           fish: [],
           decorations: [],
           aquarium_layout: {},
-          screen_time_goals: { dailyLimit: 240 },
+          screen_time_goals: { dailyLimit: 4 },
           app_limits: {},
           privacy_settings: {
             aquarium_visibility: 'friends',
             pearls_visibility: 'friends',
             screen_time_visibility: 'friends'
-          }
+          },
+          last_reward_collected: "1970-01-01"
         };
         
         const { data, error } = await supabase
