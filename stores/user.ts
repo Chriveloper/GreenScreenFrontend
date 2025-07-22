@@ -709,25 +709,43 @@ export const useUserStore = defineStore('user', {
         
         // Add item to the appropriate collection
         if (type === 'fish') {
-          const fishId = item.id.replace('fish_', '');
+          const fishId = item.id;
           const fishCollection = [...(this.userProfile.fish || [])];
-          if (!fishCollection.includes(fishId)) {
+          // Count how many of this fish the user already has
+          const fishCount = fishCollection.filter(id => id === fishId).length;
+          // Allow up to 3 of the same fish
+          if (fishCount < 3) {
             fishCollection.push(fishId);
             updateData.fish = fishCollection;
+          } else {
+            console.log('Maximum number of this fish already owned');
+            return false;
           }
         } else if (type === 'plant') {
-          const plantId = item.id.replace('plant_', 'plant');
+          const plantId = item.id;
           const decorCollection = [...(this.userProfile.decorations || [])];
-          if (!decorCollection.includes(plantId)) {
+          // Count how many of this plant the user already has
+          const plantCount = decorCollection.filter(id => id === plantId).length;
+          // Allow up to 3 of the same plant
+          if (plantCount < 3) {
             decorCollection.push(plantId);
             updateData.decorations = decorCollection;
+          } else {
+            console.log('Maximum number of this plant already owned');
+            return false;
           }
         } else if (type === 'decoration') {
-          const decoId = item.id.replace('deco_', 'shell_');
+          const decoId = item.id;
           const decorCollection = [...(this.userProfile.decorations || [])];
-          if (!decorCollection.includes(decoId)) {
+          // Count how many of this decoration the user already has
+          const decoCount = decorCollection.filter(id => id === decoId).length;
+          // Allow up to 3 of the same decoration
+          if (decoCount < 3) {
             decorCollection.push(decoId);
             updateData.decorations = decorCollection;
+          } else {
+            console.log('Maximum number of this decoration already owned');
+            return false;
           }
         }
         

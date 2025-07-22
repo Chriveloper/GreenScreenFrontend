@@ -534,6 +534,10 @@ const getFrameStyle = () => {
 };
 
 // Get owned items from store
+const countOwnedItems = (itemId, collection) => {
+  return collection.filter(id => id === itemId).length;
+};
+
 const ownedFish = computed(() => {
   const fishData = [
     { id: 'goldfish', name: 'Goldfish', img: '/resources/fish/fish_1.gif', color: '#FFA726', maxQuantity: 3 },
@@ -543,11 +547,34 @@ const ownedFish = computed(() => {
     { id: 'royal_gramma', name: 'Royal Gramma', img: '/resources/fish/fish_5.gif', color: '#AB47BC', maxQuantity: 1 },
   ];
   
-  return fishData.filter(fish => (userStore.fish || []).includes(fish.id))
-    .map(fish => ({
-      ...fish,
-      inTank: activeFish.value.some(active => active.id === fish.id)
-    }));
+  const result = [];
+  
+  // Get distinct fish IDs that the user owns
+  const userFishIds = [...new Set(userStore.fish || [])];
+  
+  // For each distinct fish type
+  userFishIds.forEach(fishId => {
+    const fishTemplate = fishData.find(f => f.id === fishId);
+    if (fishTemplate) {
+      // Count instances of this fish
+      const count = countOwnedItems(fishId, userStore.fish);
+      
+      // For each instance, create an entry with instance index
+      for (let i = 0; i < count; i++) {
+        const inTankList = activeFish.value.filter(f => f.id === fishId);
+        // Determine if this specific instance is in the tank
+        const isInTank = i < inTankList.length;
+        
+        result.push({
+          ...fishTemplate,
+          instanceIndex: i,
+          inTank: isInTank
+        });
+      }
+    }
+  });
+  
+  return result;
 });
 
 const ownedPlants = computed(() => {
@@ -575,7 +602,29 @@ const ownedPlants = computed(() => {
     { id: 'sponge_1', name: 'Sponge', img: '/resources/plants/sponge_1.png', maxQuantity: 2 },
   ];
   
-  return plantData.filter(plant => (userStore.decorations || []).includes(plant.id));
+  const result = [];
+  
+  // Get distinct plant IDs that the user owns
+  const userPlantIds = [...new Set(userStore.decorations || [])];
+  
+  // For each distinct plant type
+  userPlantIds.forEach(plantId => {
+    const plantTemplate = plantData.find(p => p.id === plantId);
+    if (plantTemplate) {
+      // Count instances of this plant
+      const count = countOwnedItems(plantId, userStore.decorations);
+      
+      // For each instance, create an entry with instance index
+      for (let i = 0; i < count; i++) {
+        result.push({
+          ...plantTemplate,
+          instanceIndex: i
+        });
+      }
+    }
+  });
+  
+  return result;
 });
 
 const tankHealth = computed(() => {

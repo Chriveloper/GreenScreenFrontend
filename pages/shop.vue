@@ -39,14 +39,15 @@
                   </svg>
                   {{ fish.price }}
                 </div>
+                <div class="text-gray-500 text-xs mt-1">Owned: {{ getItemCount(fish, 'fish') }}/3</div>
               </div>
             </div>
             <button 
               @click="purchaseItem(fish, 'fish')"
-              :disabled="purchasing || playerPearls < fish.price"
+              :disabled="purchasing || playerPearls < fish.price || getItemCount(fish, 'fish') >= 3"
               class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
             >
-              {{ purchasing ? 'Buying...' : 'Buy' }}
+              {{ purchasing ? 'Buying...' : (getItemCount(fish, 'fish') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
           </div>
         </div>
@@ -70,14 +71,15 @@
                   </svg>
                   {{ plant.price }}
                 </div>
+                <div class="text-gray-500 text-xs mt-1">Owned: {{ getItemCount(plant, 'plant') }}/3</div>
               </div>
             </div>
             <button 
               @click="purchaseItem(plant, 'plant')"
-              :disabled="purchasing || playerPearls < plant.price"
+              :disabled="purchasing || playerPearls < plant.price || getItemCount(plant, 'plant') >= 3"
               class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
             >
-              {{ purchasing ? 'Buying...' : 'Buy' }}
+              {{ purchasing ? 'Buying...' : (getItemCount(plant, 'plant') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
           </div>
         </div>
@@ -101,14 +103,15 @@
                   </svg>
                   {{ decoration.price }}
                 </div>
+                <div class="text-gray-500 text-xs mt-1">Owned: {{ getItemCount(decoration, 'decoration') }}/3</div>
               </div>
             </div>
             <button 
               @click="purchaseItem(decoration, 'decoration')"
-              :disabled="purchasing || playerPearls < decoration.price"
+              :disabled="purchasing || playerPearls < decoration.price || getItemCount(decoration, 'decoration') >= 3"
               class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
             >
-              {{ purchasing ? 'Buying...' : 'Buy' }}
+              {{ purchasing ? 'Buying...' : (getItemCount(decoration, 'decoration') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
           </div>
         </div>
@@ -207,6 +210,20 @@ const purchaseItem = async (item, type) => {
 
 const closePurchaseModal = () => {
   showPurchaseModal.value = false;
+};
+
+const getItemCount = (item, type) => {
+  if (!userStore.userProfile) return 0;
+  
+  if (type === 'fish') {
+    return userStore.fish.filter(id => id === item.id).length;
+  } else if (type === 'plant') {
+    return userStore.decorations.filter(id => id === item.id).length;
+  } else if (type === 'decoration') {
+    return userStore.decorations.filter(id => id === item.id).length;
+  }
+  
+  return 0;
 };
 
 onMounted(async () => {
