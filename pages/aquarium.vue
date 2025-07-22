@@ -32,7 +32,7 @@
       <!-- Aquarium Tank -->
       <div class="lg:col-span-3">
         <div 
-          class="aquarium-tank rounded-lg shadow-lg p-4 min-h-[500px] relative overflow-hidden cursor-pointer pixelated-bg"
+          class="aquarium-tank rounded-lg shadow-lg p-4 relative overflow-hidden cursor-pointer pixelated-bg"
           :class="{ 'ring-2 ring-yellow-400': editMode }"
           :style="getBackgroundStyle()"
           @click="handleTankClick"
@@ -49,7 +49,7 @@
           
           <!-- Floor/substrate -->
           <div 
-            class="absolute bottom-0 left-0 right-0 h-20 rounded-b-lg pixelated-bg z-10"
+            class="absolute bottom-0 left-0 right-0 ground-region rounded-b-lg pixelated-bg z-10"
             :style="getFloorStyle()"
           ></div>
 
@@ -58,7 +58,7 @@
             v-for="plant in placedPlants"
             :key="plant.id"
             class="absolute cursor-move z-20 plant-container"
-            :class="{ 'hover:scale-110': editMode }"
+            :class="{ 'hover:scale-110': editMode, 'plant-sway': true }"
             :style="getPlantStyle(plant)"
             @mousedown="startDrag(plant, $event)"
             @touchstart="startDrag(plant, $event)"
@@ -93,7 +93,8 @@
           <div
             v-for="bubble in bubbles"
             :key="bubble.id"
-            class="absolute w-2 h-2 bg-white rounded-full opacity-70 animate-bounce z-25"
+            class="absolute rounded-full opacity-70 bubble z-25"
+            :class="bubble.sizeClass"
             :style="getBubbleStyle(bubble)"
           ></div>
 
@@ -468,9 +469,10 @@ const getPlantImageClass = (plantId) => {
 const getPlantStyle = (plant) => {
   return { 
     left: plant.x + '%', 
-    top: plant.y + '%',
-    transform: 'translate(-50%, -100%)', // Anchor at bottom center
-    zIndex: Math.floor(plant.y) + 20 // Dynamic z-index based on y position for depth
+    bottom: plant.bottomOffset + 'px', // Use bottom offset instead of top positioning
+    transform: 'translateX(-50%)', // Center horizontally
+    zIndex: 20 + Math.floor(plant.x / 10), // Dynamic z-index based on x position for depth
+    animationDelay: (plant.id.charCodeAt(0) % 5) + 's' // Varied animation delay based on plant id
   };
 };
 
@@ -487,8 +489,9 @@ const getBubbleStyle = (bubble) => {
   return { 
     left: bubble.x + '%', 
     bottom: bubble.y + 'px',
+    animationDuration: bubble.duration + 's',
     animationDelay: bubble.delay + 's',
-    zIndex: 25
+    opacity: bubble.opacity
   };
 };
 
@@ -501,10 +504,9 @@ const getBackgroundStyle = () => {
       background-size: cover; 
       background-position: center; 
       background-repeat: no-repeat;
-      min-height: 500px;
     `;
   }
-  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7); min-height: 500px;';
+  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
 };
 
 const getFloorStyle = () => {
@@ -680,7 +682,7 @@ const saveAquariumLayout = async () => {
     floor: selectedFloor.value,
     frame: selectedFrame.value
   }));
-  
+
   try {
     const success = await userStore.updateAquariumLayout(layout);
     if (!success) {
@@ -766,8 +768,8 @@ const addPlantToTank = async (plant) => {
       plantId: plant.id,
       name: plant.name,
       img: plant.img,
-      x: Math.random() * 60 + 20,
-      y: Math.random() * 40 + 40
+      x: Math.random() * 90 + 5, // Random x position (5-95%)
+      bottomOffset: Math.floor(Math.random() * 10) // Random bottom offset (0-10px)
     };
     
     placedPlants.value.push(newPlant);
@@ -897,17 +899,40 @@ const animateFish = () => {
 };
 
 const generateBubbles = () => {
-  if (bubbles.value.length < 6) {
-    bubbles.value.push({
-      id: Date.now() + Math.random(),
-      x: Math.random() * 80 + 10, // Keep bubbles away from edges
-      y: Math.random() * 30 + 10,
-      delay: Math.random() * 3
-    });
+  // Keep a maximum of 15 bubbles
+  if (bubbles.value.length < 15) {
+    // Add 2-4 new bubbles each time
+    const newBubbleCount = Math.floor(Math.random() * 3) + 2;
+    
+    for (let i = 0; i < newBubbleCount; i++) {
+      // Randomize bubble properties
+      const size = Math.random();
+      let sizeClass = 'w-1 h-1';
+      
+      if (size < 0.3) {
+        sizeClass = 'w-1 h-1'; // Small bubble
+      } else if (size < 0.7) {
+        sizeClass = 'w-2 h-2'; // Medium bubble
+      } else {
+        sizeClass = 'w-3 h-3'; // Large bubble
+      }
+      
+      bubbles.value.push({
+        id: Date.now() + Math.random(),
+        x: Math.random() * 90 + 5, // 5-95% horizontal position
+        y: Math.random() * 50, // Start from different heights
+        delay: Math.random() * 2, // Random start delay
+        duration: 3 + Math.random() * 4, // Animation duration between 3-7s
+        opacity: 0.5 + Math.random() * 0.4, // Random opacity
+        sizeClass: sizeClass
+      });
+    }
   }
   
-  // Remove old bubbles that have floated up
-  bubbles.value = bubbles.value.filter((bubble, index) => index < 8);
+  // Remove old bubbles that have floated up (keep most recent 15)
+  if (bubbles.value.length > 15) {
+    bubbles.value = bubbles.value.slice(-15);
+  }
 };
 
 const loadAquariumLayout = () => {
@@ -916,7 +941,17 @@ const loadAquariumLayout = () => {
   
   if (layout && Object.keys(layout).length > 0) {
     if (layout.plants) {
-      placedPlants.value = layout.plants;
+      // Convert any plants using old positioning system to new bottom-based system
+      placedPlants.value = layout.plants.map(plant => {
+        if (plant.y && !plant.bottomOffset) {
+          // Convert top-based positioning to bottom-based
+          return {
+            ...plant,
+            bottomOffset: Math.floor(Math.random() * 10) // Random bottom offset
+          };
+        }
+        return plant;
+      });
       console.log('Loaded plants:', placedPlants.value.length);
     }
     
@@ -966,7 +1001,7 @@ const handleTankClick = (event) => {
   // This function can be extended to handle tank interactions
 };
 
-// Drag functionality for moving plants (basic implementation)
+// Enhanced drag functionality for moving plants with ground restriction
 const startDrag = (plant, event) => {
   if (!editMode.value) return;
   
@@ -992,15 +1027,20 @@ const handleDrag = (event) => {
   if (!draggedItem.value) return;
   
   const tankRect = document.querySelector('.aquarium-tank').getBoundingClientRect();
+  const groundRect = document.querySelector('.ground-region').getBoundingClientRect();
   const clientX = event.clientX || event.touches?.[0]?.clientX;
   const clientY = event.clientY || event.touches?.[0]?.clientY;
   
   const newX = ((clientX - tankRect.left - dragOffset.value.x) / tankRect.width) * 100;
-  const newY = ((clientY - tankRect.top - dragOffset.value.y) / tankRect.height) * 100;
   
-  // Keep within bounds
+  // Plants are now positioned relative to the bottom, so we don't need to restrict Y
+  // Instead, we calculate a bottomOffset that keeps the plant on the ground
+  // This is a random value between 0 and 10 pixels to create some variation
+  const bottomOffset = Math.floor(Math.random() * 10);
+  
+  // Keep within bounds (x-axis only)
   draggedItem.value.x = Math.max(5, Math.min(95, newX));
-  draggedItem.value.y = Math.max(10, Math.min(90, newY));
+  draggedItem.value.bottomOffset = bottomOffset;
 };
 
 const stopDrag = () => {
@@ -1032,8 +1072,8 @@ onMounted(async () => {
     
     // Start animations
     fishAnimationInterval = setInterval(animateFish, 100);
-    bubbleInterval = setInterval(generateBubbles, 3000);
-    generateBubbles();
+    bubbleInterval = setInterval(generateBubbles, 2000); // Generate bubbles more frequently
+    generateBubbles(); // Initial bubbles
     
     showMessage('Aquarium loaded successfully!', 'success');
   } catch (error) {
@@ -1076,19 +1116,65 @@ onUnmounted(() => {
   image-rendering: crisp-edges;
 }
 
-/* Container positioning and sizing */
+/* Fixed aspect ratio container for aquarium tank */
 .aquarium-tank {
-  aspect-ratio: 16/10;
-  max-width: 100%;
+  aspect-ratio: 3/2; /* Fixed 3:2 aspect ratio */
+  width: 100%;
   position: relative;
 }
 
+/* Ground region height (1/6 of tank height) */
+.ground-region {
+  height: calc(100% / 6);
+}
+
+/* Plant animation and positioning */
 .plant-container {
   transition: transform 0.1s ease-out;
+  transform-origin: bottom center;
+}
+
+.plant-sway {
+  animation: sway 5s ease-in-out infinite;
+}
+
+@keyframes sway {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-50%) rotate(2deg); }
+  50% { transform: translateX(-50%) rotate(0deg); }
+  75% { transform: translateX(-50%) rotate(-2deg); }
+  100% { transform: translateX(-50%) rotate(0deg); }
 }
 
 .fish-container {
   will-change: transform, left, top;
+}
+
+/* Bubble animations with different sizes */
+.bubble {
+  background: white;
+  animation: float-up linear forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: var(--opacity, 0.7);
+  }
+  25% {
+    transform: translateY(-25vh) translateX(5px);
+  }
+  50% {
+    transform: translateY(-50vh) translateX(-5px);
+  }
+  75% {
+    transform: translateY(-75vh) translateX(5px);
+  }
+  100% {
+    transform: translateY(-100vh) translateX(0);
+    opacity: 0;
+  }
 }
 
 /* Consistent z-index layers */
@@ -1102,28 +1188,12 @@ onUnmounted(() => {
 
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
-  .aquarium-tank {
-    min-height: 300px;
-    aspect-ratio: 4/3;
-  }
-  
   .plant-container img {
     transform: scale(0.8);
   }
   
   .fish-container img {
     transform: scale(0.8);
-  }
-}
-
-/* Mobile touch improvements */
-@media (hover: none) and (pointer: coarse) {
-  .cursor-move {
-    cursor: default;
-  }
-  
-  .cursor-move:active {
-    cursor: default;
   }
 }
 
@@ -1137,23 +1207,8 @@ onUnmounted(() => {
   user-select: none;
 }
 
-/* Smooth animations */
+/* Smooth animations for fish */
 .fish-container {
   transition: left 1s ease-in-out, top 1s ease-in-out;
-}
-
-@keyframes float-up {
-  from {
-    transform: translateY(0) scale(0.5);
-    opacity: 0.7;
-  }
-  to {
-    transform: translateY(-100px) scale(1);
-    opacity: 0;
-  }
-}
-
-.animate-bounce {
-  animation: float-up 4s linear infinite;
 }
 </style>
