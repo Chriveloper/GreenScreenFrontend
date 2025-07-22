@@ -673,7 +673,8 @@ const saveAquariumLayout = async () => {
       swimY: f.swimY || 50, 
       targetX: f.targetX || Math.random() * 80 + 10,
       targetY: f.targetY || Math.random() * 50 + 20,
-      direction: f.direction || 'right' 
+      direction: f.direction || 'right',
+      instanceIndex: f.instanceIndex || 0
     })),
     background: selectedBackground.value,
     floor: selectedFloor.value,
@@ -699,13 +700,26 @@ const toggleFish = async (fish) => {
   
   loading.value = true;
   try {
-    const fishIndex = activeFish.value.findIndex(f => f.id === fish.id);
+    // Check if this specific instance of the fish is already in the tank
+    // We need to check both id and instanceIndex
+    const fishIndex = activeFish.value.findIndex(f => 
+      f.id === fish.id && f.instanceIndex === fish.instanceIndex
+    );
+    
     if (fishIndex >= 0) {
-      // Remove fish from tank
+      // Remove this specific fish instance from tank
       activeFish.value.splice(fishIndex, 1);
       showMessage(`${fish.name} removed from tank`, 'info');
     } else {
-      // Add fish to tank
+      // Check if we've reached the maximum allowed for this fish type
+      const sameTypeCount = activeFish.value.filter(f => f.id === fish.id).length;
+      if (sameTypeCount >= fish.maxQuantity) {
+        showMessage(`Maximum number of ${fish.name} already in tank (${fish.maxQuantity})`, 'info');
+        loading.value = false;
+        return;
+      }
+      
+      // Add fish to tank with its instance index
       const startX = Math.random() * 60 + 20;
       const startY = Math.random() * 50 + 15;
       activeFish.value.push({
@@ -713,6 +727,7 @@ const toggleFish = async (fish) => {
         name: fish.name,
         img: fish.img,
         color: fish.color,
+        instanceIndex: fish.instanceIndex,
         swimX: startX,
         swimY: startY,
         targetX: Math.random() * 60 + 20,
@@ -931,6 +946,7 @@ const loadAquariumLayout = () => {
         return {
           ...fishTemplate,
           ...savedFish,
+          instanceIndex: savedFish.instanceIndex || 0,
           targetX: savedFish.targetX || Math.random() * 80 + 10,
           targetY: savedFish.targetY || Math.random() * 50 + 20
         };
