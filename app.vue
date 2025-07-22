@@ -186,15 +186,17 @@ const logout = async () => {
 onMounted(async () => {
   fetch('http://localhost:8080/data')
     .then(response => response.json())
-    .then(data => {
+    .then(async data => {
       console.log('Received data:', data);
       console.log(JSON.stringify(data))
       userStore.installed_apps = JSON.stringify(data.installedApps);
       userStore.usage_data = JSON.stringify(data.usageData);
-      
+
+      const exceeded = await checkLimitsExceeded()
+
       // Display welcome toast after data is loaded
       if (toastRef.value) {
-        toastRef.value.showToast('Welcome to Bluescreen!', 'info');
+        toastRef.value.showToast('Welcome to Bluescreen! Exceeded Limit:' + exceeded, 'info');
       }
     })
     .catch(error => {
@@ -206,7 +208,7 @@ onMounted(async () => {
     });
 })
 
-export async function checkLimitsExceeded() {
+async function checkLimitsExceeded() {
   const userStore = useUserStore();
 
   if (!userStore.userProfile) return false;
