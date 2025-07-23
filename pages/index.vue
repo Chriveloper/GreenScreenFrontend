@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-sky-600">Dashboard</h1>
       <div class="flex items-center bg-white rounded-lg shadow px-4 py-2 border-t-4 border-yellow-400">
-        <span class="text-2xl mr-2">🐚</span>
+        <span class="text-2xl mr-2">🦪</span>
         <span class="text-lg font-bold text-yellow-600">{{ playerPearls }}</span>
         <span class="text-sm text-gray-600 ml-1">Pearls</span>
       </div>
@@ -138,28 +138,9 @@
           <span class="text-2xl font-bold text-yellow-500">{{ playerPearls }}</span>
         </div>
       </div>
-      
-      <!-- Total Pearls Earned -->
-      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
-        <div class="flex justify-between">
-          <span class="text-gray-600">Pearls Earned</span>
-          <span class="text-2xl font-bold text-yellow-500">{{ totalPearlsEarned }}</span>
-        </div>
-      </div>
     </div>
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Recent Activity -->
-      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
-        <h2 class="text-lg font-semibold mb-4 text-sky-700">Recent Activity</h2>
-        <ul class="space-y-3">
-          <li v-for="activity in recentActivities" :key="activity.id" class="flex items-center space-x-2">
-            <div class="w-2 h-2 rounded-full" :class="activity.color"></div>
-            <span class="text-sm">{{ activity.text }}</span>
-          </li>
-        </ul>
-      </div>
-
       <!-- User's Fish Collection Preview -->
       <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
         <h2 class="text-lg font-semibold mb-4 text-sky-700">Fish Collection</h2>
@@ -218,8 +199,7 @@ import { useUserStore } from '~/stores/user';
 const userStore = useUserStore();
 
 // Initialize with default values
-const playerPearls = ref(0);
-const totalPearlsEarned = ref(0);
+const playerPearls = computed(() => userStore.pearls);
 const todaySessions = ref(0);
 const totalHours = ref(0);
 
@@ -316,31 +296,13 @@ const getFloorPreviewStyle = () => {
   return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
 
-const recentActivities = ref([
-  { id: 1, color: 'bg-green-500', text: 'Completed 25-min focus session' },
-  { id: 2, color: 'bg-yellow-500', text: 'Earned 25 pearls' },
-  { id: 3, color: 'bg-sky-500', text: 'Added new fish to aquarium' },
-]);
-
 onMounted(async () => {
   try {
-    // Only access user store on client after mounting
-    if (userStore.isLoggedIn && !userStore.userProfile) {
-      await userStore.loadUserProfile();
-    }
-    
-    // Update reactive refs after mounting
-    playerPearls.value = userStore.pearls;
-    totalPearlsEarned.value = userStore.pearls;
-    
     // TODO: Load actual session data from database
     todaySessions.value = 3;
     totalHours.value = 5.4;
   } catch (error) {
     console.error('Error loading user data on index page:', error);
-    // Keep default values on error
-    playerPearls.value = 0;
-    totalPearlsEarned.value = 0;
   }
 });
 </script>

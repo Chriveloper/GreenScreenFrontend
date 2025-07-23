@@ -11,6 +11,7 @@
         <h2 class="text-lg font-semibold mb-4 pb-2 border-b text-sky-700">Screen Time Goals</h2>
 
         <div class="space-y-4">
+          <!-- Daily Goal -->
           <div>
             <label for="daily-limit" class="block text-sm font-medium text-gray-700 mb-1">Daily Screen Time Limit</label>
             <div class="flex items-center">
@@ -24,56 +25,83 @@
             </div>
           </div>
 
+          <!-- App Specific Limits -->
           <div class="border-t pt-4 mt-4">
             <h3 class="text-md font-medium mb-2">App Specific Limits</h3>
 
+            <!-- Add New App Limit -->
             <div class="bg-gray-50 p-4 rounded-lg mb-4">
               <h4 class="text-sm font-medium text-gray-700 mb-3">Add New App Limit</h4>
-              <div class="flex items-end space-x-2">
-                <div class="flex-1 relative">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">App</label>
-                  <button @click="showDropdown = !showDropdown" type="button"
-                          class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white">
-                    <div class="flex items-center space-x-2">
-                      <img v-if="selectedAppObject?.icon"
-                           :src="`data:image/png;base64,${selectedAppObject.icon}`"
-                           class="w-5 h-5 rounded"/>
-                      <span>{{ selectedAppObject?.appName || 'Select an app' }}</span>
-                    </div>
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 9l-7 7-7-7"/>
-                    </svg>
-                  </button>
 
-                  <ul v-if="showDropdown"
-                      class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                    <li v-for="app in availableAppsForLimits"
+              <!-- App Selector -->
+              <div class="relative w-full mb-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">App</label>
+                <button
+                    @click="showDropdown = !showDropdown"
+                    type="button"
+                    class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  <div class="flex items-center space-x-2 truncate">
+                    <img
+                        v-if="selectedAppObject?.icon"
+                        :src="`data:image/png;base64,${selectedAppObject.icon}`"
+                        class="w-5 h-5 rounded"
+                    />
+                    <span class="truncate">{{ selectedAppObject?.appName || 'Select an app' }}</span>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <div
+                    v-if="showDropdown"
+                    class="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-xl max-h-72 overflow-auto"
+                >
+                  <input
+                      type="text"
+                      v-model="dropdownSearch"
+                      placeholder="Search apps..."
+                      class="w-full px-3 py-2 text-sm border-b border-gray-200 focus:outline-none focus:ring-0"
+                  />
+                  <ul class="divide-y divide-gray-100">
+                    <li
+                        v-for="app in filteredDropdownApps"
                         :key="app.packageName"
                         @click="selectApp(app)"
-                        class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                      <img v-if="app.icon"
-                           :src="`data:image/png;base64,${app.icon}`"
-                           class="w-5 h-5 mr-2 rounded"/>
+                        class="flex items-center px-3 py-2 hover:bg-sky-50 cursor-pointer transition"
+                    >
+                      <img
+                          v-if="app.icon"
+                          :src="`data:image/png;base64,${app.icon}`"
+                          class="w-5 h-5 mr-2 rounded"
+                      />
                       <span class="truncate">{{ app.appName }}</span>
+                    </li>
+                    <li v-if="filteredDropdownApps.length === 0" class="px-3 py-2 text-sm text-gray-500">
+                      No matching apps
                     </li>
                   </ul>
                 </div>
+              </div>
 
+              <!-- Input + Add Button Row -->
+              <div class="flex items-end space-x-2">
                 <div>
                   <label for="app-limit" class="block text-sm font-medium text-gray-700 mb-1">Limit (minutes)</label>
                   <input type="number" id="app-limit" v-model="newAppLimit" min="1" max="1440"
-                         class="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+                         class="w-28 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
                          placeholder="30">
                 </div>
 
                 <button @click="addAppLimit" :disabled="!selectedApp || !newAppLimit || saving"
-                        class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm h-10 transition">
+                        class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm transition">
                   {{ saving ? 'Adding...' : 'Add' }}
                 </button>
               </div>
             </div>
 
+            <!-- Current App Limits -->
             <div v-if="Object.keys(appLimits).length > 0" class="space-y-2">
               <h4 class="text-sm font-medium text-gray-700 mb-2">Current App Limits</h4>
               <div v-for="(limit, packageName) in appLimits"
@@ -124,16 +152,26 @@ const newAppLimit = ref('')
 const availableApps = ref([])
 const saving = ref(false)
 const showDropdown = ref(false)
+const dropdownSearch = ref('')
 const message = ref('')
 const messageType = ref('success')
 
 const appLimits = computed(() => userStore.appLimits)
+
 const availableAppsForLimits = computed(() =>
     availableApps.value.filter(app => app && app.packageName && !appLimits.value[app.packageName])
 )
+
+const filteredDropdownApps = computed(() =>
+    availableAppsForLimits.value.filter(app =>
+        app.appName.toLowerCase().includes(dropdownSearch.value.toLowerCase())
+    )
+)
+
 const selectedAppObject = computed(() =>
     availableApps.value.find(app => app.packageName === selectedApp.value) || null
 )
+
 const messageClass = computed(() =>
     messageType.value === 'success'
         ? 'bg-green-100 text-green-700 border border-green-200'
@@ -171,7 +209,7 @@ const loadSettings = () => {
 const saveDailyGoal = async () => {
   saving.value = true
   try {
-    const goals = {dailyLimit: Math.round(dailyLimitMinutes.value)}
+    const goals = { dailyLimit: Math.round(dailyLimitMinutes.value) }
     const success = await userStore.updateScreenTimeGoals(goals)
     if (success) showMessage(`Daily limit updated to ${dailyLimitMinutes.value} minutes`)
     else showMessage('Failed to save daily limit', 'error')
@@ -183,6 +221,7 @@ const saveDailyGoal = async () => {
 const selectApp = (app) => {
   selectedApp.value = app.packageName
   showDropdown.value = false
+  dropdownSearch.value = ''
 }
 
 const addAppLimit = async () => {
@@ -195,7 +234,7 @@ const addAppLimit = async () => {
 
   saving.value = true
   try {
-    const updatedLimits = {...appLimits.value, [selectedApp.value]: limitValue}
+    const updatedLimits = { ...appLimits.value, [selectedApp.value]: limitValue }
     const success = await userStore.updateAppLimits(updatedLimits)
     if (success) {
       showMessage(`Added ${limitValue} min limit for ${formatAppName(selectedApp.value)}`)
@@ -212,7 +251,7 @@ const addAppLimit = async () => {
 const removeAppLimit = async (packageName) => {
   saving.value = true
   try {
-    const updatedLimits = {...appLimits.value}
+    const updatedLimits = { ...appLimits.value }
     delete updatedLimits[packageName]
     const success = await userStore.updateAppLimits(updatedLimits)
     if (success) showMessage(`Removed limit for ${formatAppName(packageName)}`)

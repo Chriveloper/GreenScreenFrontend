@@ -6,7 +6,7 @@
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-lg font-semibold text-sky-700">Focus Timer</h2>
           <div class="flex items-center bg-white rounded-lg shadow px-4 py-2 border-t-4 border-yellow-400">
-            <span class="text-2xl mr-2">🐚</span>
+            <span class="text-2xl mr-2">🦪</span>
             <span class="text-lg font-bold text-yellow-600">{{ playerPearls }}</span>
             <span class="text-sm text-gray-600 ml-1">Pearls</span>
           </div>
@@ -220,7 +220,7 @@
         <h3 class="text-2xl font-bold mb-4 text-sky-600">Session Complete!</h3>
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div class="flex items-center justify-center mb-2">
-            <span class="text-3xl mr-2">🐚</span>
+            <span class="text-3xl mr-2">🦪</span>
             <span class="text-2xl font-bold text-yellow-600">+{{ lastPearlReward }}</span>
           </div>
           <p class="text-sm text-yellow-700">Pearls earned for your focus!</p>

@@ -149,6 +149,20 @@
     <ToastNotification ref="toastRef" />
     <LinearProgress ref="progressRef" />
     <ConfirmDialog ref="dialogRef" />
+    <!-- Daily Reward Modal -->
+    <div v-if="showDailyRewardModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
+        <div class="text-5xl mb-4">🎁</div>
+        <h3 class="text-2xl font-bold mb-4 text-sky-600">Claim Daily Reward</h3>
+        <p class="text-sm text-gray-600 mb-6">You're eligible to collect your daily reward!</p>
+        <button
+            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium"
+            @click="claimDailyReward"
+        >
+          Claim Reward
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -164,6 +178,8 @@ const userStore = useUserStore()
 
 // State for mobile menu
 const mobileMenuOpen = ref(false)
+
+const showDailyRewardModal = ref(false);
 
 // Get current route
 const route = useRoute()
@@ -187,7 +203,6 @@ const shouldShowNavigation = computed(() => {
 
 // Logout function
 const logout = async () => {
-
   $supabase.auth.signOut()
   await userStore.clearUserData()
   navigateTo('/login')
@@ -195,10 +210,15 @@ const logout = async () => {
 }
 
 onMounted(async () => {
+
   const isLoggedIn = !!(await useNuxtApp().$supabase.auth.getUser()).data.user;
   if (!isLoggedIn) {
     await logout();
     return;
+  }
+
+  if (userStore.isLoggedIn && !userStore.userProfile) {
+    await userStore.loadUserProfile();
   }
 
   fetch('http://localhost:8080/data')
@@ -213,7 +233,7 @@ onMounted(async () => {
       
       userStore.installed_apps = JSON.stringify(data.installedApps);
       userStore.usage_data = JSON.stringify(data.usageData);
-      
+
       // Store additional metadata
       userStore.screen_time_metadata = JSON.stringify({
         totalScreenTime: data.totalScreenTime,
@@ -227,13 +247,17 @@ onMounted(async () => {
 
       // Enhanced welcome message with screen time info
       if (toastRef.value) {
-        const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
+        //const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
         toastRef.value.showToast(
           `Welcome! ${data.dayLabel}: ${screenTimeHours}h screen time, ${data.totalAppsUsed} apps used. Limit exceeded: ${exceeded}`, 
           'info'
         );
 
         if (await claimedRewardToday()) return;
+
+        if (!await checkLimitsExceeded()) {
+          showDailyRewardModal.value = true;
+        }
 
         if (!await checkLimitsExceeded()) {
           await userStore.collectDailyReward();
@@ -248,6 +272,13 @@ onMounted(async () => {
       }
     });
 })
+
+const claimDailyReward = async () => {
+  await userStore.collectDailyReward();
+  await userStore.loadUserProfile(); // Refresh pearls
+  toastRef.value?.showToast('Daily reward claimed!', 'success');
+  showDailyRewardModal.value = false;
+};
 
 async function claimedRewardToday(){
   const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
@@ -265,23 +296,7 @@ async function claimedRewardToday(){
 async function checkLimitsExceeded() {
   if (!userStore.userProfile) return false;
 
-  const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
-
-  if (lastRewardDate >= yesterday) {
-    return false;
-  }
-
-  // Fetch usage data from backend with enhanced structure
-  const response = await fetch('http://localhost:8080/data');
-  const data = await response.json();
-
-  userStore.installed_apps = JSON.stringify(data.installedApps);
-  userStore.usage_data = JSON.stringify(data.usageData);
-
-  const dailyLimitHours = userStore.userProfile.screen_time_goals?.dailyLimit || 8;
+  const dailyLimitMinutes = userStore.userProfile.screen_time_goals?.dailyLimit || 0;
   const appLimits = userStore.userProfile.app_limits || {};
 
   let totalUsageSeconds = 0;

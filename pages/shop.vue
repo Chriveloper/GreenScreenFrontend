@@ -9,9 +9,7 @@
         </div>
         <div class="text-right">
           <div class="flex items-center text-yellow-500 mb-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <span class="mr-1 text-2xl">🦪</span>
             <span class="text-2xl font-bold">{{ playerPearls }}</span>
           </div>
           <span class="text-sm text-gray-500">Available Pearls</span>
@@ -23,30 +21,23 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Fish Section -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-sky-700 mb-4 flex items-center">
-          🐠 Fish
-        </h2>
+        <h2 class="text-lg font-semibold text-sky-700 mb-4 flex items-center">🐠 Fish</h2>
         <div class="space-y-4">
-          <div
-v-for="fish in availableFish" :key="fish.id" 
-               class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
+          <div v-for="fish in availableFish" :key="fish.id" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
             <div class="flex items-center">
-              <img :src="fish.img" :alt="fish.name" class="w-12 h-12 pixelated mr-3">
+              <img :src="fish.img" :alt="fish.name" class="w-12 h-12 pixelated mr-3" />
               <div>
                 <p class="font-medium">{{ fish.name }}</p>
                 <div class="flex items-center text-yellow-500 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {{ fish.price }}
+                  <span class="mr-1">🦪</span>{{ fish.price }}
                 </div>
                 <div class="text-gray-500 text-xs mt-1">Owned: {{ getItemCount(fish, 'fish') }}/3</div>
               </div>
             </div>
-            <button 
-              :disabled="purchasing || playerPearls < fish.price || getItemCount(fish, 'fish') >= 3"
-              class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
-              @click="purchaseItem(fish, 'fish')"
+            <button
+                :disabled="purchasing || playerPearls < fish.price || getItemCount(fish, 'fish') >= 3"
+                class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
+                @click="purchaseItem(fish, 'fish')"
             >
               {{ purchasing ? 'Buying...' : (getItemCount(fish, 'fish') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
@@ -56,30 +47,23 @@ v-for="fish in availableFish" :key="fish.id"
 
       <!-- Plants Section -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-green-700 mb-4 flex items-center">
-          🌿 Plants
-        </h2>
+        <h2 class="text-lg font-semibold text-green-700 mb-4 flex items-center">🌿 Plants</h2>
         <div class="space-y-4">
-          <div
-v-for="plant in availablePlants" :key="plant.id" 
-               class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
+          <div v-for="plant in availablePlants" :key="plant.id" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
             <div class="flex items-center">
-              <img :src="plant.img" :alt="plant.name" class="w-12 h-12 pixelated mr-3">
+              <img :src="plant.img" :alt="plant.name" class="w-12 h-12 pixelated mr-3" />
               <div>
                 <p class="font-medium">{{ plant.name }}</p>
                 <div class="flex items-center text-yellow-500 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {{ plant.price }}
+                  <span class="mr-1">🦪</span>{{ plant.price }}
                 </div>
                 <div class="text-gray-500 text-xs mt-1">Owned: {{ getItemCount(plant, 'plant') }}/3</div>
               </div>
             </div>
-            <button 
-              :disabled="purchasing || playerPearls < plant.price || getItemCount(plant, 'plant') >= 3"
-              class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
-              @click="purchaseItem(plant, 'plant')"
+            <button
+                :disabled="purchasing || playerPearls < plant.price || getItemCount(plant, 'plant') >= 3"
+                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
+                @click="purchaseItem(plant, 'plant')"
             >
               {{ purchasing ? 'Buying...' : (getItemCount(plant, 'plant') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
@@ -89,30 +73,23 @@ v-for="plant in availablePlants" :key="plant.id"
 
       <!-- Decorations Section -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-purple-700 mb-4 flex items-center">
-          🎨 Decorations
-        </h2>
+        <h2 class="text-lg font-semibold text-purple-700 mb-4 flex items-center">🎨 Decorations</h2>
         <div class="space-y-4">
-          <div
-v-for="decoration in availableDecorations" :key="decoration.id" 
-               class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
+          <div v-for="decoration in availableDecorations" :key="decoration.id" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
             <div class="flex items-center">
-              <img :src="decoration.img" :alt="decoration.name" class="w-12 h-12 pixelated mr-3">
+              <img :src="decoration.img" :alt="decoration.name" class="w-12 h-12 pixelated mr-3" />
               <div>
                 <p class="font-medium">{{ decoration.name }}</p>
                 <div class="flex items-center text-yellow-500 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {{ decoration.price }}
+                  <span class="mr-1">🦪</span>{{ decoration.price }}
                 </div>
                 <div class="text-gray-500 text-xs mt-1">Owned: {{ getItemCount(decoration, 'decoration') }}/3</div>
               </div>
             </div>
-            <button 
-              :disabled="purchasing || playerPearls < decoration.price || getItemCount(decoration, 'decoration') >= 3"
-              class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
-              @click="purchaseItem(decoration, 'decoration')"
+            <button
+                :disabled="purchasing || playerPearls < decoration.price || getItemCount(decoration, 'decoration') >= 3"
+                class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
+                @click="purchaseItem(decoration, 'decoration')"
             >
               {{ purchasing ? 'Buying...' : (getItemCount(decoration, 'decoration') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
@@ -145,6 +122,7 @@ v-for="decoration in availableDecorations" :key="decoration.id"
     </div>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';

@@ -1,243 +1,163 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <!-- Add debug info at the top of the page (remove in production) -->
-    <div v-if="debug.enabled" class="bg-yellow-100 p-4 mb-4 rounded">
-      <h3 class="font-bold">Debug Info:</h3>
-      <pre class="text-xs mt-2 bg-yellow-50 p-2 rounded max-h-40 overflow-auto">{{ debug.log }}</pre>
-      <button class="text-xs text-gray-600 mt-2" @click="debug.log = ''">Clear</button>
-    </div>
+  <div class="min-h-screen w-full flex flex-col overflow-x-hidden bg-gray-50">
+    <main class="flex-1 overflow-y-auto px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] py-4 sm:px-4">
+      <div class="w-full max-w-screen-sm mx-auto px-4">
 
-    <!-- Header with Pearl Count -->
-    <div class="bg-white rounded-lg shadow p-6 mb-8 border-t-4 border-sky-400">
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Friends</h1>
-          <p class="text-gray-600 mt-1">Connect with friends and view their aquariums</p>
+        <!-- Debug Info -->
+        <div v-if="debug.enabled" class="bg-yellow-100 p-3 mb-4 rounded">
+          <h3 class="font-bold text-sm">Debug Info:</h3>
+          <pre class="text-xs mt-2 bg-yellow-50 p-2 rounded h-32 overflow-y-auto whitespace-pre-wrap break-words">{{ debug.log }}</pre>
+          <button class="text-xs text-gray-600 mt-2" @click="debug.log = ''">Clear</button>
         </div>
-        <div class="text-right">
-          <div class="flex items-center text-yellow-500 mb-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="font-bold">{{ playerPearls }}</span>
+
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6 border-t-4 border-sky-400">
+          <h1 class="text-xl font-bold text-gray-900">Friends</h1>
+          <p class="text-gray-600 mt-1 text-sm">Connect with friends and view their aquarium!</p>
+        </div>
+
+        <!-- Search -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <h2 class="text-base font-semibold text-gray-900 mb-3">Find Friends</h2>
+          <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+            <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search by username..."
+                class="flex-1 px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 text-sm"
+                :disabled="searching"
+                @input="handleSearch"
+            />
+            <button
+                :disabled="searching || !searchQuery.trim()"
+                class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm font-medium w-full sm:w-auto"
+                @click="searchUsers"
+            >
+              {{ searching ? 'Searching...' : 'Search' }}
+            </button>
           </div>
-          <span class="text-xs text-gray-500">Your Pearls</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- Search Users -->
-    <div class="bg-white rounded-lg shadow p-6 mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Find Friends</h2>
-      
-      <div class="flex space-x-4">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by username or display name..."
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-          :disabled="searching"
-          @input="handleSearch"
-        />
-        <button
-          :disabled="searching || !searchQuery.trim()"
-          class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-md font-medium transition"
-          @click="searchUsers"
-        >
-          {{ searching ? 'Searching...' : 'Search' }}
-        </button>
-      </div>
-
-      <!-- Search Results -->
-      <div v-if="searchQuery.length >= 2" class="mt-4">
-        <div v-if="searching" class="flex justify-center py-4">
-          <div class="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-        <div v-else-if="searchResults.length > 0" class="space-y-3">
-          <div
-v-for="user in searchResults" :key="user.id"
-               class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition">
-            <div>
-              <p class="font-medium">{{ user.display_name || user.username }}</p>
-              <p class="text-sm text-gray-500">@{{ user.username }}</p>
+          <!-- Results -->
+          <div v-if="searchQuery.length >= 2" class="mt-4">
+            <div v-if="searching" class="flex justify-center py-4">
+              <div class="w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <button
-              v-if="!friendIds.includes(user.id) && !sentRequestIds.includes(user.id)"
-              :disabled="sendingRequest"
-              class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition"
-              @click="sendRequest(user.id)"
-            >
-              {{ sendingRequest ? 'Sending...' : 'Send Request' }}
-            </button>
-            <span v-else-if="sentRequestIds.includes(user.id)" class="text-yellow-600 text-sm font-medium">
-              Request Sent
-            </span>
-            <span v-else class="text-green-600 text-sm font-medium">
-              ✓ Friends
-            </span>
-          </div>
-        </div>
-        <div v-else-if="searchQuery.length >= 2" class="text-center text-gray-500 py-4">
-          No users found matching "{{ searchQuery }}"
-        </div>
-      </div>
-    </div>
-
-    <!-- Incoming Friend Requests -->
-    <div v-if="incomingRequests.length > 0" class="bg-white rounded-lg shadow p-6 mb-8">
-      <h3 class="text-md font-semibold text-gray-900 mb-4">Friend Requests</h3>
-      <div class="space-y-3">
-        <div
-          v-for="request in incomingRequests"
-          :key="request.friendship_id"
-          class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition"
-        >
-          <div>
-            <h3 class="font-medium">{{ request.display_name || request.username }}</h3>
-            <p class="text-sm text-gray-600">@{{ request.username }}</p>
-          </div>
-          <div class="flex space-x-2">
-            <button
-              :disabled="processingRequest"
-              class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
-              @click="respondToRequest(request.friendship_id, 'accepted')"
-            >
-              {{ processingRequest ? 'Processing...' : 'Accept' }}
-            </button>
-            <button
-              :disabled="processingRequest"
-              class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
-              @click="respondToRequest(request.friendship_id, 'declined')"
-            >
-              {{ processingRequest ? 'Processing...' : 'Decline' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Friends List -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Friends ({{ friendsList.length }})</h2>
-      <div v-if="friendsList.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-          v-for="friend in friendsList"
-          :key="friend.id"
-          class="p-4 border rounded-lg hover:bg-gray-50 transition"
-        >
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h3 class="font-medium">{{ friend.display_name || friend.username }}</h3>
-              <p class="text-sm text-gray-600">@{{ friend.username }}</p>
+            <div v-else-if="searchResults.length" class="space-y-3">
+              <div
+                  v-for="user in searchResults"
+                  :key="user.id"
+                  class="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
+              >
+                <div>
+                  <p class="font-medium text-sm">{{ user.display_name || user.username }}</p>
+                  <p class="text-xs text-gray-500">@{{ user.username }}</p>
+                </div>
+                <button
+                    v-if="!friendIds.includes(user.id) && !sentRequestIds.includes(user.id)"
+                    :disabled="sendingRequest"
+                    class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-1.5 rounded text-xs font-medium"
+                    @click="sendRequest(user.id)"
+                >
+                  {{ sendingRequest ? 'Sending...' : 'Send Request' }}
+                </button>
+                <span v-else-if="sentRequestIds.includes(user.id)" class="text-yellow-600 text-xs font-medium">Request Sent</span>
+                <span v-else class="text-green-600 text-xs font-medium">✓ Friends</span>
+              </div>
             </div>
-            <div v-if="friend.pearls !== null" class="flex items-center text-yellow-500 text-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {{ friend.pearls }}
+            <div v-else class="text-center text-gray-500 py-4 text-sm">
+              No users found matching "{{ searchQuery }}"
             </div>
           </div>
-          
-          <div class="flex space-x-2">
-            <button
-              :disabled="loadingFriendAquarium || !friend.aquarium_layout"
-              class="flex-1 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition"
-              @click="viewFriendAquarium(friend)"
-            >
-              {{ loadingFriendAquarium ? 'Loading...' : 'View Aquarium' }}
-            </button>
-            <button
-              :disabled="processingRequest"
-              class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
-              @click="removeFriend(friend.id)"
-            >
-              Remove
-            </button>
-          </div>
         </div>
-      </div>
-      <div v-else class="text-center text-gray-500 py-8">
-        <p class="text-lg mb-2">No friends yet!</p>
-        <p class="text-sm">Search for users above to add friends!</p>
-      </div>
-    </div>
 
-    <!-- Friend Aquarium Modal -->
-    <div v-if="selectedFriend" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl p-6 m-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">{{ selectedFriend.display_name || selectedFriend.username }}'s Aquarium</h2>
-          <button
-            class="text-gray-500 hover:text-gray-700"
-            @click="selectedFriend = null"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Friend's Aquarium Display -->
-        <div v-if="loadingFriendAquarium" class="h-64 flex items-center justify-center">
-          <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-        <div v-else-if="!selectedFriend.aquarium_layout" class="h-64 flex items-center justify-center bg-gray-100 rounded-lg">
-          <div class="text-center">
-            <p class="text-lg text-gray-500">This aquarium is private or empty</p>
-          </div>
-        </div>
-        <div v-else class="aspect-video bg-gradient-to-b from-sky-200 to-sky-400 rounded-lg relative overflow-hidden">
-          <!-- This would be similar to your aquarium display but read-only -->
-          <div class="w-full h-full relative">
-            <!-- Background -->
-            <div class="absolute inset-0 pixelated" :style="getFriendBackgroundStyle()"></div>
-            
-            <!-- Floor -->
-            <div class="absolute bottom-0 left-0 right-0 h-20 pixelated" :style="getFriendFloorStyle()"></div>
-            
-            <!-- Plants -->
+        <!-- Friend Requests -->
+        <div v-if="incomingRequests.length" class="bg-white rounded-lg shadow p-4 mb-6">
+          <h3 class="text-sm font-semibold text-gray-900 mb-3">Friend Requests</h3>
+          <div class="space-y-3">
             <div
-              v-for="plant in friendAquariumPlants"
-              :key="plant.id"
-              class="absolute"
-              :style="getPlantStyle(plant)"
+                v-for="request in incomingRequests"
+                :key="request.friendship_id"
+                class="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
             >
-              <img 
-                :src="plant.img" 
-                :alt="plant.name"
-                class="w-16 h-20 object-contain pixelated"
-              />
-            </div>
-            
-            <!-- Fish -->
-            <div
-              v-for="fish in friendAquariumFish"
-              :key="fish.id"
-              class="absolute transition-all duration-1000 ease-in-out"
-              :style="getFishStyle(fish)"
-            >
-              <img 
-                :src="fish.img" 
-                :alt="fish.name"
-                class="w-12 h-10 object-contain pixelated"
-              />
+              <div>
+                <h3 class="font-medium text-sm">{{ request.display_name || request.username }}</h3>
+                <p class="text-xs text-gray-600">@{{ request.username }}</p>
+              </div>
+              <div class="flex space-x-2">
+                <button
+                    :disabled="processingRequest"
+                    class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-1.5 rounded text-xs font-medium"
+                    @click="respondToRequest(request.friendship_id, 'accepted')"
+                >
+                  {{ processingRequest ? '...' : 'Accept' }}
+                </button>
+                <button
+                    :disabled="processingRequest"
+                    class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-1.5 rounded text-xs font-medium"
+                    @click="respondToRequest(request.friendship_id, 'declined')"
+                >
+                  {{ processingRequest ? '...' : 'Decline' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Success/Error Messages -->
-    <div v-if="message" class="fixed bottom-4 right-4 z-50">
-      <div
-class="p-4 rounded-md shadow-lg max-w-sm" :class="{
-        'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
-        'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
-        'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'
-      }">
-        {{ message }}
+        <!-- Friends List -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <h2 class="text-base font-semibold text-gray-900 mb-3">Your Friends ({{ friendsList.length }})</h2>
+          <div v-if="friendsList.length" class="space-y-3">
+            <div
+                v-for="friend in friendsList"
+                :key="friend.id"
+                class="p-3 border rounded hover:bg-gray-50"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <div>
+                  <h3 class="font-medium text-sm">{{ friend.display_name || friend.username }}</h3>
+                  <p class="text-xs text-gray-600">@{{ friend.username }}</p>
+                </div>
+                <div v-if="friend.pearls !== null" class="flex items-center text-yellow-500 text-xs">
+                  🦪 {{ friend.pearls }}
+                </div>
+              </div>
+              <div class="flex space-x-2">
+                <button
+                    :disabled="loadingFriendAquarium || !friend.aquarium_layout"
+                    class="flex-1 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-1.5 rounded text-xs font-medium"
+                    @click="viewFriendAquarium(friend)"
+                >
+                  {{ loadingFriendAquarium ? 'Loading...' : 'View Aquarium' }}
+                </button>
+                <button
+                    :disabled="processingRequest"
+                    class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-1.5 rounded text-xs font-medium"
+                    @click="removeFriend(friend.id)"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center text-gray-500 py-6 text-sm">
+            <p>No friends yet!</p>
+            <p>Search above to add some.</p>
+          </div>
+        </div>
+
+        <!-- Toast -->
+        <div v-if="message" class="fixed bottom-4 right-4 z-50 max-w-[90vw]">
+          <div class="p-3 rounded shadow-lg text-sm font-medium"
+               :class="{
+                 'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
+                 'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
+                 'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'
+               }">
+            {{ message }}
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -524,10 +444,5 @@ onMounted(async () => {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
-}
-
-.spinner {
-  border-color: #3b82f6;
-  border-top-color: transparent;
 }
 </style>
