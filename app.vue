@@ -281,7 +281,6 @@ async function checkLimitsExceeded() {
   userStore.installed_apps = JSON.stringify(data.installedApps);
   userStore.usage_data = JSON.stringify(data.usageData);
 
-  const usageData = data.usageData;
   const dailyLimitHours = userStore.userProfile.screen_time_goals?.dailyLimit || 8;
   const appLimits = userStore.userProfile.app_limits || {};
 
