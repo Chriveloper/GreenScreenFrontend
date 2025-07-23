@@ -702,7 +702,7 @@ export const useUserStore = defineStore('user', {
         }
         
         // Prepare the update
-        let updateData: any = {
+        const updateData: any = {
           pearls: this.userProfile.pearls - price,
           updated_at: new Date().toISOString()
         };

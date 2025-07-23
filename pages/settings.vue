@@ -17,9 +17,9 @@
             <label for="daily-limit" class="block text-sm font-medium text-gray-700 mb-1">Daily Screen Time Limit (hours)</label>
             <div class="flex items-center">
               <input 
-                type="number" 
                 id="daily-limit" 
-                v-model="dailyLimitHours"
+                v-model="dailyLimitHours" 
+                type="number"
                 min="0.5" 
                 max="24" 
                 step="0.5"
@@ -27,9 +27,9 @@
               >
               <span class="ml-2 text-gray-600">hours</span>
               <button 
-                @click="saveDailyGoal" 
-                :disabled="saving"
+                :disabled="saving" 
                 class="ml-4 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-sm transition"
+                @click="saveDailyGoal"
               >
                 {{ saving ? 'Saving...' : 'Save' }}
               </button>
@@ -77,9 +77,9 @@
                 <div>
                   <label for="app-limit" class="block text-sm font-medium text-gray-700 mb-1">Limit (minutes)</label>
                   <input 
-                    type="number" 
                     id="app-limit" 
-                    v-model="newAppLimit"
+                    v-model="newAppLimit" 
+                    type="number"
                     min="1" 
                     max="1440"
                     class="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
@@ -87,9 +87,9 @@
                   >
                 </div>
                 <button 
-                  @click="addAppLimit" 
-                  :disabled="!selectedApp || !newAppLimit || saving"
+                  :disabled="!selectedApp || !newAppLimit || saving" 
                   class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm h-10 transition"
+                  @click="addAppLimit"
                 >
                   {{ saving ? 'Adding...' : 'Add' }}
                 </button>
@@ -114,10 +114,10 @@
                   </div>
                 </div>
                 <button 
-                  @click="removeAppLimit(packageName)" 
-                  :disabled="saving"
+                  :disabled="saving" 
                   class="text-red-500 hover:text-red-700 disabled:text-gray-400 p-1 transition"
                   title="Remove limit"
+                  @click="removeAppLimit(packageName)"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -151,8 +151,8 @@
           Changes are saved automatically when you click Save buttons above.
         </div>
         <button 
-          @click="resetAllLimits" 
-          class="text-red-600 hover:text-red-700 text-sm font-medium transition"
+          class="text-red-600 hover:text-red-700 text-sm font-medium transition" 
+          @click="resetAllLimits"
         >
           Reset All Limits
         </button>

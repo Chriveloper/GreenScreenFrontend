@@ -7,8 +7,8 @@
           <div>
             <label class="block text-sm font-medium mb-1" for="email">Email</label>
             <input
-                v-model="email"
                 id="email"
+                v-model="email"
                 name="email"
                 type="email"
                 autocomplete="email"

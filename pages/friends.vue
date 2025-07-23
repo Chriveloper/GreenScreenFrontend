@@ -4,7 +4,7 @@
     <div v-if="debug.enabled" class="bg-yellow-100 p-4 mb-4 rounded">
       <h3 class="font-bold">Debug Info:</h3>
       <pre class="text-xs mt-2 bg-yellow-50 p-2 rounded max-h-40 overflow-auto">{{ debug.log }}</pre>
-      <button @click="debug.log = ''" class="text-xs text-gray-600 mt-2">Clear</button>
+      <button class="text-xs text-gray-600 mt-2" @click="debug.log = ''">Clear</button>
     </div>
 
     <!-- Header with Pearl Count -->
@@ -33,16 +33,16 @@
       <div class="flex space-x-4">
         <input
           v-model="searchQuery"
-          @input="handleSearch"
           type="text"
           placeholder="Search by username or display name..."
           class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
           :disabled="searching"
+          @input="handleSearch"
         />
         <button
-          @click="searchUsers"
           :disabled="searching || !searchQuery.trim()"
           class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-md font-medium transition"
+          @click="searchUsers"
         >
           {{ searching ? 'Searching...' : 'Search' }}
         </button>
@@ -54,7 +54,8 @@
           <div class="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
         <div v-else-if="searchResults.length > 0" class="space-y-3">
-          <div v-for="user in searchResults" :key="user.id"
+          <div
+v-for="user in searchResults" :key="user.id"
                class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition">
             <div>
               <p class="font-medium">{{ user.display_name || user.username }}</p>
@@ -62,9 +63,9 @@
             </div>
             <button
               v-if="!friendIds.includes(user.id) && !sentRequestIds.includes(user.id)"
-              @click="sendRequest(user.id)"
               :disabled="sendingRequest"
               class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+              @click="sendRequest(user.id)"
             >
               {{ sendingRequest ? 'Sending...' : 'Send Request' }}
             </button>
@@ -97,16 +98,16 @@
           </div>
           <div class="flex space-x-2">
             <button
-              @click="respondToRequest(request.friendship_id, 'accepted')"
               :disabled="processingRequest"
               class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
+              @click="respondToRequest(request.friendship_id, 'accepted')"
             >
               {{ processingRequest ? 'Processing...' : 'Accept' }}
             </button>
             <button
-              @click="respondToRequest(request.friendship_id, 'declined')"
               :disabled="processingRequest"
               class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
+              @click="respondToRequest(request.friendship_id, 'declined')"
             >
               {{ processingRequest ? 'Processing...' : 'Decline' }}
             </button>
@@ -139,16 +140,16 @@
           
           <div class="flex space-x-2">
             <button
-              @click="viewFriendAquarium(friend)"
               :disabled="loadingFriendAquarium || !friend.aquarium_layout"
               class="flex-1 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+              @click="viewFriendAquarium(friend)"
             >
               {{ loadingFriendAquarium ? 'Loading...' : 'View Aquarium' }}
             </button>
             <button
-              @click="removeFriend(friend.id)"
               :disabled="processingRequest"
               class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition"
+              @click="removeFriend(friend.id)"
             >
               Remove
             </button>
@@ -167,8 +168,8 @@
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ selectedFriend.display_name || selectedFriend.username }}'s Aquarium</h2>
           <button
-            @click="selectedFriend = null"
             class="text-gray-500 hover:text-gray-700"
+            @click="selectedFriend = null"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -228,7 +229,8 @@
 
     <!-- Success/Error Messages -->
     <div v-if="message" class="fixed bottom-4 right-4 z-50">
-      <div class="p-4 rounded-md shadow-lg max-w-sm" :class="{
+      <div
+class="p-4 rounded-md shadow-lg max-w-sm" :class="{
         'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
         'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
         'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'

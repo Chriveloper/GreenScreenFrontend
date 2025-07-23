@@ -27,7 +27,8 @@
           🐠 Fish
         </h2>
         <div class="space-y-4">
-          <div v-for="fish in availableFish" :key="fish.id" 
+          <div
+v-for="fish in availableFish" :key="fish.id" 
                class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
             <div class="flex items-center">
               <img :src="fish.img" :alt="fish.name" class="w-12 h-12 pixelated mr-3">
@@ -43,9 +44,9 @@
               </div>
             </div>
             <button 
-              @click="purchaseItem(fish, 'fish')"
               :disabled="purchasing || playerPearls < fish.price || getItemCount(fish, 'fish') >= 3"
               class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
+              @click="purchaseItem(fish, 'fish')"
             >
               {{ purchasing ? 'Buying...' : (getItemCount(fish, 'fish') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
@@ -59,7 +60,8 @@
           🌿 Plants
         </h2>
         <div class="space-y-4">
-          <div v-for="plant in availablePlants" :key="plant.id" 
+          <div
+v-for="plant in availablePlants" :key="plant.id" 
                class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
             <div class="flex items-center">
               <img :src="plant.img" :alt="plant.name" class="w-12 h-12 pixelated mr-3">
@@ -75,9 +77,9 @@
               </div>
             </div>
             <button 
-              @click="purchaseItem(plant, 'plant')"
               :disabled="purchasing || playerPearls < plant.price || getItemCount(plant, 'plant') >= 3"
               class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
+              @click="purchaseItem(plant, 'plant')"
             >
               {{ purchasing ? 'Buying...' : (getItemCount(plant, 'plant') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
@@ -91,7 +93,8 @@
           🎨 Decorations
         </h2>
         <div class="space-y-4">
-          <div v-for="decoration in availableDecorations" :key="decoration.id" 
+          <div
+v-for="decoration in availableDecorations" :key="decoration.id" 
                class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition">
             <div class="flex items-center">
               <img :src="decoration.img" :alt="decoration.name" class="w-12 h-12 pixelated mr-3">
@@ -107,9 +110,9 @@
               </div>
             </div>
             <button 
-              @click="purchaseItem(decoration, 'decoration')"
               :disabled="purchasing || playerPearls < decoration.price || getItemCount(decoration, 'decoration') >= 3"
               class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-3 py-2 rounded text-sm font-medium transition"
+              @click="purchaseItem(decoration, 'decoration')"
             >
               {{ purchasing ? 'Buying...' : (getItemCount(decoration, 'decoration') >= 3 ? 'Max Owned' : 'Buy') }}
             </button>
@@ -131,10 +134,10 @@
           <p class="text-gray-600 mt-2">{{ lastPurchaseItem.name }} has been added to your collection.</p>
         </div>
         <div class="flex space-x-3">
-          <button @click="closePurchaseModal" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium">
+          <button class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium" @click="closePurchaseModal">
             Continue Shopping
           </button>
-          <NuxtLink to="/aquarium" @click="closePurchaseModal" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md font-medium text-center">
+          <NuxtLink to="/aquarium" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md font-medium text-center" @click="closePurchaseModal">
             Go to Aquarium
           </NuxtLink>
         </div>

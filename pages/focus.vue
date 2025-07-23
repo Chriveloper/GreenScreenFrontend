@@ -43,26 +43,26 @@
         <!-- Timer Controls -->
         <div class="flex justify-center space-x-3 mb-6">
           <button 
-            @click="setFocusTime(15)"
             :class="{'bg-sky-600 text-white': focusMinutes === 15 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 15 || isRunning}"
             class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
             :disabled="isRunning"
+            @click="setFocusTime(15)"
           >
             15 min
           </button>
           <button 
-            @click="setFocusTime(25)"
             :class="{'bg-sky-600 text-white': focusMinutes === 25 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 25 || isRunning}"
             class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
             :disabled="isRunning"
+            @click="setFocusTime(25)"
           >
             25 min
           </button>
           <button 
-            @click="setFocusTime(45)"
             :class="{'bg-sky-600 text-white': focusMinutes === 45 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 45 || isRunning}"
             class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
             :disabled="isRunning"
+            @click="setFocusTime(45)"
           >
             45 min
           </button>
@@ -72,9 +72,9 @@
         <div class="mb-6">
           <label for="session-goal" class="block text-sm font-medium text-gray-700 mb-2">Session Goal (optional)</label>
           <input 
-            type="text" 
             id="session-goal" 
-            v-model="sessionGoal"
+            v-model="sessionGoal" 
+            type="text"
             placeholder="What will you focus on?"
             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
             :disabled="isRunning"
@@ -85,22 +85,22 @@
         <div class="flex space-x-3">
           <button 
             v-if="!isRunning"
-            @click="startTimer"
             class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-md font-medium text-sm transition"
+            @click="startTimer"
           >
             Start Focus
           </button>
           <button 
             v-else
-            @click="pauseTimer"
             class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md font-medium text-sm transition"
+            @click="pauseTimer"
           >
             Pause
           </button>
           <button 
-            @click="resetTimer"
             class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-md font-medium text-sm transition"
             :disabled="!isRunning && timeLeft === focusMinutes * 60"
+            @click="resetTimer"
           >
             Reset
           </button>
@@ -203,10 +203,10 @@
           </div>
         </div>
         <div class="flex space-x-3">
-          <button @click="closeCompletionModal" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium">
+          <button class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium" @click="closeCompletionModal">
             Continue
           </button>
-          <NuxtLink to="/shop" @click="closeCompletionModal" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center">
+          <NuxtLink to="/shop" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center" @click="closeCompletionModal">
             Visit Shop
           </NuxtLink>
         </div>

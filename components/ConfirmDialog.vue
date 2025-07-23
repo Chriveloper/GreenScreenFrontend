@@ -11,17 +11,17 @@
           
           <div class="flex justify-end space-x-3">
             <button 
-              @click="cancel" 
-              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition"
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition" 
+              @click="cancel"
             >
               {{ cancelText }}
             </button>
             <button 
-              @click="confirm" 
               :class="[
                 'px-4 py-2 rounded-md transition',
                 type === 'danger' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-sky-600 hover:bg-sky-700 text-white'
-              ]"
+              ]" 
+              @click="confirm"
             >
               {{ confirmText }}
             </button>
