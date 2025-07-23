@@ -790,54 +790,9 @@ export const useUserStore = defineStore('user', {
         return false;
       }
     },
-    
-    /**
-     * Check if user is eligible for a daily reward
-     * @returns boolean indicating if user can collect a reward
-     */
-    canCollectDailyReward(): boolean {
-      if (!this.userProfile) return false;
-      
-      const lastCollected = new Date(this.userProfile.last_reward_collected);
-      const today = new Date();
-      
-      // Reset hours to compare dates only
-      lastCollected.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-      
-      // User can collect reward if they haven't already collected today
-      return lastCollected < today;
-    },
-    
-    /**
-     * Calculate reward amount based on streak or other factors
-     * @returns number of pearls to award
-     */
-    calculateDailyReward(): number {
-      // Implement reward calculation logic
-      // For example, base reward + streak bonus
-      const baseReward = 10;
-      const streakBonus = this.getDailyRewardStreak() * 2;
-      
-      return baseReward + streakBonus;
-    },
-    
-    /**
-     * Get the current login streak
-     * @returns number of consecutive days with rewards collected
-     */
-    getDailyRewardStreak(): number {
-      // Implement streak calculation
-      // This would need to track consecutive days
-      return 0; // Placeholder
-    },
-    
-    /**
-     * Collect daily reward and update user profile
-     * @returns boolean indicating success
-     */
+
     async collectDailyReward(): Promise<boolean> {
-      if (!this.user || !this.userProfile || !this.canCollectDailyReward()) {
+      if (!this.user || !this.userProfile) {
         return false;
       }
       
@@ -845,7 +800,7 @@ export const useUserStore = defineStore('user', {
         const { $supabase } = useNuxtApp();
         const supabase = $supabase as SupabaseClient;
         
-        const rewardAmount = this.calculateDailyReward();
+        const rewardAmount = 200;
         const today = new Date().toISOString();
         
         const updateData = {

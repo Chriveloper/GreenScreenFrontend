@@ -168,6 +168,8 @@ const mobileMenuOpen = ref(false)
 // Get current route
 const route = useRoute()
 
+const { $supabase } = useNuxtApp()
+
 // Define refs for the components
 const toastRef = ref(null);
 const progressRef = ref(null);
@@ -185,13 +187,20 @@ const shouldShowNavigation = computed(() => {
 
 // Logout function
 const logout = async () => {
-  const { $supabase } = useNuxtApp()
-  await $supabase.auth.signOut()
-  userStore.clearUserData()
+
+  $supabase.auth.signOut()
+  await userStore.clearUserData()
   navigateTo('/login')
+  console.log("test")
 }
 
 onMounted(async () => {
+  const isLoggedIn = !!(await useNuxtApp().$supabase.auth.getUser()).data.user;
+  if (!isLoggedIn) {
+    await logout();
+    return;
+  }
+
   fetch('http://localhost:8080/data')
     .then(response => response.json())
     .then(async data => {
@@ -223,6 +232,13 @@ onMounted(async () => {
           `Welcome! ${data.dayLabel}: ${screenTimeHours}h screen time, ${data.totalAppsUsed} apps used. Limit exceeded: ${exceeded}`, 
           'info'
         );
+
+        if (await claimedRewardToday()) return;
+
+        if (!await checkLimitsExceeded()) {
+          await userStore.collectDailyReward();
+          toastRef.value.showToast('Added Daily Reward!', 'info');
+        }
       }
     })
     .catch(error => {
@@ -233,9 +249,20 @@ onMounted(async () => {
     });
 })
 
-async function checkLimitsExceeded() {
-  const userStore = useUserStore();
+async function claimedRewardToday(){
+  const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
 
+  const last = lastRewardDate.toISOString().slice(0, 10);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  return last === todayStr || last === yesterdayStr;
+}
+
+async function checkLimitsExceeded() {
   if (!userStore.userProfile) return false;
 
   const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
@@ -261,6 +288,8 @@ async function checkLimitsExceeded() {
   let totalUsageSeconds = 0;
   const appUsageSeconds = {};
 
+  const usageData = JSON.parse(userStore.usage_data);
+
   for (const entry of usageData) {
     // Use foregroundSeconds (new field) or fall back to usageSeconds
     const appUsage = entry.foregroundSeconds || entry.usageSeconds || 0;
@@ -272,9 +301,9 @@ async function checkLimitsExceeded() {
     appUsageSeconds[entry.packageName] += appUsage;
   }
 
-  const totalUsageHours = totalUsageSeconds / 3600;
-  if (totalUsageHours > dailyLimitHours) {
-    console.log(`Daily limit of ${dailyLimitHours} hours exceeded with ${totalUsageHours.toFixed(2)} hours.`);
+  const totalUsageMinutes = totalUsageSeconds / 60;
+  if (totalUsageMinutes > dailyLimitMinutes) {
+    console.log(`Daily limit of ${dailyLimitMinutes} hours exceeded with ${totalUsageMinutes.toFixed(2)} hours.`);
     return true;
   }
 
@@ -292,19 +321,3 @@ async function checkLimitsExceeded() {
 }
 
 </script>
-
-<style>
-body {
-  @apply antialiased text-gray-800;
-}
-
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
-}
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-</style>
