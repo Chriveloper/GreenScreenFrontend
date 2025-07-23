@@ -169,7 +169,7 @@ const getFrameStyle = () => {
 .cursor-move { cursor: move; }
 .cursor-move:active { cursor: grabbing; }
 .pixelated, .pixelated-bg { image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
-.aquarium-tank { aspect-ratio: 3/2; width: 100%; position: relative; }
+.aquarium-tank { aspect-ratio: 2/3; width: 100%; position: relative; }
 .ground-region { height: calc(100% / 6); }
 .plant-container { transition: transform 0.1s ease-out; transform-origin: bottom center; }
 .plant-sway { animation: sway 5s ease-in-out infinite; }
