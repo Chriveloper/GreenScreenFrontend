@@ -55,8 +55,9 @@ export const useUserStore = defineStore('user', {
     friends: [] as Friend[],
     pendingRequests: [] as Friend[],
     sentRequests: [] as Friend[],
+    screen_time_metadata: null as string | null,
   }),
-  
+
   getters: {
     isLoggedIn: (state) => {
       // Prevent SSR issues during static generation
@@ -72,8 +73,26 @@ export const useUserStore = defineStore('user', {
     friendsList: (state) => state.friends.filter(f => f.friendship_status === 'accepted'),
     incomingRequests: (state) => state.pendingRequests.filter(f => !f.is_requester),
     outgoingRequests: (state) => state.sentRequests.filter(f => f.is_requester),
+    screenTimeMetadata(): any {
+      if (!this.screen_time_metadata) return null;
+      try {
+        return JSON.parse(this.screen_time_metadata);
+      } catch {
+        return null;
+      }
+    },
+    
+    todayTotalScreenTime(): number {
+      const metadata = this.screenTimeMetadata;
+      return metadata?.totalScreenTime || 0;
+    },
+    
+    todayAppsUsed(): number {
+      const metadata = this.screenTimeMetadata;
+      return metadata?.totalAppsUsed || 0;
+    }
   },
-  
+
   actions: {
     setUser(user: any) {
       console.log('Setting user:', user?.id);
@@ -852,6 +871,28 @@ export const useUserStore = defineStore('user', {
       } catch (err) {
         console.error('Error collecting daily reward:', err);
         return false;
+      }
+    },
+    
+    // New method to fetch historical data
+    async fetchHistoricalUsageData(dayOffset: number = 0) {
+      try {
+        const response = await fetch(`http://localhost:8080/data?day=${dayOffset}`);
+        const data = await response.json();
+        
+        return {
+          usageData: data.usageData,
+          metadata: {
+            totalScreenTime: data.totalScreenTime,
+            totalAppsUsed: data.totalAppsUsed,
+            dayLabel: data.dayLabel,
+            targetDate: data.targetDate,
+            dataTimestamp: data.dataTimestamp
+          }
+        };
+      } catch (error) {
+        console.error('Error fetching historical usage data:', error);
+        return null;
       }
     }
   }

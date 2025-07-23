@@ -185,9 +185,13 @@
               :class="{'border-red-500': isAppOverLimit(app)}"
               class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-l-4"
             >
-              <div>
+              <div class="flex-1">
                 <p class="font-medium">{{ app.appName }}</p>
-                <p class="text-xs text-gray-500">{{ formatUsageTime(app.usage) }}</p>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span>{{ formatUsageTime(app.usage || app.foregroundSeconds || app.usageSeconds, app.launchCount) }}</span>
+                  <span v-if="app.firstTimeUsed">First: {{ new Date(app.firstTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</span>
+                  <span v-if="app.lastTimeUsed">Last: {{ new Date(app.lastTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</span>
+                </div>
               </div>
               
               <!-- Show warning if over limit -->
@@ -446,12 +450,24 @@ const closeCompletionModal = () => {
   showCompletionModal.value = false;
 };
 
-const formatUsageTime = (seconds) => {
+const formatUsageTime = (seconds, launchCount = null) => {
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  let timeStr = '';
+  
+  if (minutes < 60) {
+    timeStr = `${minutes}m`;
+  } else {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    timeStr = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+  
+  // Add launch count if available
+  if (launchCount && launchCount > 1) {
+    timeStr += ` (${launchCount}×)`;
+  }
+  
+  return timeStr;
 };
 
 const isAppOverLimit = (app) => {
@@ -466,19 +482,72 @@ const requestUsageData = () => {
     console.log("📤 [Focus] Requesting usage data...");
     fetchNativeData.postMessage('request_device_data');
   } else {
-    console.log('⚠️ Native data channel not available - using sample data');
-    // Use sample data for development (in seconds)
+    console.log('⚠️ Native data channel not available - fetching from server');
+    // Fetch from server instead of using sample data
+    fetchUsageDataFromServer();
+  }
+};
+
+// New method to fetch from server
+const fetchUsageDataFromServer = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/data');
+    const data = await response.json();
+    
+    console.log(`📊 Received ${data.dayLabel} data:`, {
+      totalScreenTime: Math.round(data.totalScreenTime / 3600 * 10) / 10 + 'h',
+      totalAppsUsed: data.totalAppsUsed,
+      targetDate: data.targetDate
+    });
+    
+    processEnhancedUsageData(data);
+  } catch (error) {
+    console.error('Error fetching usage data from server:', error);
+    // Fall back to sample data
     const sampleData = JSON.stringify([
-      { packageName: 'com.instagram.android', appName: 'Instagram', usage: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
-      { packageName: 'com.facebook.katana', appName: 'Facebook', usage: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
-      { packageName: 'com.whatsapp', appName: 'WhatsApp', usage: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
-      { packageName: 'com.tiktok.app', appName: 'TikTok', usage: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString() }
+      { packageName: 'com.instagram.android', appName: 'Instagram', foregroundSeconds: 3600, usageSeconds: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 5 },
+      { packageName: 'com.facebook.katana', appName: 'Facebook', foregroundSeconds: 1800, usageSeconds: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 3 },
+      { packageName: 'com.whatsapp', appName: 'WhatsApp', foregroundSeconds: 2400, usageSeconds: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 8 },
+      { packageName: 'com.tiktok.app', appName: 'TikTok', foregroundSeconds: 4500, usageSeconds: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 6 }
     ]);
     processUsageData(sampleData);
   }
 };
 
-// Process usage data from native app
+// Process enhanced usage data from server
+const processEnhancedUsageData = (serverData) => {
+  try {
+    rawUsageData.value = serverData.usageData;
+    
+    // Filter for today's data (server already filters, but keeping for consistency)
+    const today = new Date().toDateString();
+    todayUsageData.value = serverData.usageData.map(app => ({
+      ...app,
+      usage: app.foregroundSeconds || app.usageSeconds || 0 // Use foreground time preferentially
+    }));
+    
+    // Update total screen time from server metadata
+    if (serverData.totalScreenTime) {
+      totalScreenTimeToday.value = serverData.totalScreenTime;
+    }
+    
+    // Save to Supabase if authenticated
+    if (userStore.isLoggedIn) {
+      userStore.saveUsageData(serverData.usageData);
+    }
+    
+    console.log(`📊 Processed ${todayUsageData.value.length} apps for ${serverData.dayLabel}`);
+    
+    // Show notification with screen time summary
+    const screenTimeHours = Math.round(serverData.totalScreenTime / 3600 * 10) / 10;
+    showNotification(`${serverData.dayLabel}: ${screenTimeHours}h screen time across ${serverData.totalAppsUsed} apps`, 'info');
+    
+  } catch (error) {
+    console.error('Error processing enhanced usage data:', error);
+  }
+};
+
+// Process usage data from native app (keep existing for compatibility)
 const processUsageData = (data) => {
   try {
     const parsed = JSON.parse(data);
@@ -489,7 +558,10 @@ const processUsageData = (data) => {
     todayUsageData.value = parsed.filter(app => {
       const appDate = new Date(app.startTime).toDateString();
       return appDate === today;
-    });
+    }).map(app => ({
+      ...app,
+      usage: app.foregroundSeconds || app.usageSeconds || 0
+    }));
     
     // Save to Supabase if authenticated
     if (userStore.isLoggedIn) {

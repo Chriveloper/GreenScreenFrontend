@@ -7,7 +7,7 @@
         class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
     >
       <div class="flex items-center justify-between h-16 px-6 border-b">
-        <span class="text-sky-600 font-bold text-xl">Bluescreen</span>
+        <span class="text-sky-600 font-bold text-xl">Focus Tank</span>
         <button
             class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
             @click="mobileMenuOpen = false"
@@ -75,6 +75,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               Test Usage
+            </NuxtLink>
+          </li>
+          <li>
+            <NuxtLink to="/usage-history" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/usage-history' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Usage History
             </NuxtLink>
           </li>
           <li>
@@ -187,23 +195,40 @@ onMounted(async () => {
   fetch('http://localhost:8080/data')
     .then(response => response.json())
     .then(async data => {
-      console.log('Received data:', data);
-      console.log(JSON.stringify(data))
+      console.log('Received enhanced data:', data);
+      console.log(`Data for ${data.dayLabel} (${data.targetDate}):`, {
+        totalScreenTime: data.totalScreenTime,
+        totalAppsUsed: data.totalAppsUsed,
+        queryPeriod: `${data.queryStartTime} to ${data.queryEndTime}`
+      });
+      
       userStore.installed_apps = JSON.stringify(data.installedApps);
       userStore.usage_data = JSON.stringify(data.usageData);
+      
+      // Store additional metadata
+      userStore.screen_time_metadata = JSON.stringify({
+        totalScreenTime: data.totalScreenTime,
+        totalAppsUsed: data.totalAppsUsed,
+        dayLabel: data.dayLabel,
+        targetDate: data.targetDate,
+        dataTimestamp: data.dataTimestamp
+      });
 
       const exceeded = await checkLimitsExceeded()
 
-      // Display welcome toast after data is loaded
+      // Enhanced welcome message with screen time info
       if (toastRef.value) {
-        toastRef.value.showToast('Welcome to Bluescreen! Exceeded Limit:' + exceeded, 'info');
+        const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
+        toastRef.value.showToast(
+          `Welcome! ${data.dayLabel}: ${screenTimeHours}h screen time, ${data.totalAppsUsed} apps used. Limit exceeded: ${exceeded}`, 
+          'info'
+        );
       }
     })
     .catch(error => {
       console.error('Fetch failed:', error);
-      // Still try to show welcome toast even if data fetch fails
       if (toastRef.value) {
-        toastRef.value.showToast('Welcome to Bluescreen!', 'info');
+        toastRef.value.showToast('Welcome to Focus Tank!', 'info');
       }
     });
 })
@@ -219,11 +244,10 @@ async function checkLimitsExceeded() {
   yesterday.setHours(0, 0, 0, 0);
 
   if (lastRewardDate >= yesterday) {
-    // Reward already collected yesterday or today
     return false;
   }
 
-  // Fetch usage data from backend
+  // Fetch usage data from backend with enhanced structure
   const response = await fetch('http://localhost:8080/data');
   const data = await response.json();
 
@@ -231,19 +255,21 @@ async function checkLimitsExceeded() {
   userStore.usage_data = JSON.stringify(data.usageData);
 
   const usageData = data.usageData;
-
-  const dailyLimitHours = userStore.userProfile.screen_time_goals.dailyLimit;
-  const appLimits = userStore.userProfile.app_limits;
+  const dailyLimitHours = userStore.userProfile.screen_time_goals?.dailyLimit || 8;
+  const appLimits = userStore.userProfile.app_limits || {};
 
   let totalUsageSeconds = 0;
   const appUsageSeconds = {};
 
   for (const entry of usageData) {
-    totalUsageSeconds += entry.usageSeconds;
+    // Use foregroundSeconds (new field) or fall back to usageSeconds
+    const appUsage = entry.foregroundSeconds || entry.usageSeconds || 0;
+    totalUsageSeconds += appUsage;
+    
     if (!appUsageSeconds[entry.packageName]) {
       appUsageSeconds[entry.packageName] = 0;
     }
-    appUsageSeconds[entry.packageName] += entry.usageSeconds;
+    appUsageSeconds[entry.packageName] += appUsage;
   }
 
   const totalUsageHours = totalUsageSeconds / 3600;
@@ -253,11 +279,11 @@ async function checkLimitsExceeded() {
   }
 
   for (const packageName in appLimits) {
-    const limitHours = appLimits[packageName];
+    const limitMinutes = appLimits[packageName];
     const appSeconds = appUsageSeconds[packageName] || 0;
-    const appHours = appSeconds / 3600;
-    if (appHours > limitHours) {
-      console.log(`App ${packageName} limit of ${limitHours} hours exceeded with ${appHours.toFixed(2)} hours.`);
+    const appMinutes = appSeconds / 60;
+    if (appMinutes > limitMinutes) {
+      console.log(`App ${packageName} limit of ${limitMinutes} minutes exceeded with ${appMinutes.toFixed(2)} minutes.`);
       return true;
     }
   }
