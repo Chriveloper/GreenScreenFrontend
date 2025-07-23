@@ -2,15 +2,15 @@
   <div class="min-h-screen flex bg-sky-50">
     <!-- Left Sidebar Menu -->
     <div
+        v-if="shouldShowNavigation"
         :class="{'translate-x-0': mobileMenuOpen, '-translate-x-full': !mobileMenuOpen}"
         class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0"
-        v-if="shouldShowNavigation"
     >
       <div class="flex items-center justify-between h-16 px-6 border-b">
         <span class="text-sky-600 font-bold text-xl">Bluescreen</span>
         <button
-            @click="mobileMenuOpen = false"
             class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
+            @click="mobileMenuOpen = false"
         >
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -27,11 +27,11 @@
             </NuxtLink>
           </li>
           <li>
-            <NuxtLink to="/timer" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/timer' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
+            <NuxtLink to="/focus" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/timer' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Focus Timer
+              Focus
             </NuxtLink>
           </li>
           <li>
@@ -90,8 +90,8 @@
 
         <div class="mt-8 pt-8 border-t border-gray-200 px-4">
           <button
-              @click="logout"
               class="flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors"
+              @click="logout"
           >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -115,8 +115,8 @@
       <header v-if="shouldShowNavigation" class="bg-white shadow-sm lg:hidden">
         <div class="flex items-center justify-between h-16 px-4">
           <button
-              @click="mobileMenuOpen = true"
               class="p-2 rounded-md text-gray-600 hover:text-sky-600 hover:bg-gray-100"
+              @click="mobileMenuOpen = true"
           >
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />

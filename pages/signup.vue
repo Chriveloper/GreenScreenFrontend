@@ -7,8 +7,8 @@
           <div>
             <label class="block text-sm font-medium mb-1" for="email">Email</label>
             <input
-                v-model="email"
                 id="email"
+                v-model="email"
                 name="email"
                 type="email"
                 autocomplete="email"
@@ -19,8 +19,8 @@
           <div>
             <label class="block text-sm font-medium mb-1" for="password">Password</label>
             <input
-                v-model="password"
                 id="password"
+                v-model="password"
                 name="password"
                 type="password"
                 autocomplete="new-password"
@@ -31,8 +31,8 @@
           <div>
             <label class="block text-sm font-medium mb-1" for="confirmPassword">Confirm Password</label>
             <input
-                v-model="confirmPassword"
                 id="confirmPassword"
+                v-model="confirmPassword"
                 name="confirmPassword"
                 type="password"
                 autocomplete="new-password"

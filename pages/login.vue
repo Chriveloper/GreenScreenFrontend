@@ -6,8 +6,8 @@
         <div class="space-y-4">
           <FormInput
             id="email"
-            label="Email"
             v-model="email"
+            label="Email"
             type="email"
             placeholder="Enter your email"
             :error="errors.email"
@@ -16,8 +16,8 @@
           
           <FormInput
             id="password"
-            label="Password"
             v-model="password"
+            label="Password"
             type="password"
             placeholder="Enter your password"
             :error="errors.password"
@@ -31,7 +31,7 @@
           <ActionButton
             type="submit"
             :loading="loading"
-            loadingText="Logging in..."
+            loading-text="Logging in..."
             variant="primary"
             class="w-full"
           >

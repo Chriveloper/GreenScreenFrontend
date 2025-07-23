@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed top-0 left-0 right-0 z-50" v-if="isLoading">
+  <div v-if="isLoading" class="fixed top-0 left-0 right-0 z-50">
     <div class="h-1 bg-sky-100">
       <div 
         class="h-full bg-sky-600 transition-all duration-300 ease-out"

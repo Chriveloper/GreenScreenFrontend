@@ -37,37 +37,37 @@
         <h3 class="text-center text-gray-600 mb-3">Select Focus Duration</h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
-            @click="setFocusTime(15)"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
             :class="focusSelection === 15 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            @click="setFocusTime(15)"
           >
             <div class="font-bold text-sky-700">15 min</div>
             <div class="text-xs text-yellow-600">{{ 15**2 }} pearls</div>
           </button>
           <button
-            @click="setFocusTime(25)"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
             :class="focusSelection === 25 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            @click="setFocusTime(25)"
           >
             <div class="font-bold text-sky-700">25 min</div>
             <div class="text-xs text-yellow-600">{{ 25**2 }} pearls</div>
           </button>
           <button
-            @click="setFocusTime(45)"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
             :class="focusSelection === 45 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            @click="setFocusTime(45)"
           >
             <div class="font-bold text-sky-700">45 min</div>
             <div class="text-xs text-yellow-600">{{ 45**2 }} pearls</div>
           </button>
           <button
-            @click="setFocusTime('custom')"
             :disabled="isRunning"
             class="p-3 rounded-lg transition"
             :class="focusSelection === 'custom' ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+            @click="setFocusTime('custom')"
           >
             <div class="font-bold text-sky-700">Custom</div>
             <div class="text-xs text-gray-500">Enter time</div>
@@ -80,10 +80,10 @@
         <label for="custom-minutes" class="block text-sm font-medium text-gray-700 text-center">Custom Minutes</label>
         <div class="mt-1 relative rounded-md shadow-sm w-48 mx-auto">
           <input
-            type="number"
-            name="custom-minutes"
             id="custom-minutes"
             v-model.number="customMinutes"
+            type="number"
+            name="custom-minutes"
             :disabled="isRunning"
             class="w-full text-center p-2 border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
             placeholder="e.g., 10"
@@ -98,13 +98,13 @@
 
       <!-- Controls -->
       <div class="flex items-center justify-center space-x-4">
-        <button @click="resetTimer" class="p-3 rounded-full bg-gray-200 hover:bg-gray-300 transition">
+        <button class="p-3 rounded-full bg-gray-200 hover:bg-gray-300 transition" @click="resetTimer">
           <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.13-5.12M20 15a9 9 0 01-14.13 5.12"></path></svg>
         </button>
         <button
-          @click="isRunning ? pauseTimer() : startTimer()"
           class="w-20 h-20 rounded-full text-white font-bold text-lg transition flex items-center justify-center"
           :class="isRunning ? 'bg-orange-500 hover:bg-orange-600' : 'bg-sky-600 hover:bg-sky-700'"
+          @click="isRunning ? pauseTimer() : startTimer()"
         >
           {{ isRunning ? 'PAUSE' : 'START' }}
         </button>
@@ -130,10 +130,10 @@
           </p>
         </div>
         <div class="flex space-x-4">
-          <button @click="closeCompletionModal" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium">
+          <button class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium" @click="closeCompletionModal">
             Continue
           </button>
-          <NuxtLink to="/shop" @click="closeCompletionModal" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center">
+          <NuxtLink to="/shop" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center" @click="closeCompletionModal">
             Visit Shop
           </NuxtLink>
         </div>

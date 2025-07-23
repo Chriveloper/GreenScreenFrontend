@@ -3,106 +3,131 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- First column: Focus Timer -->
       <div class="bg-white rounded-lg shadow-lg p-8">
-        <h2 class="text-lg font-semibold text-sky-700 mb-6">Focus Timer</h2>
-        
-        <!-- Timer Display -->
-        <div class="flex flex-col items-center mb-8">
-          <div class="relative">
-            <svg class="w-48 h-48">
-              <circle
-                cx="96"
-                cy="96"
-                r="88"
-                fill="none"
-                stroke="#f1f5f9"
-                stroke-width="12"
-              />
-              <circle
-                cx="96"
-                cy="96"
-                r="88"
-                fill="none"
-                stroke="#0284c7"
-                stroke-width="12"
-                stroke-dasharray="553"
-                :stroke-dashoffset="progressOffset"
-                stroke-linecap="round"
-                transform="rotate(-90 96 96)"
-                class="transition-all duration-1000 ease-linear"
-              />
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <div class="text-center">
-                <p class="text-3xl font-bold text-sky-700">{{ displayTime }}</p>
-                <p class="text-sm text-gray-500">{{ isBreak ? 'Break' : 'Focus' }}</p>
-              </div>
-            </div>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-semibold text-sky-700">Focus Timer</h2>
+          <div class="flex items-center bg-white rounded-lg shadow px-4 py-2 border-t-4 border-yellow-400">
+            <span class="text-2xl mr-2">🐚</span>
+            <span class="text-lg font-bold text-yellow-600">{{ playerPearls }}</span>
+            <span class="text-sm text-gray-600 ml-1">Pearls</span>
           </div>
         </div>
         
-        <!-- Timer Controls -->
-        <div class="flex justify-center space-x-3 mb-6">
-          <button 
-            @click="setFocusTime(15)"
-            :class="{'bg-sky-600 text-white': focusMinutes === 15 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 15 || isRunning}"
-            class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-            :disabled="isRunning"
-          >
-            15 min
-          </button>
-          <button 
-            @click="setFocusTime(25)"
-            :class="{'bg-sky-600 text-white': focusMinutes === 25 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 25 || isRunning}"
-            class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-            :disabled="isRunning"
-          >
-            25 min
-          </button>
-          <button 
-            @click="setFocusTime(45)"
-            :class="{'bg-sky-600 text-white': focusMinutes === 45 && !isRunning, 'bg-gray-100 text-gray-700': focusMinutes !== 45 || isRunning}"
-            class="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-            :disabled="isRunning"
-          >
-            45 min
-          </button>
+        <!-- Timer Display -->
+        <div class="relative w-48 h-48 mx-auto mb-6">
+          <svg class="w-full h-full" viewBox="0 0 100 100">
+            <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+            <circle
+              class="text-sky-600 transition-all duration-1000"
+              stroke-width="8"
+              :stroke-dasharray="circumference"
+              :stroke-dashoffset="progressOffset"
+              stroke-linecap="round"
+              stroke="currentColor"
+              fill="transparent"
+              r="45"
+              cx="50"
+              cy="50"
+            />
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
+              <p class="text-3xl font-bold text-sky-700">{{ displayTime }}</p>
+              <p class="text-sm text-gray-500">{{ isBreak ? 'Break' : 'Focus' }}</p>
+            </div>
+          </div>
         </div>
-        
+
+        <!-- Duration Selection -->
+        <div class="mb-4">
+          <h3 class="text-center text-gray-600 mb-3">Select Focus Duration</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button
+              :disabled="isRunning"
+              class="p-3 rounded-lg transition"
+              :class="focusSelection === 15 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+              @click="setFocusTime(15)"
+            >
+              <div class="font-bold text-sky-700">15 min</div>
+              <div class="text-xs text-yellow-600">{{ 15**2 }} pearls</div>
+            </button>
+            <button
+              :disabled="isRunning"
+              class="p-3 rounded-lg transition"
+              :class="focusSelection === 25 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+              @click="setFocusTime(25)"
+            >
+              <div class="font-bold text-sky-700">25 min</div>
+              <div class="text-xs text-yellow-600">{{ 25**2 }} pearls</div>
+            </button>
+            <button
+              :disabled="isRunning"
+              class="p-3 rounded-lg transition"
+              :class="focusSelection === 45 ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+              @click="setFocusTime(45)"
+            >
+              <div class="font-bold text-sky-700">45 min</div>
+              <div class="text-xs text-yellow-600">{{ 45**2 }} pearls</div>
+            </button>
+            <button
+              :disabled="isRunning"
+              class="p-3 rounded-lg transition"
+              :class="focusSelection === 'custom' ? 'bg-sky-100 border border-sky-500' : 'bg-gray-100 hover:bg-gray-200'"
+              @click="setFocusTime('custom')"
+            >
+              <div class="font-bold text-sky-700">Custom</div>
+              <div class="text-xs text-gray-500">Enter time</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Time Input -->
+        <div v-if="focusSelection === 'custom'" class="mb-6">
+          <label for="custom-minutes" class="block text-sm font-medium text-gray-700 text-center">Custom Minutes</label>
+          <div class="mt-1 relative rounded-md shadow-sm w-48 mx-auto">
+            <input
+              id="custom-minutes"
+              v-model.number="customMinutes"
+              type="number"
+              name="custom-minutes"
+              :disabled="isRunning"
+              class="w-full text-center p-2 border-gray-300 rounded-md focus:ring-sky-500 focus:border-sky-500"
+              placeholder="e.g., 10"
+              min="1"
+              max="180"
+            />
+          </div>
+          <p v-if="customMinutes > 0" class="text-center text-xs text-yellow-600 mt-2">
+            Reward: {{ customMinutes**2 }} pearls
+          </p>
+        </div>
+
         <!-- Session Goal Input -->
         <div class="mb-6">
           <label for="session-goal" class="block text-sm font-medium text-gray-700 mb-2">Session Goal (optional)</label>
           <input 
-            type="text" 
             id="session-goal" 
-            v-model="sessionGoal"
+            v-model="sessionGoal" 
+            type="text"
             placeholder="What will you focus on?"
             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
             :disabled="isRunning"
           >
         </div>
         
-        <!-- Action Buttons -->
-        <div class="flex space-x-3">
-          <button 
-            v-if="!isRunning"
-            @click="startTimer"
-            class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-3 rounded-md font-medium text-sm transition"
-          >
-            Start Focus
+        <!-- Controls -->
+        <div class="flex items-center justify-center space-x-4">
+          <button class="p-3 rounded-full bg-gray-200 hover:bg-gray-300 transition" @click="resetTimer">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.13-5.12M20 15a9 9 0 01-14.13 5.12"></path></svg>
           </button>
-          <button 
-            v-else
-            @click="pauseTimer"
-            class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md font-medium text-sm transition"
+          <button
+            class="w-20 h-20 rounded-full text-white font-bold text-lg transition flex items-center justify-center"
+            :class="isRunning ? 'bg-orange-500 hover:bg-orange-600' : 'bg-sky-600 hover:bg-sky-700'"
+            @click="isRunning ? pauseTimer() : startTimer()"
           >
-            Pause
+            {{ isRunning ? 'PAUSE' : 'START' }}
           </button>
-          <button 
-            @click="resetTimer"
-            class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-md font-medium text-sm transition"
-            :disabled="!isRunning && timeLeft === focusMinutes * 60"
-          >
-            Reset
+          <button class="p-3 rounded-full bg-gray-200 invisible">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 17.364a5 5 0 010-7.072m2.828 9.9a9 9 0 010-12.728"></path></svg>
           </button>
         </div>
       </div>
@@ -184,29 +209,26 @@
       </div>
     </div>
     
-    <!-- Completion Modal -->
+    <!-- Session Complete Modal -->
     <div v-if="showCompletionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-        <div class="text-center mb-6">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
+      <div class="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
+        <div class="text-6xl mb-4">🎉</div>
+        <h3 class="text-2xl font-bold mb-4 text-sky-600">Session Complete!</h3>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div class="flex items-center justify-center mb-2">
+            <span class="text-3xl mr-2">🐚</span>
+            <span class="text-2xl font-bold text-yellow-600">+{{ lastPearlReward }}</span>
           </div>
-          <h3 class="text-xl font-bold text-gray-900">Focus Session Complete!</h3>
-          <p class="text-gray-600 mt-2">You've completed a {{ completedSessionMinutes }} minute focus session.</p>
-          <div class="flex items-center justify-center mt-4 text-yellow-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="text-xl font-bold ml-2">+{{ lastPearlReward }} pearls</span>
-          </div>
+          <p class="text-sm text-yellow-700">Pearls earned for your focus!</p>
+          <p class="text-xs text-gray-500 mt-1">
+            ({{ completedSessionMinutes }} minutes)² = {{ lastPearlReward }} pearls
+          </p>
         </div>
-        <div class="flex space-x-3">
-          <button @click="closeCompletionModal" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium">
+        <div class="flex space-x-4">
+          <button class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium" @click="closeCompletionModal">
             Continue
           </button>
-          <NuxtLink to="/shop" @click="closeCompletionModal" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center">
+          <NuxtLink to="/shop" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md font-medium text-center" @click="closeCompletionModal">
             Visit Shop
           </NuxtLink>
         </div>
@@ -234,138 +256,189 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useUserStore } from '~/stores/user'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useUserStore } from '~/stores/user';
 
-const userStore = useUserStore()
+const userStore = useUserStore();
 
 // Timer state
-const focusMinutes = ref(25)
-const breakMinutes = ref(5)
-const timeLeft = ref(25 * 60) // in seconds
-const isRunning = ref(false)
-const isBreak = ref(false)
-const sessionGoal = ref('')
-let timerInterval = null
+const focusSelection = ref(25); // 15, 25, 45, or 'custom'
+const customMinutes = ref(10);
+const focusMinutes = ref(25);
+const breakMinutes = ref(5);
+const timeLeft = ref(25 * 60); // in seconds
+const isRunning = ref(false);
+const isBreak = ref(false);
+const sessionGoal = ref('');
+let timerInterval = null;
 
 // Pearl system
-const showCompletionModal = ref(false)
-const lastPearlReward = ref(0)
-const completedSessionMinutes = ref(0)
+const showCompletionModal = ref(false);
+const lastPearlReward = ref(0);
+const completedSessionMinutes = ref(0);
 
 // Screen time goals state
-const dailyLimitHours = ref(4)
-const selectedApp = ref('')
-const newAppLimit = ref('')
+const dailyLimitHours = ref(4);
+const selectedApp = ref('');
+const newAppLimit = ref('');
 
 // Usage data state
-const todayUsageData = ref([])
-const rawUsageData = ref([])
+const todayUsageData = ref([]);
+const rawUsageData = ref([]);
 
 // Notifications
-const notifications = ref([])
+const notifications = ref([]);
 
-// Get user data from store
-const playerPearls = computed(() => userStore.pearls)
-const appLimits = computed(() => userStore.appLimits)
+// Computed Properties
+const playerPearls = computed(() => userStore.pearls);
+const appLimits = computed(() => userStore.appLimits);
 
-// Timer computed properties
+const activeMinutes = computed(() => {
+  if (focusSelection.value === 'custom') {
+    return Math.max(1, customMinutes.value || 1); // Ensure at least 1 minute
+  }
+  return focusSelection.value;
+});
+
 const displayTime = computed(() => {
-  const minutes = Math.floor(timeLeft.value / 60)
-  const seconds = timeLeft.value % 60
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-})
+  const minutes = Math.floor(timeLeft.value / 60);
+  const seconds = timeLeft.value % 60;
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+});
 
-// Add this computed property
+const circumference = 2 * Math.PI * 45;
 const progressOffset = computed(() => {
-  const totalSeconds = focusMinutes.value * 60;
+  const totalSeconds = activeMinutes.value * 60;
+  if (totalSeconds === 0) return circumference;
   const percentage = (totalSeconds - timeLeft.value) / totalSeconds;
-  return 553 * (1 - percentage); // 553 is the circumference of the circle with r=88
+  return circumference * (1 - percentage);
 });
 
 // Screen time computed properties
 const totalScreenTimeToday = computed(() => {
-  // Convert from seconds to minutes
-  return todayUsageData.value.reduce((total, app) => total + app.usage, 0)
-})
+  return todayUsageData.value.reduce((total, app) => total + app.usage, 0);
+});
 
 const dailyLimitPercentage = computed(() => {
-  const dailyLimitSeconds = dailyLimitHours.value * 60 * 60
-  const percentage = Math.min(100, Math.round((totalScreenTimeToday.value / dailyLimitSeconds) * 100))
-  return percentage
-})
+  const dailyLimitSeconds = dailyLimitHours.value * 60 * 60;
+  const percentage = Math.min(100, Math.round((totalScreenTimeToday.value / dailyLimitSeconds) * 100));
+  return percentage;
+});
 
 const dailyLimitProgress = computed(() => {
-  const percentage = Math.min(1, totalScreenTimeToday.value / (dailyLimitHours.value * 60 * 60))
-  return 251.2 * (1 - percentage) // 251.2 is circumference of circle with r=40
-})
+  const percentage = Math.min(1, totalScreenTimeToday.value / (dailyLimitHours.value * 60 * 60));
+  return 251.2 * (1 - percentage); // 251.2 is circumference of circle with r=40
+});
 
 const isOverDailyLimit = computed(() => {
-  return totalScreenTimeToday.value > dailyLimitHours.value * 60 * 60
-})
+  return totalScreenTimeToday.value > dailyLimitHours.value * 60 * 60;
+});
 
 const sortedTodayUsage = computed(() => {
-  return [...todayUsageData.value].sort((a, b) => b.usage - a.usage)
-})
+  return [...todayUsageData.value].sort((a, b) => b.usage - a.usage);
+});
 
-// Timer methods
-const startTimer = () => {
-  if (!isRunning.value) {
-    isRunning.value = true;
-    timerInterval = setInterval(() => {
-      if (timeLeft.value > 0) {
-        timeLeft.value--;
+// Watch for changes in custom minutes to update the timer
+watch(customMinutes, (newVal) => {
+  if (focusSelection.value === 'custom' && !isRunning.value) {
+    timeLeft.value = Math.max(1, newVal || 1) * 60;
+    focusMinutes.value = Math.max(1, newVal || 1);
+  }
+});
+
+// Methods
+const setFocusTime = (selection) => {
+  if (isRunning.value) return;
+  focusSelection.value = selection;
+  
+  if (selection !== 'custom') {
+    timeLeft.value = selection * 60;
+    focusMinutes.value = selection;
+  } else {
+    timeLeft.value = Math.max(1, customMinutes.value || 1) * 60;
+    focusMinutes.value = Math.max(1, customMinutes.value || 1);
+  }
+};
+
+const calculatePearlReward = () => {
+  return Math.round(Math.pow(activeMinutes.value, 2));
+};
+
+const refreshUserData = async () => {
+  console.log('Refreshing user data...');
+  await userStore.loadUserProfile();
+  console.log('User data refreshed. Current pearls:', userStore.pearls);
+};
+
+const startTimer = async () => {
+  if (isRunning.value || activeMinutes.value <= 0) return;
+  isRunning.value = true;
+  
+  timerInterval = setInterval(async () => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+    } else {
+      await completeTimer();
+    }
+  }, 1000);
+};
+
+const completeTimer = async () => {
+  clearInterval(timerInterval);
+  isRunning.value = false;
+  
+  if (isBreak.value) {
+    // Break finished, start new focus session
+    isBreak.value = false;
+    timeLeft.value = focusMinutes.value * 60;
+    showNotification('Break finished! Ready for next focus session.', 'info');
+  } else {
+    // Focus session finished - award pearls
+    const pearlReward = calculatePearlReward();
+    lastPearlReward.value = pearlReward;
+    completedSessionMinutes.value = activeMinutes.value;
+    
+    try {
+      const success = await userStore.addFocusSession(activeMinutes.value, pearlReward);
+      if (success) {
+        console.log(`Successfully added ${pearlReward} pearls to account.`);
+        await refreshUserData();
+        showNotification(`Earned ${pearlReward} pearls for focusing ${activeMinutes.value} minutes!`, 'success');
       } else {
-        // Timer finished
-        isRunning.value = false;
-        clearInterval(timerInterval);
-        
-        if (isBreak.value) {
-          // Break finished, start new focus session
-          isBreak.value = false;
-          timeLeft.value = focusMinutes.value * 60;
-          showNotification('Break finished! Ready for next focus session.', 'info');
-        } else {
-          // Focus session finished - award pearls
-          const pearlReward = calculatePearlReward();
-          lastPearlReward.value = pearlReward;
-          completedSessionMinutes.value = focusMinutes.value;
-          
-          // Save session and update pearls in store
-          userStore.addFocusSession(focusMinutes.value, pearlReward);
-          
-          // Show completion modal
-          showCompletionModal.value = true;
-          
-          // Start break
-          isBreak.value = true;
-          timeLeft.value = breakMinutes.value * 60;
-        }
+        console.error('Failed to add focus session rewards');
+        showNotification('Failed to add rewards. Please try again.', 'error');
       }
-    }, 1000);
+    } catch (error) {
+      console.error('Error while adding focus session:', error);
+    }
+    
+    showCompletionModal.value = true;
+    
+    // Start break if not in custom mode
+    if (focusSelection.value !== 'custom') {
+      isBreak.value = true;
+      timeLeft.value = breakMinutes.value * 60;
+    } else {
+      resetTimer(false); // Reset without changing duration
+    }
   }
 };
 
 const pauseTimer = () => {
   isRunning.value = false;
-  if (timerInterval) {
-    clearInterval(timerInterval);
-  }
+  clearInterval(timerInterval);
 };
 
-const resetTimer = () => {
-  isRunning.value = false;
+const resetTimer = (changeDuration = true) => {
+  pauseTimer();
   isBreak.value = false;
-  timeLeft.value = focusMinutes.value * 60;
-  if (timerInterval) {
-    clearInterval(timerInterval);
-  }
-};
-
-const setFocusTime = (minutes) => {
-  if (!isRunning.value) {
-    focusMinutes.value = minutes;
-    timeLeft.value = minutes * 60;
+  
+  if (changeDuration) {
+    focusSelection.value = 25;
+    focusMinutes.value = 25;
+    timeLeft.value = 25 * 60;
+  } else {
+    timeLeft.value = activeMinutes.value * 60;
   }
 };
 
@@ -373,106 +446,64 @@ const closeCompletionModal = () => {
   showCompletionModal.value = false;
 };
 
-// Calculate pearl reward based on session length
-const calculatePearlReward = () => {
-  // Basic formula: 2 pearls per 5 minutes, rounded up
-  return Math.ceil(focusMinutes.value / 5) * 2;
+const formatUsageTime = (seconds) => {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 };
 
-// Screen time methods
-const saveDailyGoal = async () => {
-  // Update screen time goals in store
-  const goals = { dailyLimit: dailyLimitHours.value * 60 }
-  await userStore.updateScreenTimeGoals(goals)
-  console.log(`Daily limit set to ${dailyLimitHours.value} hours`)
-}
-
-const addAppLimit = async () => {
-  if (selectedApp.value && newAppLimit.value) {
-    // Create updated limits object
-    const updatedLimits = { ...appLimits.value, [selectedApp.value]: parseInt(newAppLimit.value) }
-    
-    // Update in store
-    await userStore.updateAppLimits(updatedLimits)
-    
-    // Reset form
-    selectedApp.value = ''
-    newAppLimit.value = ''
-  }
-}
-
-const removeAppLimit = async (packageName) => {
-  // Create updated limits object without the removed app
-  const updatedLimits = { ...appLimits.value }
-  delete updatedLimits[packageName]
-  
-  // Update in store
-  await userStore.updateAppLimits(updatedLimits)
-}
-
-const formatAppName = (packageName) => {
-  const app = todayUsageData.value.find(a => a.packageName === packageName)
-  return app ? app.appName : packageName
-}
-
-const formatUsageTime = (seconds) => {
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes}m`
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
-}
-
 const isAppOverLimit = (app) => {
-  const limit = appLimits.value[app.packageName]
-  const appMinutes = Math.round(app.usage / 60)
-  return limit && appMinutes > limit
-}
+  const limit = appLimits.value[app.packageName];
+  const appMinutes = Math.round(app.usage / 60);
+  return limit && appMinutes > limit;
+};
 
 // Usage data methods
 const requestUsageData = () => {
   if (process.client && typeof fetchNativeData !== 'undefined') {
-    console.log("📤 [Focus] Requesting usage data...")
-    fetchNativeData.postMessage('request_device_data')
+    console.log("📤 [Focus] Requesting usage data...");
+    fetchNativeData.postMessage('request_device_data');
   } else {
-    console.log('⚠️ Native data channel not available - using sample data')
+    console.log('⚠️ Native data channel not available - using sample data');
     // Use sample data for development (in seconds)
     const sampleData = JSON.stringify([
       { packageName: 'com.instagram.android', appName: 'Instagram', usage: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
       { packageName: 'com.facebook.katana', appName: 'Facebook', usage: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
       { packageName: 'com.whatsapp', appName: 'WhatsApp', usage: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString() },
       { packageName: 'com.tiktok.app', appName: 'TikTok', usage: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString() }
-    ])
-    processUsageData(sampleData)
+    ]);
+    processUsageData(sampleData);
   }
-}
+};
 
 // Process usage data from native app
 const processUsageData = (data) => {
   try {
-    const parsed = JSON.parse(data)
-    rawUsageData.value = parsed
+    const parsed = JSON.parse(data);
+    rawUsageData.value = parsed;
     
     // Filter for today's data
-    const today = new Date().toDateString()
+    const today = new Date().toDateString();
     todayUsageData.value = parsed.filter(app => {
-      const appDate = new Date(app.startTime).toDateString()
-      return appDate === today
-    })
+      const appDate = new Date(app.startTime).toDateString();
+      return appDate === today;
+    });
     
     // Save to Supabase if authenticated
     if (userStore.isLoggedIn) {
-      userStore.saveUsageData(parsed)
+      userStore.saveUsageData(parsed);
     }
     
-    console.log(`📊 Processed ${todayUsageData.value.length} apps for today`)
+    console.log(`📊 Processed ${todayUsageData.value.length} apps for today`);
   } catch (error) {
-    console.error('Error processing usage data:', error)
+    console.error('Error processing usage data:', error);
   }
-}
+};
 
 // Set up native data callback
-/*const setupNativeCallback = () => {
+const setupNativeCallback = () => {
   if (process.client) {
     window.onNativeData = function(data) {
       console.log("🟢 [Focus] Received usage data from native:", data);
@@ -488,37 +519,24 @@ const processUsageData = (data) => {
     
     // Add a method that Flutter can call when the app is put in background
     window.onAppBackground = function() {
-      // Save any unsaved state
       console.log("App went to background");
       if (isRunning.value) {
         pauseTimer();
       }
     };
   }
-};*/
+};
 
 // Load saved settings
 const loadSettings = async () => {
   if (userStore.isLoggedIn) {
     // Get screen time goal from store
-    const screenTimeGoals = userStore.screenTimeGoals
+    const screenTimeGoals = userStore.screenTimeGoals;
     if (screenTimeGoals?.dailyLimit) {
-      dailyLimitHours.value = screenTimeGoals.dailyLimit / 60 // Convert minutes to hours
+      dailyLimitHours.value = screenTimeGoals.dailyLimit / 60; // Convert minutes to hours
     }
   }
-}
-
-onMounted(async () => {
-  setupNativeCallback()
-  await loadSettings()
-  requestUsageData()
-})
-
-onUnmounted(() => {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
-})
+};
 
 // Notifications
 const showNotification = (message, type = 'info') => {
@@ -530,6 +548,18 @@ const showNotification = (message, type = 'info') => {
     notifications.value = notifications.value.filter(n => n.id !== id);
   }, 5000);
 };
+
+onMounted(async () => {
+  setupNativeCallback();
+  await loadSettings();
+  requestUsageData();
+});
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+});
 </script>
 
 <style>

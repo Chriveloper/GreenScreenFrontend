@@ -11,7 +11,6 @@
         :name="id"
         :type="type"
         :value="modelValue"
-        @input="$emit('update:modelValue', $event.target.value)"
         :placeholder="placeholder"
         :required="required"
         :disabled="disabled"
@@ -20,6 +19,7 @@
           error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-sky-500 focus:ring-sky-500',
           disabled ? 'bg-gray-100 text-gray-500' : ''
         ]"
+        @input="$emit('update:modelValue', $event.target.value)"
       />
       <div v-if="error" class="absolute inset-y-0 right-0 pr-3 flex items-center">
         <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">

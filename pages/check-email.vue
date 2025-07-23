@@ -10,17 +10,17 @@
         Please check your inbox and click the link to verify your account.
       </p>
       <button
-          @click="tryVerify"
           class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700 transition"
+          @click="tryVerify"
       >
         I Verified My Email
       </button>
 
       <!-- Resend button -->
       <button
-          @click="resendVerification"
           :disabled="resendLoading"
           class="w-full mt-4 bg-gray-300 text-gray-800 rounded py-2 hover:bg-gray-400 transition disabled:opacity-50"
+          @click="resendVerification"
       >
         <span v-if="resendLoading">Resending...</span>
         <span v-else>Resend Verification Email</span>

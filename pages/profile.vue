@@ -51,15 +51,16 @@
       </div>
       
       <button
-        @click="saveProfile"
         :disabled="saving"
         class="mt-6 w-full bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-medium transition"
+        @click="saveProfile"
       >
         {{ saving ? 'Saving...' : 'Save Profile' }}
       </button>
       
       <!-- Success/Error Messages -->
-      <div v-if="message" class="mt-4 p-3 rounded-md" :class="{
+      <div
+v-if="message" class="mt-4 p-3 rounded-md" :class="{
         'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
         'bg-red-100 text-red-700 border border-red-200': messageType === 'error'
       }">
