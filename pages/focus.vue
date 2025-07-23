@@ -188,9 +188,15 @@
               <div class="flex-1">
                 <p class="font-medium">{{ app.appName }}</p>
                 <div class="flex items-center space-x-4 text-xs text-gray-500">
-                  <span>{{ formatUsageTime(app.usage || app.foregroundSeconds || app.usageSeconds, app.launchCount) }}</span>
+                  <span>{{ formatUsageTime(app.foregroundSeconds || app.usage, app.launchCount, app.backgroundSeconds) }}</span>
                   <span v-if="app.firstTimeUsed">First: {{ new Date(app.firstTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</span>
                   <span v-if="app.lastTimeUsed">Last: {{ new Date(app.lastTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</span>
+                  <span v-if="app.launchCount > 1" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">{{ app.launchCount }} launches</span>
+                </div>
+                
+                <!-- Show foreground vs background breakdown for significant apps -->
+                <div v-if="app.backgroundSeconds > 60" class="mt-1 text-xs text-gray-400">
+                  Foreground: {{ Math.round(app.foregroundSeconds / 60) }}m, Background: {{ Math.round(app.backgroundSeconds / 60) }}m
                 </div>
               </div>
               
@@ -450,7 +456,7 @@ const closeCompletionModal = () => {
   showCompletionModal.value = false;
 };
 
-const formatUsageTime = (seconds, launchCount = null) => {
+const formatUsageTime = (seconds, launchCount = null, backgroundSeconds = null) => {
   const minutes = Math.round(seconds / 60);
   let timeStr = '';
   
@@ -465,6 +471,12 @@ const formatUsageTime = (seconds, launchCount = null) => {
   // Add launch count if available
   if (launchCount && launchCount > 1) {
     timeStr += ` (${launchCount}×)`;
+  }
+  
+  // Add background time indicator if significant
+  if (backgroundSeconds && backgroundSeconds > 60) {
+    const bgMinutes = Math.round(backgroundSeconds / 60);
+    timeStr += ` +${bgMinutes}m bg`;
   }
   
   return timeStr;
@@ -488,62 +500,78 @@ const requestUsageData = () => {
   }
 };
 
-// New method to fetch from server
+// New method to fetch from native Android server
 const fetchUsageDataFromServer = async () => {
   try {
     const response = await fetch('http://localhost:8080/data');
     const data = await response.json();
     
-    console.log(`📊 Received ${data.dayLabel} data:`, {
+    if (data.error) {
+      console.error('Native Android error:', data.message);
+      showNotification(`Native data error: ${data.message}`, 'error');
+      // Fall back to sample data
+      const sampleData = JSON.stringify([
+        { packageName: 'com.instagram.android', appName: 'Instagram', foregroundSeconds: 3600, backgroundSeconds: 120, usageSeconds: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 5 },
+        { packageName: 'com.facebook.katana', appName: 'Facebook', foregroundSeconds: 1800, backgroundSeconds: 60, usageSeconds: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 3 },
+        { packageName: 'com.whatsapp', appName: 'WhatsApp', foregroundSeconds: 2400, backgroundSeconds: 180, usageSeconds: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 8 },
+        { packageName: 'com.tiktok.app', appName: 'TikTok', foregroundSeconds: 4500, backgroundSeconds: 90, usageSeconds: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 6 }
+      ]);
+      processUsageData(sampleData);
+      return;
+    }
+    
+    console.log(`📊 Received native ${data.dayLabel} data:`, {
       totalScreenTime: Math.round(data.totalScreenTime / 3600 * 10) / 10 + 'h',
       totalAppsUsed: data.totalAppsUsed,
-      targetDate: data.targetDate
+      targetDate: data.targetDate,
+      queryPeriod: `${data.queryStartTime} to ${data.queryEndTime}`
     });
     
-    processEnhancedUsageData(data);
+    processEnhancedNativeData(data);
   } catch (error) {
-    console.error('Error fetching usage data from server:', error);
+    console.error('Error fetching native usage data from server:', error);
+    showNotification('Failed to fetch native data', 'error');
     // Fall back to sample data
     const sampleData = JSON.stringify([
-      { packageName: 'com.instagram.android', appName: 'Instagram', foregroundSeconds: 3600, usageSeconds: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 5 },
-      { packageName: 'com.facebook.katana', appName: 'Facebook', foregroundSeconds: 1800, usageSeconds: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 3 },
-      { packageName: 'com.whatsapp', appName: 'WhatsApp', foregroundSeconds: 2400, usageSeconds: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 8 },
-      { packageName: 'com.tiktok.app', appName: 'TikTok', foregroundSeconds: 4500, usageSeconds: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 6 }
+      { packageName: 'com.instagram.android', appName: 'Instagram', foregroundSeconds: 3600, backgroundSeconds: 120, usageSeconds: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 5 },
+      { packageName: 'com.facebook.katana', appName: 'Facebook', foregroundSeconds: 1800, backgroundSeconds: 60, usageSeconds: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 3 }
     ]);
     processUsageData(sampleData);
   }
 };
 
-// Process enhanced usage data from server
-const processEnhancedUsageData = (serverData) => {
+// Process enhanced native Android data
+const processEnhancedNativeData = (nativeData) => {
   try {
-    rawUsageData.value = serverData.usageData;
+    rawUsageData.value = nativeData.usageData;
     
-    // Filter for today's data (server already filters, but keeping for consistency)
-    const today = new Date().toDateString();
-    todayUsageData.value = serverData.usageData.map(app => ({
+    // Map native Android data to our format
+    todayUsageData.value = nativeData.usageData.map(app => ({
       ...app,
-      usage: app.foregroundSeconds || app.usageSeconds || 0 // Use foreground time preferentially
+      usage: app.foregroundSeconds || 0, // Use foreground time for screen time calculations
+      backgroundTime: app.backgroundSeconds || 0,
+      totalTime: (app.foregroundSeconds || 0) + (app.backgroundSeconds || 0)
     }));
     
-    // Update total screen time from server metadata
-    if (serverData.totalScreenTime) {
-      totalScreenTimeToday.value = serverData.totalScreenTime;
+    // Update total screen time from native metadata
+    if (nativeData.totalScreenTime) {
+      totalScreenTimeToday.value = nativeData.totalScreenTime;
     }
     
     // Save to Supabase if authenticated
     if (userStore.isLoggedIn) {
-      userStore.saveUsageData(serverData.usageData);
+      userStore.saveUsageData(nativeData.usageData);
     }
     
-    console.log(`📊 Processed ${todayUsageData.value.length} apps for ${serverData.dayLabel}`);
+    console.log(`📊 Processed ${todayUsageData.value.length} apps for ${nativeData.dayLabel}`);
+    console.log('Sample app data:', todayUsageData.value.slice(0, 2));
     
-    // Show notification with screen time summary
-    const screenTimeHours = Math.round(serverData.totalScreenTime / 3600 * 10) / 10;
-    showNotification(`${serverData.dayLabel}: ${screenTimeHours}h screen time across ${serverData.totalAppsUsed} apps`, 'info');
+    // Show notification with native screen time summary
+    const screenTimeHours = Math.round(nativeData.totalScreenTime / 3600 * 10) / 10;
+    showNotification(`${nativeData.dayLabel}: ${screenTimeHours}h screen time, ${nativeData.totalAppsUsed} apps used (Native Android)`, 'info');
     
   } catch (error) {
-    console.error('Error processing enhanced usage data:', error);
+    console.error('Error processing native Android data:', error);
   }
 };
 

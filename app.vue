@@ -204,7 +204,17 @@ onMounted(async () => {
   fetch('http://localhost:8080/data')
     .then(response => response.json())
     .then(async data => {
-      console.log('Received enhanced data:', data);
+      console.log('Received native Android data:', data);
+      
+      // Check if this is an error response
+      if (data.error) {
+        console.error('Native data error:', data.message);
+        if (toastRef.value) {
+          toastRef.value.showToast(`Data error: ${data.message}`, 'error');
+        }
+        return;
+      }
+      
       console.log(`Data for ${data.dayLabel} (${data.targetDate}):`, {
         totalScreenTime: data.totalScreenTime,
         totalAppsUsed: data.totalAppsUsed,
@@ -214,18 +224,21 @@ onMounted(async () => {
       userStore.installed_apps = JSON.stringify(data.installedApps);
       userStore.usage_data = JSON.stringify(data.usageData);
       
-      // Store additional metadata
+      // Store additional metadata from native Android implementation
       userStore.screen_time_metadata = JSON.stringify({
         totalScreenTime: data.totalScreenTime,
         totalAppsUsed: data.totalAppsUsed,
         dayLabel: data.dayLabel,
         targetDate: data.targetDate,
-        dataTimestamp: data.dataTimestamp
+        dataTimestamp: data.dataTimestamp,
+        queryStartTime: data.queryStartTime,
+        queryEndTime: data.queryEndTime,
+        dayOffset: data.dayOffset
       });
 
       const exceeded = await checkLimitsExceeded()
 
-      // Enhanced welcome message with screen time info
+      // Enhanced welcome message with native screen time info
       if (toastRef.value) {
         const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
         toastRef.value.showToast(
@@ -244,7 +257,7 @@ onMounted(async () => {
     .catch(error => {
       console.error('Fetch failed:', error);
       if (toastRef.value) {
-        toastRef.value.showToast('Welcome to Focus Tank!', 'info');
+        toastRef.value.showToast('Welcome to Focus Tank! (Native data unavailable)', 'info');
       }
     });
 })
@@ -274,49 +287,58 @@ async function checkLimitsExceeded() {
     return false;
   }
 
-  // Fetch usage data from backend with enhanced structure
-  const response = await fetch('http://localhost:8080/data');
-  const data = await response.json();
+  try {
+    // Fetch usage data from native Android backend
+    const response = await fetch('http://localhost:8080/data');
+    const data = await response.json();
 
-  userStore.installed_apps = JSON.stringify(data.installedApps);
-  userStore.usage_data = JSON.stringify(data.usageData);
-
-  const dailyLimitHours = userStore.userProfile.screen_time_goals?.dailyLimit || 8;
-  const appLimits = userStore.userProfile.app_limits || {};
-
-  let totalUsageSeconds = 0;
-  const appUsageSeconds = {};
-
-  const usageData = JSON.parse(userStore.usage_data);
-
-  for (const entry of usageData) {
-    // Use foregroundSeconds (new field) or fall back to usageSeconds
-    const appUsage = entry.foregroundSeconds || entry.usageSeconds || 0;
-    totalUsageSeconds += appUsage;
-    
-    if (!appUsageSeconds[entry.packageName]) {
-      appUsageSeconds[entry.packageName] = 0;
+    if (data.error) {
+      console.error('Error fetching data for limit check:', data.message);
+      return false;
     }
-    appUsageSeconds[entry.packageName] += appUsage;
-  }
 
-  const totalUsageMinutes = totalUsageSeconds / 60;
-  if (totalUsageMinutes > dailyLimitMinutes) {
-    console.log(`Daily limit of ${dailyLimitMinutes} hours exceeded with ${totalUsageMinutes.toFixed(2)} hours.`);
-    return true;
-  }
+    userStore.installed_apps = JSON.stringify(data.installedApps);
+    userStore.usage_data = JSON.stringify(data.usageData);
 
-  for (const packageName in appLimits) {
-    const limitMinutes = appLimits[packageName];
-    const appSeconds = appUsageSeconds[packageName] || 0;
-    const appMinutes = appSeconds / 60;
-    if (appMinutes > limitMinutes) {
-      console.log(`App ${packageName} limit of ${limitMinutes} minutes exceeded with ${appMinutes.toFixed(2)} minutes.`);
+    const dailyLimitMinutes = userStore.userProfile.screen_time_goals?.dailyLimit || 480; // 8 hours default
+    const appLimits = userStore.userProfile.app_limits || {};
+
+    let totalUsageSeconds = 0;
+    const appUsageSeconds = {};
+
+    // Process native usage data with foreground/background separation
+    for (const entry of data.usageData) {
+      // Use foregroundSeconds from native Android implementation
+      const appUsage = entry.foregroundSeconds || 0;
+      totalUsageSeconds += appUsage;
+      
+      if (!appUsageSeconds[entry.packageName]) {
+        appUsageSeconds[entry.packageName] = 0;
+      }
+      appUsageSeconds[entry.packageName] += appUsage;
+    }
+
+    const totalUsageMinutes = totalUsageSeconds / 60;
+    if (totalUsageMinutes > dailyLimitMinutes) {
+      console.log(`Daily limit of ${dailyLimitMinutes} minutes exceeded with ${totalUsageMinutes.toFixed(2)} minutes.`);
       return true;
     }
-  }
 
-  return false;
+    for (const packageName in appLimits) {
+      const limitMinutes = appLimits[packageName];
+      const appSeconds = appUsageSeconds[packageName] || 0;
+      const appMinutes = appSeconds / 60;
+      if (appMinutes > limitMinutes) {
+        console.log(`App ${packageName} limit of ${limitMinutes} minutes exceeded with ${appMinutes.toFixed(2)} minutes.`);
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error checking limits:', error);
+    return false;
+  }
 }
 
 </script>

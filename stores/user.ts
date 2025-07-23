@@ -396,13 +396,17 @@ export const useUserStore = defineStore('user', {
         const { $supabase } = useNuxtApp();
         const supabase = $supabase as SupabaseClient;
         
-        // Format data for insertion
+        // Format native Android data for database insertion
         const formattedData = usageData.map(app => ({
           user_id: this.user!.id,
           date: new Date(app.startTime).toISOString().split('T')[0],
           app_name: app.appName,
           package_name: app.packageName,
-          usage_seconds: app.usage,
+          usage_seconds: app.foregroundSeconds || app.usageSeconds || 0,
+          background_seconds: app.backgroundSeconds || 0,
+          launch_count: app.launchCount || 1,
+          first_time_used: app.firstTimeUsed || null,
+          last_time_used: app.lastTimeUsed || null,
           start_time: app.startTime,
           end_time: app.endTime
         }));
@@ -413,10 +417,10 @@ export const useUserStore = defineStore('user', {
           
         if (error) throw error;
         
-        console.log('Usage data saved successfully');
+        console.log('Native usage data saved successfully');
         return true;
       } catch (err) {
-        console.error('Error saving usage data:', err);
+        console.error('Error saving native usage data:', err);
         return false;
       }
     },
@@ -829,11 +833,16 @@ export const useUserStore = defineStore('user', {
       }
     },
     
-    // New method to fetch historical data
+    // New method to fetch historical data from native Android
     async fetchHistoricalUsageData(dayOffset: number = 0) {
       try {
         const response = await fetch(`http://localhost:8080/data?day=${dayOffset}`);
         const data = await response.json();
+        
+        if (data.error) {
+          console.error('Native data error:', data.message);
+          return null;
+        }
         
         return {
           usageData: data.usageData,
@@ -842,7 +851,10 @@ export const useUserStore = defineStore('user', {
             totalAppsUsed: data.totalAppsUsed,
             dayLabel: data.dayLabel,
             targetDate: data.targetDate,
-            dataTimestamp: data.dataTimestamp
+            dataTimestamp: data.dataTimestamp,
+            queryStartTime: data.queryStartTime,
+            queryEndTime: data.queryEndTime,
+            dayOffset: data.dayOffset
           }
         };
       } catch (error) {
