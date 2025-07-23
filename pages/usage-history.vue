@@ -42,9 +42,9 @@
           </div>
         </div>
         
-        <!-- App Usage List -->
+        <!-- App Usage List with Native Data -->
         <div class="space-y-3">
-          <h3 class="text-lg font-semibold text-gray-700 mb-4">App Usage Details</h3>
+          <h3 class="text-lg font-semibold text-gray-700 mb-4">App Usage Details (Native Android)</h3>
           <div 
             v-for="app in sortedUsageData" 
             :key="app.packageName"
@@ -53,14 +53,20 @@
             <div class="flex-1">
               <p class="font-medium">{{ app.appName }}</p>
               <div class="flex items-center space-x-4 text-sm text-gray-500">
-                <span>{{ formatUsageTime(app.foregroundSeconds || app.usageSeconds) }}</span>
-                <span v-if="app.launchCount">{{ app.launchCount }} launches</span>
+                <span class="font-medium">{{ formatUsageTime(app.foregroundSeconds || app.usageSeconds) }}</span>
+                <span v-if="app.launchCount" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">{{ app.launchCount }} launches</span>
                 <span v-if="app.firstTimeUsed">
                   First: {{ new Date(app.firstTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}
                 </span>
                 <span v-if="app.lastTimeUsed">
                   Last: {{ new Date(app.lastTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}
                 </span>
+              </div>
+              
+              <!-- Show foreground vs background breakdown -->
+              <div v-if="app.backgroundSeconds > 0" class="mt-1 text-xs text-gray-400">
+                Foreground: {{ Math.round((app.foregroundSeconds || 0) / 60) }}m
+                <span v-if="app.backgroundSeconds > 0">, Background: {{ Math.round(app.backgroundSeconds / 60) }}m</span>
               </div>
             </div>
             <div class="text-right">
@@ -115,6 +121,14 @@ const sortedUsageData = computed(() => {
   });
 });
 
+const formatUsageTime = (seconds) => {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+};
+
 // Methods
 const loadDay = async (dayOffset) => {
   loading.value = true;
@@ -139,14 +153,6 @@ const formatTotalTime = (seconds) => {
     return `${hours}h ${minutes}m`;
   }
   return `${minutes}m`;
-};
-
-const formatUsageTime = (seconds) => {
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 };
 
 // Initialize

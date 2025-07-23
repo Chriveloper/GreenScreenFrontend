@@ -12,9 +12,11 @@
             <th class="px-4 py-2 text-left font-medium text-sky-700">Icon</th>
             <th class="px-4 py-2 text-left font-medium text-sky-700">App Name</th>
             <th class="px-4 py-2 text-left font-medium text-sky-700">Package Name</th>
-            <th class="px-4 py-2 text-left font-medium text-sky-700">Usage Time</th>
-            <th class="px-4 py-2 text-left font-medium text-sky-700">Start Time</th>
-            <th class="px-4 py-2 text-left font-medium text-sky-700">End Time</th>
+            <th class="px-4 py-2 text-left font-medium text-sky-700">Foreground Time</th>
+            <th class="px-4 py-2 text-left font-medium text-sky-700">Background Time</th>
+            <th class="px-4 py-2 text-left font-medium text-sky-700">Launches</th>
+            <th class="px-4 py-2 text-left font-medium text-sky-700">First Used</th>
+            <th class="px-4 py-2 text-left font-medium text-sky-700">Last Used</th>
           </tr>
           </thead>
           <tbody>
@@ -33,24 +35,30 @@
             </td>
             <td class="px-4 py-2 font-medium">{{ app.appName }}</td>
             <td class="px-4 py-2 text-sm text-gray-600">{{ app.packageName }}</td>
-            <td class="px-4 py-2">{{ formatUsageTime(app.usageSeconds) }}</td>
-            <td class="px-4 py-2 text-sm">{{ formatDateTime(app.startTime) }}</td>
-            <td class="px-4 py-2 text-sm">{{ formatDateTime(app.endTime) }}</td>
+            <td class="px-4 py-2">{{ formatUsageTime(app.foregroundSeconds || app.usageSeconds) }}</td>
+            <td class="px-4 py-2">{{ formatUsageTime(app.backgroundSeconds || 0) }}</td>
+            <td class="px-4 py-2">{{ app.launchCount || 1 }}</td>
+            <td class="px-4 py-2 text-sm">{{ app.firstTimeUsed ? formatDateTime(app.firstTimeUsed) : 'N/A' }}</td>
+            <td class="px-4 py-2 text-sm">{{ app.lastTimeUsed ? formatDateTime(app.lastTimeUsed) : 'N/A' }}</td>
           </tr>
           </tbody>
         </table>
       </div>
 
       <div class="mt-6">
-        <h3 class="font-semibold mb-2 text-sky-700">Usage Summary:</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h3 class="font-semibold mb-2 text-sky-700">Native Android Usage Summary:</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
             <p class="text-sm text-gray-600">Total Apps</p>
             <p class="text-2xl font-bold text-sky-600">{{ parsedUsageData.length }}</p>
           </div>
           <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p class="text-sm text-gray-600">Total Usage</p>
-            <p class="text-2xl font-bold text-green-600">{{ totalUsageMinutes }} min</p>
+            <p class="text-sm text-gray-600">Foreground Usage</p>
+            <p class="text-2xl font-bold text-green-600">{{ totalForegroundMinutes }} min</p>
+          </div>
+          <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <p class="text-sm text-gray-600">Background Usage</p>
+            <p class="text-2xl font-bold text-yellow-600">{{ totalBackgroundMinutes }} min</p>
           </div>
           <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <p class="text-sm text-gray-600">Most Used App</p>
@@ -64,7 +72,7 @@
 </template>
 
 <script setup>
-import {computed, onMounted, ref} from 'vue'
+import {computed, onMounted, ref, watch} from 'vue'
 import {useUserStore} from '@/stores/user'
 
 const userStore = useUserStore()
@@ -103,15 +111,20 @@ onMounted(() => {
 })
 
 // Computed properties
-const totalUsageMinutes = computed(() => {
-  const total = parsedUsageData.value.reduce((sum, app) => sum + (app.usageSeconds || 0), 0)
+const totalForegroundMinutes = computed(() => {
+  const total = parsedUsageData.value.reduce((sum, app) => sum + (app.foregroundSeconds || app.usageSeconds || 0), 0)
+  return Math.round(total / 60)
+})
+
+const totalBackgroundMinutes = computed(() => {
+  const total = parsedUsageData.value.reduce((sum, app) => sum + (app.backgroundSeconds || 0), 0)
   return Math.round(total / 60)
 })
 
 const mostUsedApp = computed(() => {
   if (parsedUsageData.value.length === 0) return null
   return parsedUsageData.value.reduce((prev, curr) =>
-      (curr.usageSeconds || 0) > (prev.usageSeconds || 0) ? curr : prev
+      (curr.foregroundSeconds || curr.usageSeconds || 0) > (prev.foregroundSeconds || prev.usageSeconds || 0) ? curr : prev
   )
 })
 

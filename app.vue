@@ -203,6 +203,7 @@ const shouldShowNavigation = computed(() => {
 
 // Logout function
 const logout = async () => {
+
   $supabase.auth.signOut()
   await userStore.clearUserData()
   navigateTo('/login')
@@ -210,7 +211,6 @@ const logout = async () => {
 }
 
 onMounted(async () => {
-
   const isLoggedIn = !!(await useNuxtApp().$supabase.auth.getUser()).data.user;
   if (!isLoggedIn) {
     await logout();
@@ -224,7 +224,17 @@ onMounted(async () => {
   fetch('http://localhost:8080/data')
     .then(response => response.json())
     .then(async data => {
-      console.log('Received enhanced data:', data);
+      console.log('Received native Android data:', data);
+
+      // Check if this is an error response
+      if (data.error) {
+        console.error('Native data error:', data.message);
+        if (toastRef.value) {
+          toastRef.value.showToast(`Data error: ${data.message}`, 'error');
+        }
+        return;
+      }
+
       console.log(`Data for ${data.dayLabel} (${data.targetDate}):`, {
         totalScreenTime: data.totalScreenTime,
         totalAppsUsed: data.totalAppsUsed,
@@ -233,21 +243,24 @@ onMounted(async () => {
       
       userStore.installed_apps = JSON.stringify(data.installedApps);
       userStore.usage_data = JSON.stringify(data.usageData);
-
-      // Store additional metadata
+      
+      // Store additional metadata from native Android implementation
       userStore.screen_time_metadata = JSON.stringify({
         totalScreenTime: data.totalScreenTime,
         totalAppsUsed: data.totalAppsUsed,
         dayLabel: data.dayLabel,
         targetDate: data.targetDate,
-        dataTimestamp: data.dataTimestamp
+        dataTimestamp: data.dataTimestamp,
+        queryStartTime: data.queryStartTime,
+        queryEndTime: data.queryEndTime,
+        dayOffset: data.dayOffset
       });
 
       const exceeded = await checkLimitsExceeded()
 
-      // Enhanced welcome message with screen time info
+      // Enhanced welcome message with native screen time info
       if (toastRef.value) {
-        //const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
+        const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
         toastRef.value.showToast(
           `Welcome! ${data.dayLabel}: ${screenTimeHours}h screen time, ${data.totalAppsUsed} apps used. Limit exceeded: ${exceeded}`, 
           'info'
@@ -268,17 +281,10 @@ onMounted(async () => {
     .catch(error => {
       console.error('Fetch failed:', error);
       if (toastRef.value) {
-        toastRef.value.showToast('Welcome to Focus Tank!', 'info');
+        toastRef.value.showToast('Welcome to Focus Tank! (Native data unavailable)', 'info');
       }
     });
 })
-
-const claimDailyReward = async () => {
-  await userStore.collectDailyReward();
-  await userStore.loadUserProfile(); // Refresh pearls
-  toastRef.value?.showToast('Daily reward claimed!', 'success');
-  showDailyRewardModal.value = false;
-};
 
 async function claimedRewardToday(){
   const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
@@ -299,8 +305,8 @@ async function checkLimitsExceeded() {
   const dailyLimitMinutes = userStore.userProfile.screen_time_goals?.dailyLimit || 0;
   const appLimits = userStore.userProfile.app_limits || {};
 
-  let totalUsageSeconds = 0;
-  const appUsageSeconds = {};
+    let totalUsageSeconds = 0;
+    const appUsageSeconds = {};
 
   const usageData = JSON.parse(userStore.usage_data);
 
@@ -315,21 +321,21 @@ async function checkLimitsExceeded() {
     appUsageSeconds[entry.packageName] += appUsage;
   }
 
-  const totalUsageMinutes = totalUsageSeconds / 60;
-  if (totalUsageMinutes > dailyLimitMinutes) {
-    console.log(`Daily limit of ${dailyLimitMinutes} hours exceeded with ${totalUsageMinutes.toFixed(2)} hours.`);
-    return true;
-  }
-
-  for (const packageName in appLimits) {
-    const limitMinutes = appLimits[packageName];
-    const appSeconds = appUsageSeconds[packageName] || 0;
-    const appMinutes = appSeconds / 60;
-    if (appMinutes > limitMinutes) {
-      console.log(`App ${packageName} limit of ${limitMinutes} minutes exceeded with ${appMinutes.toFixed(2)} minutes.`);
+    const totalUsageMinutes = totalUsageSeconds / 60;
+    if (totalUsageMinutes > dailyLimitMinutes) {
+      console.log(`Daily limit of ${dailyLimitMinutes} minutes exceeded with ${totalUsageMinutes.toFixed(2)} minutes.`);
       return true;
     }
-  }
+
+    for (const packageName in appLimits) {
+      const limitMinutes = appLimits[packageName];
+      const appSeconds = appUsageSeconds[packageName] || 0;
+      const appMinutes = appSeconds / 60;
+      if (appMinutes > limitMinutes) {
+        console.log(`App ${packageName} limit of ${limitMinutes} minutes exceeded with ${appMinutes.toFixed(2)} minutes.`);
+        return true;
+      }
+    }
 
   return false;
 }
