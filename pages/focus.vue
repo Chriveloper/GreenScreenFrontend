@@ -456,7 +456,7 @@ const closeCompletionModal = () => {
   showCompletionModal.value = false;
 };
 
-const formatUsageTime = (seconds, launchCount = null, backgroundSeconds = null) => {
+const formatUsageTime = (seconds, launchCount) => {
   const minutes = Math.round(seconds / 60);
   let timeStr = '';
   
@@ -473,11 +473,7 @@ const formatUsageTime = (seconds, launchCount = null, backgroundSeconds = null) 
     timeStr += ` (${launchCount}×)`;
   }
   
-  // Add background time indicator if significant
-  if (backgroundSeconds && backgroundSeconds > 60) {
-    const bgMinutes = Math.round(backgroundSeconds / 60);
-    timeStr += ` +${bgMinutes}m bg`;
-  }
+  // backgroundSeconds is no longer provided in the API
   
   return timeStr;
 };
@@ -514,7 +510,6 @@ const fetchUsageDataFromServer = async () => {
     if (data.error) {
       console.error('Native Android error:', data.message);
       showNotification(`Native data error: ${data.message}`, 'error');
-      // Don't fall back to sample data immediately - let user know what happened
       return;
     }
     
@@ -538,11 +533,7 @@ const processEnhancedNativeData = (nativeData) => {
     // Map native Android data to our format using the new structure
     todayUsageData.value = nativeData.usageData.map(app => ({
       ...app,
-      usage: app.foregroundSeconds || 0, // Always use foregroundSeconds now
-      backgroundTime: 0, // Remove if not provided by new API
-      totalTime: app.foregroundSeconds || 0,
-      // Add lastTimeUsed if available
-      lastTimeUsed: app.lastTimeUsed ? new Date(app.lastTimeUsed).toISOString() : null
+      usage: app.foregroundSeconds || app.usageSeconds || 0
     }));
     
     // Use the provided totalScreenTime directly

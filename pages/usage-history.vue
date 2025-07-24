@@ -64,9 +64,8 @@
               </div>
               
               <!-- Show foreground vs background breakdown -->
-              <div v-if="app.backgroundSeconds > 0" class="mt-1 text-xs text-gray-400">
-                Foreground: {{ Math.round((app.foregroundSeconds || 0) / 60) }}m
-                <span v-if="app.backgroundSeconds > 0">, Background: {{ Math.round(app.backgroundSeconds / 60) }}m</span>
+              <div class="mt-1 text-xs text-gray-400">
+                Usage time: {{ formatUsageTime(app.foregroundSeconds || app.usageSeconds) }}
               </div>
             </div>
             <div class="text-right">

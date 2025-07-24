@@ -399,16 +399,15 @@ export const useUserStore = defineStore('user', {
         // Format data for database insertion with new structure
         const formattedData = usageData.map(app => ({
           user_id: this.user!.id,
-          date: new Date().toISOString().split('T')[0], // Use current date since we know when we're saving
+          date: new Date().toISOString().split('T')[0],
           app_name: app.appName,
           package_name: app.packageName,
-          usage_seconds: app.foregroundSeconds || 0, // Always use foregroundSeconds
-          background_seconds: 0, // Not provided in new API
+          usage_seconds: app.foregroundSeconds || app.usageSeconds || 0,
           launch_count: app.launchCount || 1,
-          first_time_used: null, // Not provided in new API
-          last_time_used: app.lastTimeUsed ? new Date(app.lastTimeUsed).toISOString() : null,
-          start_time: null, // Not relevant with new API
-          end_time: null // Not relevant with new API
+          first_time_used: app.firstTimeUsed || null,
+          last_time_used: app.lastTimeUsed || null,
+          start_time: app.startTime || null,
+          end_time: app.endTime || null
         }));
         
         const { error } = await supabase
