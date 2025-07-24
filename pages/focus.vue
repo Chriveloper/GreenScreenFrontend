@@ -172,6 +172,20 @@
               </div>
             </div>
           </div>
+          <!-- Add a horizontal progress bar for daily screen time -->
+          <div class="mt-4">
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div
+                class="h-3 rounded-full transition-all duration-500"
+                :class="isOverDailyLimit ? 'bg-red-500' : 'bg-sky-500'"
+                :style="{ width: Math.min(100, dailyLimitPercentage) + '%' }"
+              ></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0h</span>
+              <span>{{ dailyLimitHours }}h</span>
+            </div>
+          </div>
         </div>
         
         <!-- App Usage List -->
@@ -186,30 +200,41 @@
               class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-l-4"
             >
               <div class="flex-1">
-                <p class="font-medium">{{ app.appName }}</p>
-                <div class="flex items-center space-x-4 text-xs text-gray-500">
-                  <span>{{ formatUsageTime(app.foregroundSeconds || app.usage, app.launchCount, app.backgroundSeconds) }}</span>
+                <div class="flex items-center space-x-2">
+                  <img v-if="app.icon" :src="app.icon" class="w-6 h-6 rounded" />
+                  <p class="font-medium">{{ app.appName }}</p>
+                </div>
+                <div class="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                  <span>{{ formatUsageTime(app.usage, app.launchCount) }}</span>
                   <span v-if="app.firstTimeUsed">First: {{ new Date(app.firstTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</span>
                   <span v-if="app.lastTimeUsed">Last: {{ new Date(app.lastTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}</span>
                   <span v-if="app.launchCount > 1" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">{{ app.launchCount }} launches</span>
                 </div>
                 
-                <!-- Show foreground vs background breakdown for significant apps -->
-                <div v-if="app.backgroundSeconds > 60" class="mt-1 text-xs text-gray-400">
-                  Foreground: {{ Math.round(app.foregroundSeconds / 60) }}m, Background: {{ Math.round(app.backgroundSeconds / 60) }}m
+                <!-- Per-app progress bar if limit is set -->
+                <div v-if="appLimits[app.packageName]" class="mt-2">
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      class="h-2 rounded-full transition-all duration-500"
+                      :class="isAppOverLimit(app) ? 'bg-red-500' : 'bg-green-500'"
+                      :style="{ width: Math.min(100, Math.round((app.usage / (appLimits[app.packageName] * 60)) * 100)) + '%' }"
+                    ></div>
+                  </div>
+                  <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0m</span>
+                    <span>{{ appLimits[app.packageName] }}m</span>
+                  </div>
                 </div>
               </div>
               
               <!-- Show warning if over limit -->
-              <div v-if="isAppOverLimit(app)" class="text-red-500 text-xs font-medium flex items-center">
+              <div v-if="isAppOverLimit(app)" class="text-red-500 text-xs font-medium flex items-center ml-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
                 Over limit
               </div>
-              
-              <!-- Show limit if set -->
-              <div v-else-if="appLimits[app.packageName]" class="text-gray-500 text-xs">
+              <div v-else-if="appLimits[app.packageName]" class="text-gray-500 text-xs ml-2">
                 Limit: {{ appLimits[app.packageName] }}min
               </div>
             </div>
