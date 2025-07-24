@@ -504,59 +504,49 @@ const requestUsageData = () => {
 const fetchUsageDataFromServer = async () => {
   try {
     const response = await fetch('http://localhost:8080/data');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
     
     if (data.error) {
       console.error('Native Android error:', data.message);
       showNotification(`Native data error: ${data.message}`, 'error');
-      // Fall back to sample data
-      const sampleData = JSON.stringify([
-        { packageName: 'com.instagram.android', appName: 'Instagram', foregroundSeconds: 3600, backgroundSeconds: 120, usageSeconds: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 5 },
-        { packageName: 'com.facebook.katana', appName: 'Facebook', foregroundSeconds: 1800, backgroundSeconds: 60, usageSeconds: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 3 },
-        { packageName: 'com.whatsapp', appName: 'WhatsApp', foregroundSeconds: 2400, backgroundSeconds: 180, usageSeconds: 2400, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 8 },
-        { packageName: 'com.tiktok.app', appName: 'TikTok', foregroundSeconds: 4500, backgroundSeconds: 90, usageSeconds: 4500, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 6 }
-      ]);
-      processUsageData(sampleData);
+      // Don't fall back to sample data immediately - let user know what happened
       return;
     }
     
-    console.log(`📊 Received native ${data.dayLabel} data:`, {
-      totalScreenTime: Math.round(data.totalScreenTime / 3600 * 10) / 10 + 'h',
-      totalAppsUsed: data.totalAppsUsed,
-      targetDate: data.targetDate,
-      queryPeriod: `${data.queryStartTime} to ${data.queryEndTime}`
-    });
-    
+    console.log(`📊 Received native ${data.dayLabel} data`);
     processEnhancedNativeData(data);
+    
   } catch (error) {
-    console.error('Error fetching native usage data from server:', error);
-    showNotification('Failed to fetch native data', 'error');
-    // Fall back to sample data
-    const sampleData = JSON.stringify([
-      { packageName: 'com.instagram.android', appName: 'Instagram', foregroundSeconds: 3600, backgroundSeconds: 120, usageSeconds: 3600, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 5 },
-      { packageName: 'com.facebook.katana', appName: 'Facebook', foregroundSeconds: 1800, backgroundSeconds: 60, usageSeconds: 1800, startTime: new Date().toISOString(), endTime: new Date().toISOString(), launchCount: 3 }
-    ]);
-    processUsageData(sampleData);
+    if (error.message.includes('fetch')) {
+      showNotification('Cannot connect to Android companion app', 'error');
+    } else {
+      showNotification(`Data error: ${error.message}`, 'error');
+    }
+    console.error('Error fetching native usage data:', error);
   }
 };
 
-// Process enhanced native Android data
 const processEnhancedNativeData = (nativeData) => {
   try {
     rawUsageData.value = nativeData.usageData;
     
-    // Map native Android data to our format
+    // Map native Android data to our format using the new structure
     todayUsageData.value = nativeData.usageData.map(app => ({
       ...app,
-      usage: app.foregroundSeconds || 0, // Use foreground time for screen time calculations
-      backgroundTime: app.backgroundSeconds || 0,
-      totalTime: (app.foregroundSeconds || 0) + (app.backgroundSeconds || 0)
+      usage: app.foregroundSeconds || 0, // Always use foregroundSeconds now
+      backgroundTime: 0, // Remove if not provided by new API
+      totalTime: app.foregroundSeconds || 0,
+      // Add lastTimeUsed if available
+      lastTimeUsed: app.lastTimeUsed ? new Date(app.lastTimeUsed).toISOString() : null
     }));
     
-    // Update total screen time from native metadata
-    if (nativeData.totalScreenTime) {
-      totalScreenTimeToday.value = nativeData.totalScreenTime;
-    }
+    // Use the provided totalScreenTime directly
+    totalScreenTimeToday.value = nativeData.totalScreenTime;
     
     // Save to Supabase if authenticated
     if (userStore.isLoggedIn) {
@@ -564,11 +554,10 @@ const processEnhancedNativeData = (nativeData) => {
     }
     
     console.log(`📊 Processed ${todayUsageData.value.length} apps for ${nativeData.dayLabel}`);
-    console.log('Sample app data:', todayUsageData.value.slice(0, 2));
     
     // Show notification with native screen time summary
     const screenTimeHours = Math.round(nativeData.totalScreenTime / 3600 * 10) / 10;
-    showNotification(`${nativeData.dayLabel}: ${screenTimeHours}h screen time, ${nativeData.totalAppsUsed} apps used (Native Android)`, 'info');
+    showNotification(`${nativeData.dayLabel}: ${screenTimeHours}h screen time, ${nativeData.totalAppsUsed} apps used`, 'info');
     
   } catch (error) {
     console.error('Error processing native Android data:', error);

@@ -396,19 +396,19 @@ export const useUserStore = defineStore('user', {
         const { $supabase } = useNuxtApp();
         const supabase = $supabase as SupabaseClient;
         
-        // Format native Android data for database insertion
+        // Format data for database insertion with new structure
         const formattedData = usageData.map(app => ({
           user_id: this.user!.id,
-          date: new Date(app.startTime).toISOString().split('T')[0],
+          date: new Date().toISOString().split('T')[0], // Use current date since we know when we're saving
           app_name: app.appName,
           package_name: app.packageName,
-          usage_seconds: app.foregroundSeconds || app.usageSeconds || 0,
-          background_seconds: app.backgroundSeconds || 0,
+          usage_seconds: app.foregroundSeconds || 0, // Always use foregroundSeconds
+          background_seconds: 0, // Not provided in new API
           launch_count: app.launchCount || 1,
-          first_time_used: app.firstTimeUsed || null,
-          last_time_used: app.lastTimeUsed || null,
-          start_time: app.startTime,
-          end_time: app.endTime
+          first_time_used: null, // Not provided in new API
+          last_time_used: app.lastTimeUsed ? new Date(app.lastTimeUsed).toISOString() : null,
+          start_time: null, // Not relevant with new API
+          end_time: null // Not relevant with new API
         }));
         
         const { error } = await supabase
@@ -417,10 +417,10 @@ export const useUserStore = defineStore('user', {
           
         if (error) throw error;
         
-        console.log('Native usage data saved successfully');
+        console.log('Usage data saved successfully');
         return true;
       } catch (err) {
-        console.error('Error saving native usage data:', err);
+        console.error('Error saving usage data:', err);
         return false;
       }
     },
@@ -859,6 +859,37 @@ export const useUserStore = defineStore('user', {
         };
       } catch (error) {
         console.error('Error fetching historical usage data:', error);
+        return null;
+      }
+    },
+
+    // Add this new method for detailed usage stats
+    async fetchDetailedUsageData(dayOffset: number = 0) {
+      try {
+        const response = await fetch(`http://localhost:8080/detailed_usage?dayOffset=${dayOffset}`);
+        const data = await response.json();
+        
+        if (data.error) {
+          console.error('Native detailed data error:', data.message);
+          return null;
+        }
+        
+        return {
+          usageData: data.usageData,
+          installedApps: data.installedApps,
+          metadata: {
+            totalScreenTime: data.totalScreenTime,
+            totalAppsUsed: data.totalAppsUsed,
+            dayLabel: data.dayLabel,
+            targetDate: data.targetDate,
+            dataTimestamp: data.dataTimestamp,
+            queryStartTime: data.queryStartTime,
+            queryEndTime: data.queryEndTime,
+            dayOffset: data.dayOffset
+          }
+        };
+      } catch (error) {
+        console.error('Error fetching detailed usage data:', error);
         return null;
       }
     }

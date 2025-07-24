@@ -135,8 +135,13 @@ const loadDay = async (dayOffset) => {
   selectedDay.value = dayOffset;
   
   try {
+    // Use the day parameter explicitly
     const data = await userStore.fetchHistoricalUsageData(dayOffset);
     currentData.value = data;
+    
+    if (data) {
+      console.log(`Loaded usage data for ${data.metadata.dayLabel} (offset: ${dayOffset})`);
+    }
   } catch (error) {
     console.error('Error loading historical data:', error);
     currentData.value = null;
