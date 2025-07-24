@@ -167,7 +167,7 @@
 </template>
 
 <script setup>
-import {ref, computed, onMounted, provide} from 'vue'
+import {ref, computed, onMounted, provide, onUnmounted} from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '~/stores/user'
 import ToastNotification from '~/components/ToastNotification.vue';
@@ -340,4 +340,41 @@ async function checkLimitsExceeded() {
   return false;
 }
 
+let screenTimeInterval = null;
+
+async function fetchAndStoreScreenTime() {
+  try {
+    const response = await fetch('http://localhost:8080/data');
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Native data error:', data.message);
+      return;
+    }
+
+    userStore.installed_apps = JSON.stringify(data.installedApps);
+    userStore.usage_data = JSON.stringify(data.usageData);
+    userStore.screen_time_metadata = JSON.stringify({
+      totalScreenTime: data.totalScreenTime,
+      totalAppsUsed: data.totalAppsUsed,
+      dayLabel: data.dayLabel,
+      targetDate: data.targetDate,
+      dataTimestamp: data.dataTimestamp,
+      queryStartTime: data.queryStartTime,
+      queryEndTime: data.queryEndTime,
+      dayOffset: data.dayOffset
+    });
+  } catch (error) {
+    console.error('Fetch failed:', error);
+  }
+}
+
+onMounted(() => {
+  fetchAndStoreScreenTime();
+  screenTimeInterval = setInterval(fetchAndStoreScreenTime, 180000); // 3 minutes
+});
+
+onUnmounted(() => {
+  if (screenTimeInterval) clearInterval(screenTimeInterval);
+});
 </script>
