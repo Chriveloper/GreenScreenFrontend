@@ -16,7 +16,7 @@
     <!-- Water overlay effect -->
     <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg pointer-events-none z-5"></div>
     
-    <!-- Floor/substrate with tiles -->
+    <!-- Floor/substrate with fixed pixel size tiles -->
     <div 
       class="absolute bottom-0 left-0 right-0 ground-region rounded-b-lg z-10 floor-tiles"
       :style="getFloorStyle()"
@@ -35,22 +35,22 @@
       <img 
         :src="plant.img" 
         :alt="plant.name"
-        class="object-contain pixelated transition-transform"
+        class="object-contain pixelated transition-transform plant-image"
         :style="getPlantImageStyle(plant)"
       />
       <!-- Plant controls in edit mode -->
       <div v-if="editMode" class="absolute -top-8 left-1/2 transform -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-blue-600 transition"
-          @click.stop="resizePlant(plant.id, 0.1)"
-          title="Increase size"
+          @click.stop="resizePlant(plant.id, 1)"
+          title="Increase size scale"
         >
           +
         </button>
         <button
           class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-blue-600 transition"
-          @click.stop="resizePlant(plant.id, -0.1)"
-          title="Decrease size"
+          @click.stop="resizePlant(plant.id, -1)"
+          title="Decrease size scale"
         >
           −
         </button>
@@ -74,7 +74,8 @@
       <img 
         :src="fish.img" 
         :alt="fish.name"
-        class="w-12 h-10 object-contain pixelated"
+        class="object-contain pixelated fish-sprite"
+        :style="getFishImageStyle(fish)"
       />
     </div>
 
@@ -144,26 +145,40 @@ const props = defineProps({
 
 const emit = defineEmits(['start-drag', 'remove-plant', 'place-plant', 'resize-plant']);
 
+// Plant positioning and scaling based on normalized pixel size
 const getPlantStyle = (plant) => ({
   left: plant.x + '%',
   bottom: plant.y + '%',
   transform: 'translateX(-50%)',
-  zIndex: 20 + Math.floor(plant.y / 5), // Adjust z-index based on y position for depth
+  zIndex: 20 + Math.floor(plant.y / 5),
   animationDelay: (plant.id.charCodeAt(0) % 5) + 's',
-  '--plant-scale': plant.scale || 1
 });
 
-const getPlantImageStyle = (plant) => ({
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain'
-});
+// Plant image sizing - normalized pixel density with 7 scale levels
+const getPlantImageStyle = (plant) => {
+  // Base scaling factor for plant pixels to match ground tile pixels
+  const baseScale = plant.scale || 1; // 1 = normal size, 0.3-2.0 for 7 levels
+  
+  return {
+    width: `calc(var(--pixel-unit) * var(--plant-base-width) * ${baseScale})`,
+    height: `calc(var(--pixel-unit) * var(--plant-base-height) * ${baseScale})`,
+    objectFit: 'contain'
+  };
+};
 
+// Fish positioning and normalized pixel sizing
 const getFishStyle = (fish) => ({
   left: (fish.swimX || fish.x) + '%',
   top: (fish.swimY || fish.y) + '%',
   transform: `translate(-50%, -50%) ${fish.direction === 'left' ? 'scaleX(-1)' : ''}`,
-  zIndex: Math.floor((fish.swimY || fish.y)) + 15
+  zIndex: Math.floor((fish.swimY || fish.y)) + 15,
+});
+
+// Fish image sizing - normalized pixel density
+const getFishImageStyle = (fish) => ({
+  width: `calc(var(--pixel-unit) * var(--fish-base-width))`,
+  height: `calc(var(--pixel-unit) * var(--fish-base-height))`,
+  objectFit: 'contain'
 });
 
 const getBubbleStyle = (bubble) => ({
@@ -185,7 +200,12 @@ const getBackgroundStyle = () => {
 const getFloorStyle = () => {
   const floor = availableFloors.find(f => f.id === props.selectedFloor);
   if (floor && floor.image) {
-    return `background-image: url('${floor.image}'); background-size: 32px 32px; background-repeat: repeat;`;
+    // Ground tiles use the base pixel unit for consistent tile sizing
+    return `
+      background-image: url('${floor.image}'); 
+      background-size: calc(var(--pixel-unit) * var(--ground-tile-size)) calc(var(--pixel-unit) * var(--ground-tile-size)); 
+      background-repeat: repeat;
+    `;
   }
   return floor?.preview || 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
@@ -222,42 +242,72 @@ const resizePlant = (plantId, scaleChange) => {
 .cursor-move { cursor: move; }
 .cursor-move:active { cursor: grabbing; }
 .pixelated, .pixelated-bg { image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
+
 .aquarium-tank { 
   aspect-ratio: 2/3; 
   width: 100%; 
   position: relative;
-  /* Grid system for positioning - 32px as base unit */
-  --grid-unit: 32px;
-  --grid-cols: 20;
-  --grid-rows: 30;
-  --pixel-scale: calc(100% / (var(--grid-cols) * var(--grid-unit)));
+  max-width: 800px;
+  margin: 0 auto;
+  
+  /* Base pixel unit - the fundamental pixel size for the aquarium */
+  --pixel-unit: calc(min(100vw - 2rem, 800px) / 1000); /* 1 pixel = 1/1000th of tank width */
+
+  /* Ground tile pixel dimensions (e.g., if ground tiles are 32x32 pixels in the image) */
+  --ground-tile-size: 60;
+  
+  /* Fish pixel dimensions (e.g., if fish sprites are 48x32 pixels) */
+  --fish-base-width: 60;
+  --fish-base-height: 40;
+  
+  /* Plant base pixel dimensions (e.g., if plants are 24x48 pixels on average) */
+  --plant-base-width: 48;
+  --plant-base-height: 96;
 }
+
 .ground-region { 
   height: 25%; 
-  /* Make ground region a precise grid */
-  display: grid;
-  grid-template-columns: repeat(var(--grid-cols), 1fr);
 }
+
 .plant-container { 
   transition: transform 0.1s ease-out; 
   transform-origin: bottom center;
-  /* Use absolute size units based on grid */
-  width: calc(var(--grid-unit) * 2 * var(--plant-scale, 1));
-  height: calc(var(--grid-unit) * 2.5 * var(--plant-scale, 1));
 }
-.plant-sway { animation: sway 5s ease-in-out infinite; }
+
+.plant-image, .fish-sprite {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.fish-container {
+  will-change: transform, left, top;
+  transition: left 1s ease-in-out, top 1s ease-in-out;
+}
+
+.plant-sway { 
+  animation: sway 5s ease-in-out infinite; 
+}
+
 .floor-tiles { 
   background-attachment: local;
-  background-repeat: repeat;
-  background-size: var(--grid-unit) var(--grid-unit);
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
+
 @keyframes sway {
   0%, 50%, 100% { transform: translateX(-50%) rotate(0deg); }
   25% { transform: translateX(-50%) rotate(2deg); }
   75% { transform: translateX(-50%) rotate(-2deg); }
 }
-.fish-container { will-change: transform, left, top; transition: left 1s ease-in-out, top 1s ease-in-out; }
-.bubble { background: white; animation: float-up linear forwards; will-change: transform, opacity; }
+
+.bubble { 
+  background: white; 
+  animation: float-up linear forwards; 
+  will-change: transform, opacity; 
+}
+
 @keyframes float-up {
   0% { transform: translateY(0) translateX(0); opacity: var(--opacity, 0.7); }
   25% { transform: translateY(-25vh) translateX(5px); }
@@ -265,6 +315,7 @@ const resizePlant = (plantId, scaleChange) => {
   75% { transform: translateY(-75vh) translateX(5px); }
   100% { transform: translateY(-100vh) translateX(0); opacity: 0; }
 }
+
 .z-5 { z-index: 5; }
 .z-10 { z-index: 10; }
 .z-15 { z-index: 15; }
@@ -272,7 +323,26 @@ const resizePlant = (plantId, scaleChange) => {
 .z-25 { z-index: 25; }
 .z-30 { z-index: 30; }
 .z-40 { z-index: 40; }
+
+/* Responsive adjustments - maintain pixel density */
 @media (max-width: 768px) {
-  .plant-container img, .fish-container img { transform: scale(0.8); }
+  .aquarium-tank {
+    --pixel-unit: calc((100vw - 1rem) / 400);
+  }
+}
+
+@media (max-width: 480px) {
+  .aquarium-tank {
+    --pixel-unit: calc((100vw - 0.5rem) / 400);
+  }
+}
+
+/* High DPI display adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .pixelated, .pixelated-bg, .floor-tiles {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
 }
 </style>

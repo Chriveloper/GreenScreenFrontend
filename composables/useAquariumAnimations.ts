@@ -1,12 +1,31 @@
-// composables/useAquariumAnimations.ts
 import { ref, onMounted, onUnmounted } from 'vue';
+import type { Ref } from 'vue';
 
-export function useAquariumAnimations(activeFish, bubbles) {
-  let fishAnimationInterval = null;
-  let bubbleInterval = null;
+interface Fish {
+  id: string;
+  swimX: number;
+  swimY: number;
+  targetX?: number;
+  targetY?: number;
+  direction?: 'left' | 'right';
+}
+
+interface Bubble {
+  id: number;
+  x: number;
+  y: number;
+  delay: number;
+  duration: number;
+  opacity: number;
+  sizeClass: string;
+}
+
+export function useAquariumAnimations(activeFish: Ref<Fish[]>, bubbles: Ref<Bubble[]>) {
+  let fishAnimationInterval: NodeJS.Timeout | null = null;
+  let bubbleInterval: NodeJS.Timeout | null = null;
 
   const animateFish = () => {
-    activeFish.value.forEach(fish => {
+    activeFish.value.forEach((fish: Fish) => {
       if (!fish.targetX || !fish.targetY) {
         fish.targetX = Math.random() * 60 + 20;
         fish.targetY = Math.random() * 50 + 15;
@@ -71,7 +90,7 @@ export function useAquariumAnimations(activeFish, bubbles) {
   });
 
   onUnmounted(() => {
-    clearInterval(fishAnimationInterval);
-    clearInterval(bubbleInterval);
+    if (fishAnimationInterval) clearInterval(fishAnimationInterval);
+    if (bubbleInterval) clearInterval(bubbleInterval);
   });
 }

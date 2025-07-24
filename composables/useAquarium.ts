@@ -2,21 +2,54 @@ import { ref, computed } from 'vue';
 import { useUserStore } from '~/stores/user';
 import { fishData, plantData, availableBackgrounds, availableFloors, availableFrames } from '~/data/aquarium/items';
 
+interface Plant {
+  id: string;
+  plantId: string;
+  name: string;
+  img: string;
+  x: number;
+  y: number;
+  scale: number; // Scale multiplier for the plant size (0.3 to 2.0)
+}
+
+interface Fish {
+  id: string;
+  name: string;
+  img: string;
+  color: string;
+  maxQuantity: number;
+  swimX?: number;
+  swimY?: number;
+  targetX?: number;
+  targetY?: number;
+  direction?: 'left' | 'right';
+  instanceIndex?: number;
+}
+
+interface Position {
+  x: number;
+  y: number;
+}
+
 export function useAquarium() {
   const userStore = useUserStore();
 
   // Reactive state
-  const placedPlants = ref([]);
-  const activeFish = ref([]);
+  const placedPlants = ref<Plant[]>([]);
+  const activeFish = ref<Fish[]>([]);
   const selectedBackground = ref('default');
   const selectedFloor = ref('sand');
   const selectedFrame = ref('none');
   const loading = ref(false);
   const message = ref('');
-  const messageType = ref('success');
+  const messageType = ref<'success' | 'error' | 'info'>('success');
+
+  // Plant scale levels - 7 discrete scaling levels for consistent sizing
+  const PLANT_SCALE_LEVELS = [0.3, 0.5, 0.7, 1.0, 1.3, 1.6, 2.0];
+  const DEFAULT_SCALE_INDEX = 3; // Index for 1.0 scale
 
   // Show message helper
-  const showMessage = (text, type = 'success') => {
+  const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
     message.value = text;
     messageType.value = type;
     setTimeout(() => {
@@ -29,8 +62,8 @@ export function useAquarium() {
     const layout = {
       plants: placedPlants.value.map(p => ({
         ...p,
-        y: p.y || p.bottomOffset || 0,
-        scale: p.scale || 1
+        y: p.y || 0,
+        scale: p.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
       })),
       fish: activeFish.value.map(f => ({
         id: f.id,
@@ -61,26 +94,26 @@ export function useAquarium() {
   const loadAquariumLayout = () => {
     const layout = userStore.aquariumLayout;
     if (layout && Object.keys(layout).length > 0) {
-      placedPlants.value = layout.plants?.map(p => ({
+      placedPlants.value = layout.plants?.map((p: any) => ({
         ...p,
-        y: p.y !== undefined ? p.y : (p.bottomOffset || Math.floor(Math.random() * 20)),
-        scale: p.scale || 1
+        y: p.y !== undefined ? p.y : Math.floor(Math.random() * 20),
+        scale: p.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
       })) || [];
       selectedBackground.value = layout.background || 'default';
       selectedFloor.value = layout.floor || 'sand';
       selectedFrame.value = layout.frame || 'none';
-      activeFish.value = layout.fish?.map(savedFish => {
+      activeFish.value = layout.fish?.map((savedFish: any) => {
         const fishTemplate = fishData.find(f => f.id === savedFish.id);
         return { ...fishTemplate, ...savedFish };
-      }).filter(f => f.name) || [];
+      }).filter((f: any) => f.name) || [];
     }
   };
 
   // Inventory Management
-  const countOwnedItems = (itemId, collection) => collection.filter(id => id === itemId).length;
+  const countOwnedItems = (itemId: string, collection: string[]) => collection.filter(id => id === itemId).length;
 
   const ownedFish = computed(() => {
-    const result = [];
+    const result: any[] = [];
     const userFishIds = [...new Set(userStore.fish || [])];
     userFishIds.forEach(fishId => {
       const fishTemplate = fishData.find(f => f.id === fishId);
@@ -101,7 +134,7 @@ export function useAquarium() {
   });
 
   const ownedPlants = computed(() => {
-    const result = [];
+    const result: any[] = [];
     const userPlantIds = [...new Set(userStore.decorations || [])];
     userPlantIds.forEach(plantId => {
       const plantTemplate = plantData.find(p => p.id === plantId);
@@ -119,7 +152,7 @@ export function useAquarium() {
     return result;
   });
 
-  const getPlantUsageCount = (plantId) => placedPlants.value.filter(p => p.plantId === plantId).length;
+  const getPlantUsageCount = (plantId: string) => placedPlants.value.filter(p => p.plantId === plantId).length;
 
   // Tank Health
   const tankHealth = computed(() => {
@@ -131,7 +164,7 @@ export function useAquarium() {
   });
 
   // Item Interactions
-  const toggleFish = async (fish) => {
+  const toggleFish = async (fish: any) => {
     if (loading.value) return;
     loading.value = true;
     try {
@@ -168,7 +201,7 @@ export function useAquarium() {
     }
   };
 
-  const addPlantToTank = async (plant) => {
+  const addPlantToTank = async (plant: any) => {
     if (loading.value) return;
     if (getPlantUsageCount(plant.id) >= plant.maxQuantity) {
       showMessage(`Maximum ${plant.name} already placed`, 'info');
@@ -176,14 +209,14 @@ export function useAquarium() {
     }
     loading.value = true;
     try {
-      const newPlant = {
+      const newPlant: Plant = {
         id: `${plant.id}_${Date.now()}`,
         plantId: plant.id,
         name: plant.name,
         img: plant.img,
         x: Math.random() * 90 + 5,
         y: Math.random() * 20 + 2,
-        scale: 1
+        scale: PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
       };
       placedPlants.value.push(newPlant);
       await saveAquariumLayout();
@@ -195,7 +228,7 @@ export function useAquarium() {
     }
   };
 
-  const placePlantAtPosition = async (position, plant = null) => {
+  const placePlantAtPosition = async (position: Position, plant: any = null) => {
     if (loading.value) return;
     
     // If no plant specified, use the first available plant
@@ -217,14 +250,14 @@ export function useAquarium() {
 
     loading.value = true;
     try {
-      const newPlant = {
+      const newPlant: Plant = {
         id: `${plant.id}_${Date.now()}`,
         plantId: plant.id,
         name: plant.name,
         img: plant.img,
         x: Math.max(5, Math.min(95, position.x)),
-        y: Math.max(0, Math.min(25, position.y)), // Allow full range of ground region
-        scale: 1
+        y: Math.max(0, Math.min(25, position.y)),
+        scale: PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
       };
       placedPlants.value.push(newPlant);
       await saveAquariumLayout();
@@ -236,24 +269,37 @@ export function useAquarium() {
     }
   };
 
-  const resizePlant = async (plantId, scaleChange) => {
+  const resizePlant = async (plantId: string, scaleDirection: number) => {
     if (loading.value) return;
     
     const plant = placedPlants.value.find(p => p.id === plantId);
     if (!plant) return;
 
-    const newScale = Math.max(0.5, Math.min(2.0, (plant.scale || 1) + scaleChange));
-    plant.scale = newScale;
+    // Find current scale index
+    const currentScale = plant.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX];
+    const currentIndex = PLANT_SCALE_LEVELS.findIndex(scale => Math.abs(scale - currentScale) < 0.05);
     
+    // Calculate new index
+    let newIndex;
+    if (scaleDirection > 0) {
+      newIndex = Math.min(PLANT_SCALE_LEVELS.length - 1, currentIndex + 1);
+    } else {
+      newIndex = Math.max(0, currentIndex - 1);
+    }
+    
+    const newScale = PLANT_SCALE_LEVELS[newIndex];
+    plant.scale = newScale;
+
     try {
       await saveAquariumLayout();
-      showMessage(`${plant.name} resized`, 'info');
+      const scaleNames = ['Tiny', 'Small', 'Medium-Small', 'Normal', 'Medium-Large', 'Large', 'Huge'];
+      showMessage(`${plant.name} resized to ${scaleNames[newIndex]}`, 'info');
     } catch (error) {
       showMessage('Failed to resize plant', 'error');
     }
   };
 
-  const removePlant = async (plantId) => {
+  const removePlant = async (plantId: string) => {
     if (loading.value) return;
     loading.value = true;
     try {
@@ -269,7 +315,7 @@ export function useAquarium() {
   };
 
   // Customization
-  const selectItem = async (type, id) => {
+  const selectItem = async (type: string, id: string) => {
     if (loading.value) return;
     loading.value = true;
     try {
@@ -314,6 +360,7 @@ export function useAquarium() {
     removePlant,
     getPlantUsageCount,
     selectItem,
-    showMessage
+    showMessage,
+    PLANT_SCALE_LEVELS
   };
 }

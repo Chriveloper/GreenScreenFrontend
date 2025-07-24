@@ -14,9 +14,7 @@ export default defineNuxtConfig({
       crawlLinks: true,
       failOnError: false, // Don't fail the build on prerender errors
       // Skip problematic routes during static generation
-      ignore: [
-        // Skip settings page initially if it has issues
-      ]
+      ignore: []
     }
   },
   
@@ -24,6 +22,7 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
   ],
+  
   // Configure PWA via Vite plugin
   vite: {
     server: {
@@ -34,6 +33,10 @@ export default defineNuxtConfig({
     },
     plugins: [
       VitePWA({
+        registerType: 'autoUpdate',
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,png,svg,ico}']
+        },
         manifest: {
           name: 'GreenScreen Focus Manager',
           short_name: 'GreenScreen',
@@ -47,33 +50,15 @@ export default defineNuxtConfig({
             { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
             { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' }
           ]
-        },
-        workbox: {
-          runtimeCaching: [
-            {
-              urlPattern: '/api/.*',
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                expiration: { maxEntries: 50, maxAgeSeconds: 86400 }
-              }
-            },
-            {
-              urlPattern: /\.(?:png|jpg|jpeg|svg|ico)$/, 
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'asset-images',
-                expiration: { maxEntries: 100, maxAgeSeconds: 604800 }
-              }
-            }
-          ]
         }
       })
     ]
   },
+  
   css: [
     '~/assets/css/tailwind.css',
   ],
+  
   runtimeConfig: {
     public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL,

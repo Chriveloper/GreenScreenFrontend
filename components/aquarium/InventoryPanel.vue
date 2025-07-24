@@ -9,32 +9,79 @@
         <span class="text-lg mr-2">🐠</span>
         Fish Collection
       </h3>
-      <div class="grid grid-cols-2 gap-2">
+      <div class="space-y-2">
         <div
-          v-for="fish in ownedFish"
-          :key="`${fish.id}_${fish.instanceIndex}`"
-          class="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center cursor-pointer hover:bg-sky-100 transition"
-          :class="{
-            'bg-sky-100 border-sky-400': fish.inTank,
-            'bg-sky-50 border-sky-200': !fish.inTank
-          }"
-          @click="$emit('toggle-fish', fish)"
+          v-for="fishGroup in groupedFish"
+          :key="fishGroup.id"
+          class="bg-sky-50 border border-sky-200 rounded-lg p-3"
         >
-          <div class="relative">
-            <img :src="fish.img" :alt="fish.name" class="w-8 h-6 mx-auto mb-1 object-contain pixelated" />
-            <span v-if="fish.inTank" class="absolute -top-2 -right-2 bg-green-500 rounded-full w-4 h-4 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-            </span>
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center">
+              <img :src="fishGroup.img" :alt="fishGroup.name" class="w-8 h-6 mr-2 object-contain pixelated" />
+              <div>
+                <p class="font-medium text-sm">{{ fishGroup.name }}</p>
+                <p class="text-xs text-gray-500">{{ fishGroup.inTankCount }}/{{ fishGroup.totalCount }} in tank</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              <span class="text-xs bg-sky-200 text-sky-800 px-2 py-1 rounded">
+                {{ fishGroup.totalCount }}
+              </span>
+            </div>
           </div>
-          <p class="text-xs font-medium">{{ fish.name }}</p>
-          <p class="text-xs" :class="{'text-green-600 font-medium': fish.inTank, 'text-gray-500': !fish.inTank}">
-            {{ fish.inTank ? 'In Tank' : 'Available' }}
-          </p>
+          
+          <!-- Individual fish instances -->
+          <div class="grid grid-cols-3 gap-1">
+            <button
+              v-for="fish in fishGroup.instances"
+              :key="fish.uniqueKey"
+              class="aspect-square border-2 rounded-lg p-1 text-center cursor-pointer hover:scale-105 transition text-xs"
+              :class="{
+                'border-green-500 bg-green-100 text-green-700': fish.inTank,
+                'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100': !fish.inTank
+              }"
+              @click="$emit('toggle-fish', fish)"
+              :title="fish.inTank ? 'Remove from tank' : 'Add to tank'"
+            >
+              <div class="flex flex-col items-center">
+                <img :src="fish.img" :alt="fish.name" class="w-6 h-4 mb-1 object-contain pixelated" />
+                <span class="text-xs font-medium">#{{ fish.instanceIndex + 1 }}</span>
+                <div class="flex items-center justify-center mt-1">
+                  <div 
+                    v-if="fish.inTank" 
+                    class="w-2 h-2 bg-green-500 rounded-full"
+                    title="In tank"
+                  ></div>
+                  <div 
+                    v-else 
+                    class="w-2 h-2 bg-gray-300 rounded-full"
+                    title="Available"
+                  ></div>
+                </div>
+              </div>
+            </button>
+          </div>
+          
+          <!-- Quick toggle buttons -->
+          <div class="flex space-x-2 mt-2 pt-2 border-t border-sky-200">
+            <button
+              v-if="fishGroup.inTankCount < fishGroup.totalCount && fishGroup.inTankCount < fishGroup.maxQuantity"
+              @click="addNextFish(fishGroup)"
+              class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs py-1 px-2 rounded transition"
+            >
+              Add Next
+            </button>
+            <button
+              v-if="fishGroup.inTankCount > 0"
+              @click="removeLastFish(fishGroup)"
+              class="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-1 px-2 rounded transition"
+            >
+              Remove Last
+            </button>
+          </div>
         </div>
       </div>
-      <p v-if="ownedFish.length === 0" class="text-sm text-gray-500 text-center py-4">
+      <p v-if="groupedFish.length === 0" class="text-sm text-gray-500 text-center py-4">
         No fish owned. Visit the <NuxtLink to="/shop" class="text-sky-600 hover:underline">shop</NuxtLink> to buy some!
       </p>
     </div>
@@ -53,7 +100,7 @@
           :class="{ 'opacity-50': getPlantUsageCount(plant.id) >= plant.maxQuantity }"
           @click="$emit('add-plant', plant)"
         >
-          <img :src="plant.img" :alt="plant.name" class="w-8 h-8 mx-auto mb-1 object-contain" style="image-rendering: pixelated;" />
+          <img :src="plant.img" :alt="plant.name" class="w-8 h-8 mx-auto mb-1 object-contain pixelated" />
           <p class="text-xs font-medium">{{ plant.name }}</p>
           <p class="text-xs text-gray-500">{{ getPlantUsageCount(plant.id) }}/{{ plant.maxQuantity }}</p>
         </div>
@@ -66,7 +113,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
   ownedFish: {
     type: Array,
     default: () => [],
@@ -81,7 +130,50 @@ defineProps({
   },
 });
 
-defineEmits(['toggle-fish', 'add-plant']);
+const emit = defineEmits(['toggle-fish', 'add-plant']);
+
+// Group fish by type
+const groupedFish = computed(() => {
+  const groups = {};
+  
+  props.ownedFish.forEach(fish => {
+    if (!groups[fish.id]) {
+      groups[fish.id] = {
+        id: fish.id,
+        name: fish.name,
+        img: fish.img,
+        color: fish.color,
+        maxQuantity: fish.maxQuantity,
+        instances: [],
+        totalCount: 0,
+        inTankCount: 0
+      };
+    }
+    
+    groups[fish.id].instances.push(fish);
+    groups[fish.id].totalCount++;
+    if (fish.inTank) {
+      groups[fish.id].inTankCount++;
+    }
+  });
+  
+  return Object.values(groups);
+});
+
+// Helper functions for quick toggle
+const addNextFish = (fishGroup) => {
+  const nextFish = fishGroup.instances.find(fish => !fish.inTank);
+  if (nextFish) {
+    emit('toggle-fish', nextFish);
+  }
+};
+
+const removeLastFish = (fishGroup) => {
+  const lastFish = [...fishGroup.instances].reverse().find(fish => fish.inTank);
+  if (lastFish) {
+    emit('toggle-fish', lastFish);
+  }
+};
 </script>
 
 <style scoped>
