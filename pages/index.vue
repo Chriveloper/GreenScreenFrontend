@@ -32,6 +32,13 @@
           :style="getFloorPreviewStyle()"
         ></div>
         
+        <!-- Tank frame overlay -->
+        <div 
+          v-if="getFramePreviewStyle()"
+          class="absolute inset-0 pointer-events-none z-40 pixelated-bg"
+          :style="getFramePreviewStyle()"
+        ></div>
+        
         <!-- User's Plants from aquarium layout -->
         <div
           v-for="plant in previewPlants.slice(0, 3)"
@@ -39,8 +46,8 @@
           class="absolute z-20"
           :style="{ 
             left: plant.x + '%', 
-            top: plant.y + '%',
-            transform: 'translate(-50%, -100%)'
+            bottom: (plant.bottomOffset || 0) + 'px',
+            transform: 'translateX(-50%)'
           }"
         >
           <img 
@@ -53,11 +60,11 @@
         <!-- User's Fish from aquarium layout -->
         <div
           v-for="(fish, index) in previewFish.slice(0, 3)"
-          :key="fish.id"
+          :key="fish.id + (fish.instanceIndex || 0)"
           class="absolute animate-pulse z-15"
           :style="{ 
-            left: fish.x + '%', 
-            top: fish.y + '%',
+            left: (fish.swimX || fish.x) + '%', 
+            top: (fish.swimY || fish.y) + '%',
             transform: `translate(-50%, -50%) ${fish.direction === 'left' ? 'scaleX(-1)' : ''}`,
             animationDelay: (index * 0.5) + 's'
           }"
@@ -115,19 +122,19 @@
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- Total Sessions -->
+      <!-- Today's Screen Time -->
       <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-400">
         <div class="flex justify-between">
-          <span class="text-gray-600">Today's Sessions</span>
-          <span class="text-2xl font-bold text-green-500">{{ todaySessions }}</span>
+          <span class="text-gray-600">Today's Screen Time</span>
+          <span class="text-2xl font-bold text-green-500">{{ formatUsageTime(todayScreenTime) }}</span>
         </div>
       </div>
       
-      <!-- Total Hours -->
+      <!-- Apps Used Today -->
       <div class="bg-white rounded-lg shadow p-6 border-t-4 border-purple-400">
         <div class="flex justify-between">
-          <span class="text-gray-600">Total Hours</span>
-          <span class="text-2xl font-bold text-purple-500">{{ totalHours }}</span>
+          <span class="text-gray-600">Apps Used Today</span>
+          <span class="text-2xl font-bold text-purple-500">{{ todayAppsUsed }}</span>
         </div>
       </div>
       
@@ -136,6 +143,14 @@
         <div class="flex justify-between">
           <span class="text-gray-600">Current Pearls</span>
           <span class="text-2xl font-bold text-yellow-500">{{ playerPearls }}</span>
+        </div>
+      </div>
+
+      <!-- Tank Health -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-sky-400">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Tank Health</span>
+          <span class="text-2xl font-bold" :class="tankHealth >= 80 ? 'text-green-500' : tankHealth >= 60 ? 'text-yellow-500' : 'text-red-500'">{{ tankHealth }}%</span>
         </div>
       </div>
     </div>
@@ -147,7 +162,7 @@
         <div v-if="ownedFish.length > 0" class="grid grid-cols-3 gap-2">
           <div
             v-for="fish in ownedFish.slice(0, 6)"
-            :key="fish.id"
+            :key="fish.id + fish.instanceIndex"
             class="bg-gradient-to-br from-sky-100 to-sky-200 rounded-lg p-2 text-center"
           >
             <img 
@@ -168,9 +183,27 @@
         </NuxtLink>
       </div>
 
-      <!-- Quick Actions -->
+      <!-- Recent Usage Stats -->
       <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-400">
-        <h2 class="text-lg font-semibold mb-4 text-green-700">Quick Actions</h2>
+        <h2 class="text-lg font-semibold mb-4 text-green-700">Recent Usage</h2>
+        <div v-if="recentUsageData.length > 0" class="space-y-2">
+          <div v-for="app in recentUsageData.slice(0, 3)" :key="app.package" class="flex justify-between text-sm">
+            <span class="text-gray-600 truncate">{{ app.name || app.package }}</span>
+            <span class="font-medium">{{ formatUsageTime(app.usage) }}</span>
+          </div>
+        </div>
+        <div v-else class="text-center text-gray-500 py-4">
+          <p class="text-sm">No usage data available</p>
+          <p class="text-xs">Connect your Android device to track usage</p>
+        </div>
+        <NuxtLink to="/focus" class="block text-center bg-green-50 text-green-600 hover:bg-green-100 py-2 rounded-md text-sm font-medium transition mt-3">
+          View Focus Stats →
+        </NuxtLink>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-lg shadow p-6 border-t-4 border-purple-400">
+        <h2 class="text-lg font-semibold mb-4 text-purple-700">Quick Actions</h2>
         <div class="space-y-3">
           <NuxtLink to="/timer" class="w-full bg-green-100 hover:bg-green-200 text-green-700 py-3 px-4 rounded-md text-center font-medium transition block">
             🎯 Start Focus Session
@@ -180,6 +213,9 @@
           </NuxtLink>
           <NuxtLink to="/shop" class="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-700 py-3 px-4 rounded-md text-center font-medium transition block">
             🛒 Visit Shop
+          </NuxtLink>
+          <NuxtLink to="/friends" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 py-3 px-4 rounded-md text-center font-medium transition block">
+            👥 View Friends
           </NuxtLink>
         </div>
       </div>
@@ -195,34 +231,38 @@ definePageMeta({
 
 import { onMounted, ref, computed } from 'vue';
 import { useUserStore } from '~/stores/user';
+import { fishData, plantData, availableBackgrounds, availableFloors, availableFrames } from '~/data/aquarium/items';
 
 const userStore = useUserStore();
 
-// Initialize with default values
-const playerPearls = computed(() => userStore.pearls);
-const todaySessions = ref(0);
-const totalHours = ref(0);
+// Reactive data
+const todayScreenTime = ref(0);
+const todayAppsUsed = ref(0);
+const recentUsageData = ref([]);
 
-// Fish and plant data for preview
-const fishData = [
-  { id: 'goldfish', name: 'Goldfish', img: '/resources/fish/fish_1.gif' },
-  { id: 'angelfish', name: 'Angelfish', img: '/resources/fish/fish_2.gif' },
-  { id: 'clownfish', name: 'Clownfish', img: '/resources/fish/fish_3.gif' },
-  { id: 'blue_tang', name: 'Blue Tang', img: '/resources/fish/fish_4.gif' },
-  { id: 'royal_gramma', name: 'Royal Gramma', img: '/resources/fish/fish_5.gif' },
-];
+// Computed properties
+const playerPearls = computed(() => userStore.pearls || 0);
 
-const plantData = [
-  { id: 'plant1', name: 'Java Moss', img: '/resources/plants/plant_1.png' },
-  { id: 'plant2', name: 'Amazon Sword', img: '/resources/plants/plant_2.png' },
-  { id: 'plant3', name: 'Anubias', img: '/resources/plants/plant_3.png' },
-  { id: 'plant4', name: 'Water Wisteria', img: '/resources/plants/plant_4.png' },
-  { id: 'plant5', name: 'Hornwort', img: '/resources/plants/plant_5.png' },
-];
-
-// Computed properties for user data
+// Fish collection with proper instances
 const ownedFish = computed(() => {
-  return fishData.filter(fish => (userStore.fish || []).includes(fish.id));
+  const result = [];
+  const userFishIds = [...new Set(userStore.fish || [])];
+  
+  userFishIds.forEach(fishId => {
+    const fishTemplate = fishData.find(f => f.id === fishId);
+    if (fishTemplate) {
+      const countOwned = (userStore.fish || []).filter(id => id === fishId).length;
+      for (let i = 0; i < countOwned; i++) {
+        result.push({
+          ...fishTemplate,
+          instanceIndex: i,
+          inTank: false // Will be updated based on aquarium layout
+        });
+      }
+    }
+  });
+  
+  return result;
 });
 
 const previewFish = computed(() => {
@@ -232,10 +272,7 @@ const previewFish = computed(() => {
       const fishTemplate = fishData.find(f => f.id === savedFish.id);
       return {
         ...fishTemplate,
-        x: savedFish.swimX || 30,
-        y: savedFish.swimY || 40,
-        direction: savedFish.direction || 'right',
-        id: savedFish.id
+        ...savedFish
       };
     }).filter(fish => fish.name);
   }
@@ -274,9 +311,9 @@ const getAquariumPreviewStyle = () => {
   const layout = userStore.aquariumLayout;
   const backgroundId = layout?.background || 'default';
   
-  // Check if it's one of the image backgrounds
-  if (backgroundId.startsWith('background_')) {
-    return `background-image: url("/resources/backgrounds/${backgroundId}.png"); background-size: cover; background-position: center;`;
+  const bg = availableBackgrounds.find(b => b.id === backgroundId);
+  if (bg && bg.image) {
+    return `background-image: url('${bg.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
   }
   
   // Default gradient background
@@ -287,22 +324,82 @@ const getFloorPreviewStyle = () => {
   const layout = userStore.aquariumLayout;
   const floorId = layout?.floor || 'sand';
   
-  // Check if it's one of the tile floors
-  if (floorId.startsWith('tiles_')) {
-    return `background-image: url("/resources/floor_tiles/${floorId}.png"); background-size: cover; background-position: center;`;
+  const floor = availableFloors.find(f => f.id === floorId);
+  if (floor && floor.image) {
+    return `background-image: url('${floor.image}'); background-size: cover; background-position: center bottom; background-repeat: no-repeat;`;
   }
   
   // Default sand gradient
   return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
 
+const getFramePreviewStyle = () => {
+  const layout = userStore.aquariumLayout;
+  const frameId = layout?.frame || 'none';
+  
+  if (frameId === 'none') return null;
+  
+  const frame = availableFrames.find(f => f.id === frameId);
+  if (frame && frame.image) {
+    return `background-image: url('${frame.image}'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;`;
+  }
+  
+  return null;
+};
+
+// Format usage time helper
+const formatUsageTime = (seconds) => {
+  if (!seconds || seconds === 0) return '0m';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+};
+
+// Load usage data (similar to focus page)
+const loadUsageData = async () => {
+  try {
+    // Try to fetch from Android companion app
+    const response = await fetch('http://localhost:8080/data');
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (!data.error && data.usageData) {
+        todayScreenTime.value = data.totalScreenTime || 0;
+        todayAppsUsed.value = data.totalAppsUsed || 0;
+        recentUsageData.value = data.usageData
+          .sort((a, b) => (b.foregroundSeconds || b.usageSeconds || 0) - (a.foregroundSeconds || a.usageSeconds || 0))
+          .map(app => ({
+            ...app,
+            usage: app.foregroundSeconds || app.usageSeconds || 0
+          }));
+      }
+    }
+  } catch (error) {
+    console.log('Android companion app not available, using default values');
+    // Set default values when companion app is not available
+    todayScreenTime.value = 0;
+    todayAppsUsed.value = 0;
+    recentUsageData.value = [];
+  }
+};
+
 onMounted(async () => {
   try {
-    // TODO: Load actual session data from database
-    todaySessions.value = 3;
-    totalHours.value = 5.4;
+    // Load user profile if not already loaded
+    if (!userStore.userProfile && userStore.isLoggedIn) {
+      await userStore.loadUserProfile();
+    }
+    
+    // Load usage data
+    await loadUsageData();
   } catch (error) {
-    console.error('Error loading user data on index page:', error);
+    console.error('Error loading dashboard data:', error);
   }
 });
 </script>
@@ -310,6 +407,12 @@ onMounted(async () => {
 <style scoped>
 /* Pixelated rendering for preview backgrounds and tiles */
 .pixelated-bg {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.pixelated {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
