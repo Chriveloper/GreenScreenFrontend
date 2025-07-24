@@ -96,6 +96,7 @@ const userStore = useUserStore();
 const loading = ref(false);
 const selectedDay = ref(0);
 const currentData = ref(null);
+const currentInstalledApps = ref([]);
 
 // Day options
 const dayOptions = [
@@ -109,35 +110,14 @@ const dayOptions = [
   { offset: -7, label: 'A week ago' },
 ];
 
-// Computed
-const sortedUsageData = computed(() => {
-  if (!currentData.value?.usageData) return [];
-  
-  return [...currentData.value.usageData].sort((a, b) => {
-    const aTime = a.foregroundSeconds || a.usageSeconds || 0;
-    const bTime = b.foregroundSeconds || b.usageSeconds || 0;
-    return bTime - aTime;
-  });
-});
-
-const formatUsageTime = (seconds) => {
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-};
-
 // Methods
 const loadDay = async (dayOffset) => {
   loading.value = true;
   selectedDay.value = dayOffset;
-  
   try {
-    // Use the day parameter explicitly
     const data = await userStore.fetchHistoricalUsageData(dayOffset);
     currentData.value = data;
-    
+    currentInstalledApps.value = data?.installedApps || [];
     if (data) {
       console.log(`Loaded usage data for ${data.metadata.dayLabel} (offset: ${dayOffset})`);
     }
@@ -163,4 +143,29 @@ const formatTotalTime = (seconds) => {
 onMounted(() => {
   loadDay(0); // Load today's data by default
 });
+
+const sortedUsageData = computed(() => {
+  if (!currentData.value?.usageData) return [];
+  // Merge icon/appName from installedApps if available
+  return [...currentData.value.usageData].map(app => {
+    const match = currentInstalledApps.value.find(a => a.packageName === app.packageName);
+    return {
+      ...app,
+      appName: match?.appName || app.appName,
+      icon: match?.icon || null
+    };
+  }).sort((a, b) => {
+    const aTime = a.foregroundSeconds || a.usageSeconds || 0;
+    const bTime = b.foregroundSeconds || b.usageSeconds || 0;
+    return bTime - aTime;
+  });
+});
+
+const formatUsageTime = (seconds) => {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+};
 </script>

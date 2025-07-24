@@ -201,7 +201,7 @@
             >
               <div class="flex-1">
                 <div class="flex items-center space-x-2">
-                  <img v-if="app.icon" :src="app.icon" class="w-6 h-6 rounded" />
+                  <img v-if="getAppIcon(app)" :src="getAppIcon(app)" class="w-6 h-6 rounded" alt="App icon" />
                   <p class="font-medium">{{ app.appName }}</p>
                 </div>
                 <div class="flex items-center space-x-4 text-xs text-gray-500 mt-1">
@@ -653,6 +653,14 @@ const showNotification = (message, type = 'info') => {
     notifications.value = notifications.value.filter(n => n.id !== id);
   }, 5000);
 };
+
+const getAppIcon = (app) => {
+  if (!app) return null
+  if (app.icon) {
+    return app.icon.startsWith('data:image') ? app.icon : `data:image/png;base64,${app.icon}`
+  }
+  return null
+}
 
 onMounted(async () => {
   setupNativeCallback();

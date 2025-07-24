@@ -107,9 +107,16 @@
               <div v-for="(limit, packageName) in appLimits"
                    :key="packageName"
                    class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border-l-4 border-sky-500">
-                <div>
+                <div class="flex items-center">
+                  <!-- Add icon here -->
+                  <img
+                    v-if="getAppIcon(packageName)"
+                    :src="getAppIcon(packageName)"
+                    class="w-5 h-5 mr-2 rounded"
+                    alt="App icon"
+                  />
                   <span class="font-medium">{{ formatAppName(packageName) }}</span>
-                  <div class="text-sm text-gray-600">{{ limit }} minutes per day
+                  <div class="text-sm text-gray-600 ml-2">{{ limit }} minutes per day
                     <span class="ml-2 text-xs text-gray-500">({{ Math.round(limit / 60 * 10) / 10 }}h)</span>
                   </div>
                 </div>
@@ -276,6 +283,15 @@ const resetAllLimits = async () => {
 const formatAppName = (packageName) => {
   const app = availableApps.value.find(app => app && app.packageName === packageName)
   return app ? app.appName : packageName
+}
+
+const getAppIcon = (packageName) => {
+  const app = availableApps.value.find(app => app && app.packageName === packageName)
+  if (app && app.icon) {
+    // If icon is already a data URL, use as is; else, prepend
+    return app.icon.startsWith('data:image') ? app.icon : `data:image/png;base64,${app.icon}`
+  }
+  return null
 }
 
 onMounted(() => {
