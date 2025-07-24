@@ -4,6 +4,7 @@
     class="aquarium-tank rounded-lg shadow-lg p-4 relative overflow-hidden cursor-pointer pixelated-bg"
     :class="{ 'ring-2 ring-yellow-400': editMode }"
     :style="getBackgroundStyle()"
+    @click="handleTankClick"
   >
     <!-- Tank frame overlay -->
     <div 
@@ -15,9 +16,9 @@
     <!-- Water overlay effect -->
     <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg pointer-events-none z-5"></div>
     
-    <!-- Floor/substrate -->
+    <!-- Floor/substrate with tiles -->
     <div 
-      class="absolute bottom-0 left-0 right-0 ground-region rounded-b-lg pixelated-bg z-10"
+      class="absolute bottom-0 left-0 right-0 ground-region rounded-b-lg z-10 floor-tiles"
       :style="getFloorStyle()"
     ></div>
 
@@ -25,7 +26,7 @@
     <div
       v-for="plant in placedPlants"
       :key="plant.id"
-      class="absolute cursor-move z-20 plant-container"
+      class="absolute cursor-move z-20 plant-container group"
       :class="{ 'hover:scale-110': editMode, 'plant-sway': true }"
       :style="getPlantStyle(plant)"
       @mousedown="$emit('start-drag', plant, $event)"
@@ -34,20 +35,39 @@
       <img 
         :src="plant.img" 
         :alt="plant.name"
-        class="w-16 h-20 object-contain pixelated"
+        class="object-contain pixelated transition-transform"
+        :style="getPlantImageStyle(plant)"
       />
-      <div
-v-if="editMode" 
-           class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs cursor-pointer hover:bg-red-600 transition"
-           @click.stop="$emit('remove-plant', plant.id)">
-        ×
+      <!-- Plant controls in edit mode -->
+      <div v-if="editMode" class="absolute -top-8 left-1/2 transform -translate-x-1/2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-blue-600 transition"
+          @click.stop="resizePlant(plant.id, 0.1)"
+          title="Increase size"
+        >
+          +
+        </button>
+        <button
+          class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-blue-600 transition"
+          @click.stop="resizePlant(plant.id, -0.1)"
+          title="Decrease size"
+        >
+          −
+        </button>
+        <button
+          class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition"
+          @click.stop="$emit('remove-plant', plant.id)"
+          title="Remove plant"
+        >
+          ×
+        </button>
       </div>
     </div>
 
     <!-- Swimming Fish -->
     <div
       v-for="fish in activeFish"
-      :key="fish.id + fish.instanceIndex"
+      :key="`${fish.id}_${fish.instanceIndex || 0}`"
       class="absolute transition-all duration-1000 ease-in-out z-15 fish-container"
       :style="getFishStyle(fish)"
     >
@@ -71,7 +91,8 @@ v-if="editMode"
     <div v-if="editMode" class="absolute top-4 left-4 bg-white/90 rounded-lg p-3 z-30">
       <p class="text-sm font-medium text-gray-800">Edit Mode Active</p>
       <p class="text-xs text-gray-600">• Drag plants to move them</p>
-      <p class="text-xs text-gray-600">• Click × to remove items</p>
+      <p class="text-xs text-gray-600">• Click ground region to place plants</p>
+      <p class="text-xs text-gray-600">• Hover plants for resize/remove options</p>
       <p class="text-xs text-gray-600">• Use inventory to add new items</p>
       <p class="text-xs text-gray-600">• Customize background & floor</p>
     </div>
@@ -121,14 +142,21 @@ const props = defineProps({
   },
 });
 
-defineEmits(['start-drag', 'remove-plant']);
+const emit = defineEmits(['start-drag', 'remove-plant', 'place-plant', 'resize-plant']);
 
 const getPlantStyle = (plant) => ({
   left: plant.x + '%',
-  bottom: plant.bottomOffset + 'px',
+  bottom: plant.y + '%',
   transform: 'translateX(-50%)',
-  zIndex: 20 + Math.floor(plant.x / 10),
-  animationDelay: (plant.id.charCodeAt(0) % 5) + 's'
+  zIndex: 20 + Math.floor(plant.y / 5), // Adjust z-index based on y position for depth
+  animationDelay: (plant.id.charCodeAt(0) % 5) + 's',
+  '--plant-scale': plant.scale || 1
+});
+
+const getPlantImageStyle = (plant) => ({
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain'
 });
 
 const getFishStyle = (fish) => ({
@@ -140,22 +168,26 @@ const getFishStyle = (fish) => ({
 
 const getBubbleStyle = (bubble) => ({
   left: bubble.x + '%',
-  bottom: bubble.y + 'px',
-  animationDuration: bubble.duration + 's',
+  top: bubble.y + '%',
   animationDelay: bubble.delay + 's',
-  opacity: bubble.opacity
+  animationDuration: bubble.duration + 's',
+  '--opacity': bubble.opacity
 });
 
 const getBackgroundStyle = () => {
   const bg = availableBackgrounds.find(b => b.id === props.selectedBackground);
-  if (bg && bg.image) return `background-image: url('${bg.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
-  return 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
+  if (bg && bg.image) {
+    return `background-image: url('${bg.image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+  }
+  return bg?.preview || 'background: linear-gradient(to bottom, #0ea5e9, #0284c7);';
 };
 
 const getFloorStyle = () => {
   const floor = availableFloors.find(f => f.id === props.selectedFloor);
-  if (floor && floor.image) return `background-image: url('${floor.image}'); background-size: cover; background-position: center bottom; background-repeat: no-repeat;`;
-  return 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
+  if (floor && floor.image) {
+    return `background-image: url('${floor.image}'); background-size: 32px 32px; background-repeat: repeat;`;
+  }
+  return floor?.preview || 'background: linear-gradient(to top, #fbbf24, #f59e0b);';
 };
 
 const getFrameStyle = () => {
@@ -163,16 +195,62 @@ const getFrameStyle = () => {
   if (frame && frame.image) return `background-image: url('${frame.image}'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;`;
   return '';
 };
+
+const handleTankClick = (event) => {
+  if (!props.editMode) return;
+  
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 100;
+  
+  // Calculate y relative to the bottom of the tank (for ground region)
+  const groundHeight = rect.height * 0.25; // 25% of tank height
+  const clickY = rect.bottom - event.clientY;
+  const y = (clickY / groundHeight) * 25; // Convert to percentage within ground region
+  
+  // Only allow placement if click is in ground region
+  if (clickY <= groundHeight && clickY >= 0) {
+    emit('place-plant', { x, y });
+  }
+};
+
+const resizePlant = (plantId, scaleChange) => {
+  emit('resize-plant', plantId, scaleChange);
+};
 </script>
 
 <style scoped>
 .cursor-move { cursor: move; }
 .cursor-move:active { cursor: grabbing; }
 .pixelated, .pixelated-bg { image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
-.aquarium-tank { aspect-ratio: 2/3; width: 100%; position: relative; }
-.ground-region { height: calc(100% / 6); }
-.plant-container { transition: transform 0.1s ease-out; transform-origin: bottom center; }
+.aquarium-tank { 
+  aspect-ratio: 2/3; 
+  width: 100%; 
+  position: relative;
+  /* Grid system for positioning - 32px as base unit */
+  --grid-unit: 32px;
+  --grid-cols: 20;
+  --grid-rows: 30;
+  --pixel-scale: calc(100% / (var(--grid-cols) * var(--grid-unit)));
+}
+.ground-region { 
+  height: 25%; 
+  /* Make ground region a precise grid */
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), 1fr);
+}
+.plant-container { 
+  transition: transform 0.1s ease-out; 
+  transform-origin: bottom center;
+  /* Use absolute size units based on grid */
+  width: calc(var(--grid-unit) * 2 * var(--plant-scale, 1));
+  height: calc(var(--grid-unit) * 2.5 * var(--plant-scale, 1));
+}
 .plant-sway { animation: sway 5s ease-in-out infinite; }
+.floor-tiles { 
+  background-attachment: local;
+  background-repeat: repeat;
+  background-size: var(--grid-unit) var(--grid-unit);
+}
 @keyframes sway {
   0%, 50%, 100% { transform: translateX(-50%) rotate(0deg); }
   25% { transform: translateX(-50%) rotate(2deg); }

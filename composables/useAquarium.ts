@@ -1,4 +1,3 @@
-// composables/useAquarium.ts
 import { ref, computed } from 'vue';
 import { useUserStore } from '~/stores/user';
 import { fishData, plantData, availableBackgrounds, availableFloors, availableFrames } from '~/data/aquarium/items';
@@ -28,7 +27,11 @@ export function useAquarium() {
   // Save layout
   const saveAquariumLayout = async () => {
     const layout = {
-      plants: placedPlants.value,
+      plants: placedPlants.value.map(p => ({
+        ...p,
+        y: p.y || p.bottomOffset || 0,
+        scale: p.scale || 1
+      })),
       fish: activeFish.value.map(f => ({
         id: f.id,
         swimX: f.swimX || 50,
@@ -58,7 +61,11 @@ export function useAquarium() {
   const loadAquariumLayout = () => {
     const layout = userStore.aquariumLayout;
     if (layout && Object.keys(layout).length > 0) {
-      placedPlants.value = layout.plants?.map(p => p.y && !p.bottomOffset ? { ...p, bottomOffset: Math.floor(Math.random() * 10) } : p) || [];
+      placedPlants.value = layout.plants?.map(p => ({
+        ...p,
+        y: p.y !== undefined ? p.y : (p.bottomOffset || Math.floor(Math.random() * 20)),
+        scale: p.scale || 1
+      })) || [];
       selectedBackground.value = layout.background || 'default';
       selectedFloor.value = layout.floor || 'sand';
       selectedFrame.value = layout.frame || 'none';
@@ -81,7 +88,12 @@ export function useAquarium() {
         const count = countOwnedItems(fishId, userStore.fish);
         for (let i = 0; i < count; i++) {
           const inTankList = activeFish.value.filter(f => f.id === fishId);
-          result.push({ ...fishTemplate, instanceIndex: i, inTank: i < inTankList.length });
+          result.push({ 
+            ...fishTemplate, 
+            instanceIndex: i, 
+            inTank: i < inTankList.length,
+            uniqueKey: `${fishId}_${i}`
+          });
         }
       }
     });
@@ -96,7 +108,11 @@ export function useAquarium() {
       if (plantTemplate) {
         const count = countOwnedItems(plantId, userStore.decorations);
         for (let i = 0; i < count; i++) {
-          result.push({ ...plantTemplate, instanceIndex: i });
+          result.push({ 
+            ...plantTemplate, 
+            instanceIndex: i,
+            uniqueKey: `${plantId}_${i}`
+          });
         }
       }
     });
@@ -119,7 +135,10 @@ export function useAquarium() {
     if (loading.value) return;
     loading.value = true;
     try {
-      const fishIndex = activeFish.value.findIndex(f => f.id === fish.id && f.instanceIndex === fish.instanceIndex);
+      const fishIndex = activeFish.value.findIndex(f => 
+        f.id === fish.id && (f.instanceIndex || 0) === (fish.instanceIndex || 0)
+      );
+      
       if (fishIndex >= 0) {
         activeFish.value.splice(fishIndex, 1);
         showMessage(`${fish.name} removed from tank`, 'info');
@@ -131,7 +150,14 @@ export function useAquarium() {
         }
         const startX = Math.random() * 60 + 20;
         const startY = Math.random() * 50 + 15;
-        activeFish.value.push({ ...fish, swimX: startX, swimY: startY, targetX: startX, targetY: startY, direction: 'right' });
+        activeFish.value.push({ 
+          ...fish, 
+          swimX: startX, 
+          swimY: startY, 
+          targetX: startX, 
+          targetY: startY, 
+          direction: 'right' 
+        });
         showMessage(`${fish.name} added to tank`, 'success');
       }
       await saveAquariumLayout();
@@ -156,7 +182,8 @@ export function useAquarium() {
         name: plant.name,
         img: plant.img,
         x: Math.random() * 90 + 5,
-        bottomOffset: Math.floor(Math.random() * 10)
+        y: Math.random() * 20 + 2,
+        scale: 1
       };
       placedPlants.value.push(newPlant);
       await saveAquariumLayout();
@@ -165,6 +192,64 @@ export function useAquarium() {
       showMessage('Failed to add plant', 'error');
     } finally {
       loading.value = false;
+    }
+  };
+
+  const placePlantAtPosition = async (position, plant = null) => {
+    if (loading.value) return;
+    
+    // If no plant specified, use the first available plant
+    if (!plant) {
+      const availablePlant = ownedPlants.value.find(p => 
+        getPlantUsageCount(p.id) < p.maxQuantity
+      );
+      if (!availablePlant) {
+        showMessage('No available plants to place', 'info');
+        return;
+      }
+      plant = availablePlant;
+    }
+
+    if (getPlantUsageCount(plant.id) >= plant.maxQuantity) {
+      showMessage(`Maximum ${plant.name} already placed`, 'info');
+      return;
+    }
+
+    loading.value = true;
+    try {
+      const newPlant = {
+        id: `${plant.id}_${Date.now()}`,
+        plantId: plant.id,
+        name: plant.name,
+        img: plant.img,
+        x: Math.max(5, Math.min(95, position.x)),
+        y: Math.max(0, Math.min(25, position.y)), // Allow full range of ground region
+        scale: 1
+      };
+      placedPlants.value.push(newPlant);
+      await saveAquariumLayout();
+      showMessage(`${plant.name} placed`, 'success');
+    } catch (error) {
+      showMessage('Failed to place plant', 'error');
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const resizePlant = async (plantId, scaleChange) => {
+    if (loading.value) return;
+    
+    const plant = placedPlants.value.find(p => p.id === plantId);
+    if (!plant) return;
+
+    const newScale = Math.max(0.5, Math.min(2.0, (plant.scale || 1) + scaleChange));
+    plant.scale = newScale;
+    
+    try {
+      await saveAquariumLayout();
+      showMessage(`${plant.name} resized`, 'info');
+    } catch (error) {
+      showMessage('Failed to resize plant', 'error');
     }
   };
 
@@ -224,6 +309,8 @@ export function useAquarium() {
     saveAquariumLayout,
     toggleFish,
     addPlantToTank,
+    placePlantAtPosition,
+    resizePlant,
     removePlant,
     getPlantUsageCount,
     selectItem,

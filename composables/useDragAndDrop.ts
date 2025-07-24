@@ -24,11 +24,22 @@ export function useDragAndDrop(placedPlants, saveAquariumLayout) {
 
     const tankRect = document.querySelector('.aquarium-tank').getBoundingClientRect();
     const clientX = event.clientX || event.touches?.[0]?.clientX;
+    const clientY = event.clientY || event.touches?.[0]?.clientY;
     
-    const newX = ((clientX - tankRect.left - dragOffset.value.x) / tankRect.width) * 100;
+    // Calculate x position as percentage of tank width
+    const newX = ((clientX - tankRect.left) / tankRect.width) * 100;
     
+    // Calculate y position as percentage from bottom within ground region
+    const groundHeight = tankRect.height * 0.25; // 25% of tank height
+    const clickY = tankRect.bottom - clientY;
+    let newY = (clickY / groundHeight) * 25; // Scale to 0-25% range
+    
+    // Constrain to ground region
+    newY = Math.max(0, Math.min(25, newY));
+    
+    // Update plant position
     draggedItem.value.x = Math.max(5, Math.min(95, newX));
-    draggedItem.value.bottomOffset = Math.floor(Math.random() * 10);
+    draggedItem.value.y = newY;
   };
 
   const stopDrag = () => {

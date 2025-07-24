@@ -20,6 +20,8 @@
           :loading="loading"
           @start-drag="startDrag"
           @remove-plant="handleRemovePlant"
+          @place-plant="handlePlacePlant"
+          @resize-plant="handleResizePlant"
         />
       </div>
 
@@ -92,6 +94,8 @@ const {
   saveAquariumLayout,
   toggleFish,
   addPlantToTank,
+  placePlantAtPosition,
+  resizePlant,
   removePlant,
   getPlantUsageCount,
   selectItem,
@@ -127,6 +131,14 @@ const handleAddPlant = async (plant) => {
     showMessage('Edit mode activated to add plants.', 'info');
   }
   await addPlantToTank(plant);
+};
+
+const handlePlacePlant = async (position) => {
+  await placePlantAtPosition(position);
+};
+
+const handleResizePlant = async (plantId, scaleChange) => {
+  await resizePlant(plantId, scaleChange);
 };
 
 const handleRemovePlant = async (plantId) => {
