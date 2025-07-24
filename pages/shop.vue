@@ -114,7 +114,7 @@
           <button class="flex-1 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-md font-medium" @click="closePurchaseModal">
             Continue Shopping
           </button>
-          <NuxtLink to="/aquarium" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md font-medium text-center" @click="closePurchaseModal">
+          <NuxtLink to="/" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md font-medium text-center" @click="closePurchaseModal">
             Go to Aquarium
           </NuxtLink>
         </div>
@@ -122,7 +122,6 @@
     </div>
   </div>
 </template>
-
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';

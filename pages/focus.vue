@@ -515,17 +515,6 @@ const isAppOverLimit = (app) => {
   return limit && appMinutes > limit;
 };
 
-// Usage data methods
-const requestUsageData = () => {
-  if (process.client && typeof fetchNativeData !== 'undefined') {
-    console.log("📤 [Focus] Requesting usage data...");
-    fetchNativeData.postMessage('request_device_data');
-  } else {
-    console.log('⚠️ Native data channel not available - fetching from server');
-    // Fetch from server instead of using sample data
-    fetchUsageDataFromServer();
-  }
-};
 
 // New method to fetch from native Android server
 const fetchUsageDataFromServer = async () => {
@@ -613,30 +602,7 @@ const processUsageData = (data) => {
   }
 };
 
-// Set up native data callback
-const setupNativeCallback = () => {
-  if (process.client) {
-    window.onNativeData = function(data) {
-      console.log("🟢 [Focus] Received usage data from native:", data);
-      processUsageData(data);
-      
-      // Add notification if daily limit is exceeded
-      setTimeout(() => {
-        if (isOverDailyLimit.value) {
-          showNotification('Daily screen time limit exceeded!', 'warning');
-        }
-      }, 500);
-    };
-    
-    // Add a method that Flutter can call when the app is put in background
-    window.onAppBackground = function() {
-      console.log("App went to background");
-      if (isRunning.value) {
-        pauseTimer();
-      }
-    };
-  }
-};
+
 
 // Load saved settings
 const loadSettings = async () => {
@@ -669,9 +635,7 @@ const getAppIcon = (app) => {
 }
 
 onMounted(async () => {
-  setupNativeCallback();
   await loadSettings();
-  requestUsageData();
 });
 
 onUnmounted(() => {

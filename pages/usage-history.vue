@@ -1,171 +1,129 @@
+<script setup>
+import { onMounted, ref, watch } from 'vue'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+
+const parsedUsageData = ref([])
+const usageDate = ref(null)
+const selectedDayOffset = ref(0)
+const totalScreenTime = ref(0)
+
+const dayOptions = [
+  { offset: 0, label: 'Today' },
+  { offset: 1, label: 'Yesterday' },
+  { offset: 2, label: '2 days ago' },
+  { offset: 3, label: '3 days ago' },
+  { offset: 4, label: '4 days ago' },
+  { offset: 5, label: '5 days ago' },
+  { offset: 6, label: '6 days ago' },
+  { offset: 7, label: 'A week ago' }
+]
+
+const loadUsageDataFromStore = () => {
+  try {
+    const usageRaw = userStore.usage_data
+    const installedRaw = userStore.installed_apps
+
+    if (!usageRaw || !installedRaw) return
+
+    const parsed = JSON.parse(usageRaw)
+    const installed = JSON.parse(installedRaw)
+
+    const usageBlock = parsed[selectedDayOffset.value] || { entries: [] }
+    usageDate.value = usageBlock.date || 'Unknown'
+    totalScreenTime.value = usageBlock.entries.reduce((sum, e) => sum + (e.usageSeconds || 0), 0)
+
+    parsedUsageData.value = usageBlock.entries.map(entry => {
+      const match = installed.find(app => app.packageName === entry.packageName)
+      return {
+        ...entry,
+        appName: match?.appName || entry.appName,
+        icon: match?.icon || null
+      }
+    })
+  } catch (e) {
+    // silently fail
+  }
+}
+
+onMounted(() => {
+  loadUsageDataFromStore()
+  watch(() => userStore.usage_data, loadUsageDataFromStore)
+})
+
+watch(selectedDayOffset, loadUsageDataFromStore)
+
+const formatUsageTime = (seconds) => {
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${h}h ${m}m`
+}
+</script>
+
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <div class="bg-white rounded-lg shadow-lg p-8">
-      <h1 class="text-2xl font-bold text-sky-600 mb-6">Usage History</h1>
-      
-      <!-- Day Selector -->
-      <div class="mb-6">
-        <div class="flex flex-wrap gap-2">
-          <button 
-            v-for="day in dayOptions" 
+  <div class="max-w-full w-full px-4 py-4 sm:px-6 sm:py-6">
+    <h1 class="text-xl sm:text-2xl font-bold text-sky-600 mb-4 sm:mb-6">Usage History</h1>
+
+    <!-- Day Selector -->
+    <div class="mb-4 sm:mb-6">
+      <div class="flex flex-wrap gap-2">
+        <button
+            v-for="day in dayOptions"
             :key="day.offset"
-            @click="loadDay(day.offset)"
-            :class="selectedDay === day.offset ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
-            class="px-4 py-2 rounded-lg transition font-medium"
-          >
-            {{ day.label }}
-          </button>
-        </div>
-      </div>
-      
-      <!-- Loading State -->
-      <div v-if="loading" class="text-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
-        <p class="mt-2 text-gray-600">Loading usage data...</p>
-      </div>
-      
-      <!-- Data Display -->
-      <div v-else-if="currentData">
-        <!-- Summary Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
-            <p class="text-sm text-gray-600">Total Screen Time</p>
-            <p class="text-2xl font-bold text-sky-600">{{ formatTotalTime(currentData.metadata.totalScreenTime) }}</p>
-          </div>
-          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p class="text-sm text-gray-600">Apps Used</p>
-            <p class="text-2xl font-bold text-green-600">{{ currentData.metadata.totalAppsUsed }}</p>
-          </div>
-          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
-            <p class="text-sm text-gray-600">Data For</p>
-            <p class="text-2xl font-bold text-purple-600">{{ currentData.metadata.dayLabel }}</p>
-          </div>
-        </div>
-        
-        <!-- App Usage List with Native Data -->
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold text-gray-700 mb-4">App Usage Details (Native Android)</h3>
-          <div 
-            v-for="app in sortedUsageData" 
-            :key="app.packageName"
-            class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
-          >
-            <div class="flex-1">
-              <p class="font-medium">{{ app.appName }}</p>
-              <div class="flex items-center space-x-4 text-sm text-gray-500">
-                <span class="font-medium">{{ formatUsageTime(app.foregroundSeconds || app.usageSeconds) }}</span>
-                <span v-if="app.launchCount" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">{{ app.launchCount }} launches</span>
-                <span v-if="app.firstTimeUsed">
-                  First: {{ new Date(app.firstTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}
-                </span>
-                <span v-if="app.lastTimeUsed">
-                  Last: {{ new Date(app.lastTimeUsed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }}
-                </span>
-              </div>
-              
-              <!-- Show foreground vs background breakdown -->
-              <div class="mt-1 text-xs text-gray-400">
-                Usage time: {{ formatUsageTime(app.foregroundSeconds || app.usageSeconds) }}
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-lg font-semibold text-gray-700">
-                {{ Math.round((app.foregroundSeconds || app.usageSeconds) / currentData.metadata.totalScreenTime * 100) }}%
-              </div>
-              <div class="text-xs text-gray-500">of total time</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- No Data State -->
-      <div v-else class="text-center py-8 text-gray-500">
-        <p>No usage data available</p>
+            @click="selectedDayOffset = day.offset"
+            :class="selectedDayOffset === day.offset ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+            class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition text-sm sm:text-base font-medium"
+        >
+          {{ day.label }}
+        </button>
       </div>
     </div>
+
+    <!-- Data Table -->
+    <div
+        v-if="parsedUsageData.length > 0"
+        class="bg-white rounded-lg shadow-lg p-4 sm:p-6 border-t-4 border-sky-400"
+    >
+      <h2 class="text-base sm:text-lg font-semibold mb-3 text-sky-700">App Usage ({{ usageDate }})</h2>
+
+      <div class="text-xs sm:text-sm text-gray-500 mb-2">Total screen time: {{ formatUsageTime(totalScreenTime) }}</div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full table-auto border-collapse text-sm sm:text-base">
+          <thead>
+          <tr class="bg-sky-50 border-b border-sky-200">
+            <th class="px-2 py-2 sm:px-4 text-left font-medium text-sky-700">Icon</th>
+            <th class="px-2 py-2 sm:px-4 text-left font-medium text-sky-700">App Name</th>
+            <th class="px-2 py-2 sm:px-4 text-left font-medium text-sky-700">Usage</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr
+              v-for="app in parsedUsageData"
+              :key="`${app.appName}-${app.usageSeconds}`"
+              class="border-b hover:bg-sky-25"
+          >
+            <td class="px-2 py-2 sm:px-4">
+              <img
+                  v-if="app.icon"
+                  :src="`data:image/png;base64,${app.icon}`"
+                  alt="App icon"
+                  class="w-5 h-5 sm:w-6 sm:h-6 rounded"
+              />
+            </td>
+            <td class="px-2 py-2 sm:px-4 font-medium">{{ app.appName }}</td>
+            <td class="px-2 py-2 sm:px-4">{{ formatUsageTime(app.usageSeconds || 0) }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- No Data -->
+    <div v-else class="text-sm text-gray-500 mb-6">No usage data available for selected day.</div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useUserStore } from '~/stores/user';
-
-const userStore = useUserStore();
-
-// State
-const loading = ref(false);
-const selectedDay = ref(0);
-const currentData = ref(null);
-const currentInstalledApps = ref([]);
-
-// Day options
-const dayOptions = [
-  { offset: 0, label: 'Today' },
-  { offset: -1, label: 'Yesterday' },
-  { offset: -2, label: '2 days ago' },
-  { offset: -3, label: '3 days ago' },
-  { offset: -4, label: '4 days ago' },
-  { offset: -5, label: '5 days ago' },
-  { offset: -6, label: '6 days ago' },
-  { offset: -7, label: 'A week ago' },
-];
-
-// Methods
-const loadDay = async (dayOffset) => {
-  loading.value = true;
-  selectedDay.value = dayOffset;
-  try {
-    const data = await userStore.fetchHistoricalUsageData(dayOffset);
-    currentData.value = data;
-    currentInstalledApps.value = data?.installedApps || [];
-    if (data) {
-      console.log(`Loaded usage data for ${data.metadata.dayLabel} (offset: ${dayOffset})`);
-    }
-  } catch (error) {
-    console.error('Error loading historical data:', error);
-    currentData.value = null;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const formatTotalTime = (seconds) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
-};
-
-// Initialize
-onMounted(() => {
-  loadDay(0); // Load today's data by default
-});
-
-const sortedUsageData = computed(() => {
-  if (!currentData.value?.usageData) return [];
-  // Merge icon/appName from installedApps if available
-  return [...currentData.value.usageData].map(app => {
-    const match = currentInstalledApps.value.find(a => a.packageName === app.packageName);
-    return {
-      ...app,
-      appName: match?.appName || app.appName,
-      icon: match?.icon || null
-    };
-  }).sort((a, b) => {
-    const aTime = a.foregroundSeconds || a.usageSeconds || 0;
-    const bTime = b.foregroundSeconds || b.usageSeconds || 0;
-    return bTime - aTime;
-  });
-});
-
-const formatUsageTime = (seconds) => {
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-};
-</script>

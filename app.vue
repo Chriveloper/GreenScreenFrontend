@@ -23,7 +23,7 @@
           <li>
             <NuxtLink to="/" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-              Dashboard
+              Aquarium
             </NuxtLink>
           </li>
           <li>
@@ -35,14 +35,6 @@
             </NuxtLink>
           </li>
           <li>
-            <NuxtLink to="/aquarium" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/aquarium' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
-              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              Aquarium
-            </NuxtLink>
-          </li>
-          <li>
             <NuxtLink to="/friends" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/friends' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -51,14 +43,6 @@
               <span v-if="userStore.incomingRequests.length > 0" class="bg-red-500 text-white text-xs rounded-full px-1 ml-auto">
                 {{ userStore.incomingRequests.length }}
               </span>
-            </NuxtLink>
-          </li>
-          <li>
-            <NuxtLink to="/profile" class="flex items-center px-4 py-2 rounded-lg transition" :class="route.path === '/profile' ? 'bg-sky-200 text-sky-800' : 'text-gray-600 hover:bg-sky-100'">
-              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Profile
             </NuxtLink>
           </li>
           <li>
@@ -167,8 +151,9 @@
 </template>
 
 <script setup>
-import {ref, computed, onMounted, provide, onUnmounted} from 'vue'
+import {ref, computed, onMounted, provide} from 'vue'
 import { useRoute } from 'vue-router'
+import { useNuxtApp } from '#app';
 import { useUserStore } from '~/stores/user'
 import ToastNotification from '~/components/ToastNotification.vue';
 import LinearProgress from '~/components/LinearProgress.vue';
@@ -203,11 +188,10 @@ const shouldShowNavigation = computed(() => {
 
 // Logout function
 const logout = async () => {
-
   $supabase.auth.signOut()
-  await userStore.clearUserData()
-  navigateTo('/login')
-  console.log("test")
+  userStore.clearUserData();
+  navigateTo('/login');
+  console.log("test");
 }
 
 onMounted(async () => {
@@ -234,47 +218,17 @@ onMounted(async () => {
         }
         return;
       }
-
-      console.log(`Data for ${data.dayLabel} (${data.targetDate}):`, {
-        totalScreenTime: data.totalScreenTime,
-        totalAppsUsed: data.totalAppsUsed,
-        queryPeriod: `${data.queryStartTime} to ${data.queryEndTime}`
-      });
       
       userStore.installed_apps = JSON.stringify(data.installedApps);
       userStore.usage_data = JSON.stringify(data.usageData);
-      
-      // Store additional metadata from native Android implementation
-      userStore.screen_time_metadata = JSON.stringify({
-        totalScreenTime: data.totalScreenTime,
-        totalAppsUsed: data.totalAppsUsed,
-        dayLabel: data.dayLabel,
-        targetDate: data.targetDate,
-        dataTimestamp: data.dataTimestamp,
-        queryStartTime: data.queryStartTime,
-        queryEndTime: data.queryEndTime,
-        dayOffset: data.dayOffset
-      });
 
       const exceeded = await checkLimitsExceeded()
 
-      // Enhanced welcome message with native screen time info
       if (toastRef.value) {
-        const screenTimeHours = Math.round(data.totalScreenTime / 3600 * 10) / 10;
-        toastRef.value.showToast(
-          `Welcome! ${data.dayLabel}: ${screenTimeHours}h screen time, ${data.totalAppsUsed} apps used. Limit exceeded: ${exceeded}`, 
-          'info'
-        );
-
         if (await claimedRewardToday()) return;
 
-        if (!await checkLimitsExceeded()) {
+        if (!exceeded) {
           showDailyRewardModal.value = true;
-        }
-
-        if (!await checkLimitsExceeded()) {
-          await userStore.collectDailyReward();
-          toastRef.value.showToast('Added Daily Reward!', 'info');
         }
       }
     })
@@ -286,15 +240,20 @@ onMounted(async () => {
     });
 })
 
+async function claimDailyReward(){
+  await userStore.collectDailyReward();
+  showDailyRewardModal.value = false;
+}
+
 async function claimedRewardToday(){
   const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
 
-  const last = lastRewardDate.toISOString().slice(0, 10);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
-  const todayStr = today.toISOString().slice(0, 10);
+  const last = lastRewardDate.toLocaleDateString('sv-SE');
+  const yesterdayStr = yesterday.toLocaleDateString('sv-SE');
+  const todayStr = today.toLocaleDateString('sv-SE');
 
   return last === todayStr || last === yesterdayStr;
 }
@@ -308,11 +267,11 @@ async function checkLimitsExceeded() {
     let totalUsageSeconds = 0;
     const appUsageSeconds = {};
 
-  const usageData = JSON.parse(userStore.usage_data);
+  const usageData = JSON.parse(userStore.usage_data)[0];
 
-  for (const entry of usageData) {
+  for (const entry of usageData.entries) {
     // Use foregroundSeconds (new field) or fall back to usageSeconds
-    const appUsage = entry.foregroundSeconds || entry.usageSeconds || 0;
+    const appUsage = entry.usageSeconds || 0;
     totalUsageSeconds += appUsage;
     
     if (!appUsageSeconds[entry.packageName]) {
@@ -339,42 +298,4 @@ async function checkLimitsExceeded() {
 
   return false;
 }
-
-let screenTimeInterval = null;
-
-async function fetchAndStoreScreenTime() {
-  try {
-    const response = await fetch('http://localhost:8080/data');
-    const data = await response.json();
-
-    if (data.error) {
-      console.error('Native data error:', data.message);
-      return;
-    }
-
-    userStore.installed_apps = JSON.stringify(data.installedApps);
-    userStore.usage_data = JSON.stringify(data.usageData);
-    userStore.screen_time_metadata = JSON.stringify({
-      totalScreenTime: data.totalScreenTime,
-      totalAppsUsed: data.totalAppsUsed,
-      dayLabel: data.dayLabel,
-      targetDate: data.targetDate,
-      dataTimestamp: data.dataTimestamp,
-      queryStartTime: data.queryStartTime,
-      queryEndTime: data.queryEndTime,
-      dayOffset: data.dayOffset
-    });
-  } catch (error) {
-    console.error('Fetch failed:', error);
-  }
-}
-
-onMounted(() => {
-  fetchAndStoreScreenTime();
-  screenTimeInterval = setInterval(fetchAndStoreScreenTime, 180000); // 3 minutes
-});
-
-onUnmounted(() => {
-  if (screenTimeInterval) clearInterval(screenTimeInterval);
-});
 </script>
