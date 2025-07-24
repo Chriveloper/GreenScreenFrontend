@@ -370,7 +370,13 @@ const isOverDailyLimit = computed(() => {
 });
 
 const sortedTodayUsage = computed(() => {
-  return [...todayUsageData.value].sort((a, b) => b.usage - a.usage);
+  const sorted = [...todayUsageData.value].sort((a, b) => b.usage - a.usage);
+  
+  // Optional: separate system and user apps
+  const userApps = sorted.filter(app => !app.isSystemApp);
+  const systemApps = sorted.filter(app => app.isSystemApp);
+  
+  return [...userApps, ...systemApps]; // User apps first, then system apps
 });
 
 // Watch for changes in custom minutes to update the timer

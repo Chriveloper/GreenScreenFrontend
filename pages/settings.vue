@@ -76,7 +76,10 @@
                           :src="`data:image/png;base64,${app.icon}`"
                           class="w-5 h-5 mr-2 rounded"
                       />
-                      <span class="truncate">{{ app.appName }}</span>
+                      <div class="flex-1">
+                        <span class="truncate">{{ app.appName }}</span>
+                        <span v-if="app.isSystemApp" class="ml-2 text-xs text-gray-500 bg-gray-100 px-1 rounded">System</span>
+                      </div>
                     </li>
                     <li v-if="filteredDropdownApps.length === 0" class="px-3 py-2 text-sm text-gray-500">
                       No matching apps
@@ -108,14 +111,16 @@
                    :key="packageName"
                    class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border-l-4 border-sky-500">
                 <div class="flex items-center">
-                  <!-- Add icon here -->
                   <img
                     v-if="getAppIcon(packageName)"
                     :src="getAppIcon(packageName)"
                     class="w-5 h-5 mr-2 rounded"
                     alt="App icon"
                   />
-                  <span class="font-medium">{{ formatAppName(packageName) }}</span>
+                  <div>
+                    <span class="font-medium">{{ formatAppName(packageName) }}</span>
+                    <span v-if="getAppType(packageName) === 'system'" class="ml-2 text-xs text-gray-500 bg-gray-100 px-1 rounded">System</span>
+                  </div>
                   <div class="text-sm text-gray-600 ml-2">{{ limit }} minutes per day
                     <span class="ml-2 text-xs text-gray-500">({{ Math.round(limit / 60 * 10) / 10 }}h)</span>
                   </div>
@@ -292,6 +297,11 @@ const getAppIcon = (packageName) => {
     return app.icon.startsWith('data:image') ? app.icon : `data:image/png;base64,${app.icon}`
   }
   return null
+}
+
+const getAppType = (packageName) => {
+  const app = availableApps.value.find(app => app && app.packageName === packageName)
+  return app?.isSystemApp ? 'system' : 'user'
 }
 
 onMounted(() => {
