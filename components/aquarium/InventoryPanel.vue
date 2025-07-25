@@ -1,19 +1,18 @@
-<!-- components/aquarium/InventoryPanel.vue -->
 <template>
   <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
     <h2 class="text-lg font-semibold mb-4 text-gray-800">Inventory</h2>
-    
+
     <!-- Fish Inventory -->
     <div class="mb-6">
       <h3 class="text-md font-medium mb-3 text-sky-700 flex items-center">
         <span class="text-lg mr-2">🐠</span>
         Fish Collection
       </h3>
-      <div class="space-y-2">
+      <div class="space-y-4">
         <div
-          v-for="fishGroup in groupedFish"
-          :key="fishGroup.id"
-          class="bg-sky-50 border border-sky-200 rounded-lg p-3"
+            v-for="fishGroup in groupedFish"
+            :key="fishGroup.id"
+            class="bg-sky-50 border border-sky-200 rounded-lg p-3"
         >
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
@@ -23,89 +22,85 @@
                 <p class="text-xs text-gray-500">{{ fishGroup.inTankCount }}/{{ fishGroup.totalCount }} in tank</p>
               </div>
             </div>
-            <div class="flex items-center space-x-1">
-              <span class="text-xs bg-sky-200 text-sky-800 px-2 py-1 rounded">
-                {{ fishGroup.totalCount }}
-              </span>
-            </div>
           </div>
-          
-          <!-- Individual fish instances -->
-          <div class="grid grid-cols-3 gap-1">
+
+          <div class="grid grid-cols-3 gap-1 mb-3">
             <button
-              v-for="fish in fishGroup.instances"
-              :key="fish.uniqueKey"
-              class="aspect-square border-2 rounded-lg p-1 text-center cursor-pointer hover:scale-105 transition text-xs"
-              :class="{
-                'border-green-500 bg-green-100 text-green-700': fish.inTank,
-                'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100': !fish.inTank
-              }"
-              @click="$emit('toggle-fish', fish)"
-              :title="fish.inTank ? 'Remove from tank' : 'Add to tank'"
+                v-for="fish in fishGroup.instances"
+                :key="fish.uniqueKey"
+                class="aspect-square border-2 rounded-lg p-1 text-center cursor-pointer hover:scale-105 transition text-xs"
+                :class="{
+                  'border-green-500 bg-green-100 text-green-700': fish.inTank,
+                  'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100': !fish.inTank
+                }"
+                @click="$emit('toggle-fish', fish)"
+                :title="fish.inTank ? 'Remove from tank' : 'Add to tank'"
             >
               <div class="flex flex-col items-center">
-                <img :src="fish.img" :alt="fish.name" class="w-6 h-4 mb-1 object-contain pixelated" />
-                <span class="text-xs font-medium">#{{ fish.instanceIndex + 1 }}</span>
+                <img :src="fish.img" :alt="fish.name" class="w-12 h-8 mb-1 object-contain pixelated" />
                 <div class="flex items-center justify-center mt-1">
-                  <div 
-                    v-if="fish.inTank" 
-                    class="w-2 h-2 bg-green-500 rounded-full"
-                    title="In tank"
-                  ></div>
-                  <div 
-                    v-else 
-                    class="w-2 h-2 bg-gray-300 rounded-full"
-                    title="Available"
-                  ></div>
+                  <div :class="fish.inTank ? 'bg-green-500' : 'bg-gray-300'" class="w-2 h-2 rounded-full"></div>
                 </div>
               </div>
             </button>
           </div>
-          
-          <!-- Quick toggle buttons -->
-          <div class="flex space-x-2 mt-2 pt-2 border-t border-sky-200">
+
+          <div class="flex justify-center space-x-4">
             <button
-              v-if="fishGroup.inTankCount < fishGroup.totalCount && fishGroup.inTankCount < fishGroup.maxQuantity"
-              @click="addNextFish(fishGroup)"
-              class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs py-1 px-2 rounded transition"
+                @click="addNextFish(fishGroup)"
+                :disabled="fishGroup.inTankCount >= fishGroup.totalCount || fishGroup.inTankCount >= fishGroup.maxQuantity"
+                class="w-12 h-12 rounded-full text-3xl font-bold transition flex items-center justify-center"
+                :class="[
+                  fishGroup.inTankCount >= fishGroup.totalCount || fishGroup.inTankCount >= fishGroup.maxQuantity
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                ]"
+                title="Add one fish"
             >
-              Add Next
+              +
             </button>
             <button
-              v-if="fishGroup.inTankCount > 0"
-              @click="removeLastFish(fishGroup)"
-              class="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-1 px-2 rounded transition"
+                @click="removeLastFish(fishGroup)"
+                :disabled="fishGroup.inTankCount <= 0"
+                class="w-12 h-12 rounded-full text-3xl font-bold transition flex items-center justify-center"
+                :class="[
+                  fishGroup.inTankCount <= 0
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
+                ]"
+                title="Remove one fish"
             >
-              Remove Last
+              −
             </button>
           </div>
         </div>
       </div>
+
       <p v-if="groupedFish.length === 0" class="text-sm text-gray-500 text-center py-4">
         No fish owned. Visit the <NuxtLink to="/shop" class="text-sky-600 hover:underline">shop</NuxtLink> to buy some!
       </p>
     </div>
 
-    <!-- Plants Inventory -->
+    <!-- Grouped Plants Inventory -->
     <div class="mb-6">
       <h3 class="text-md font-medium mb-3 text-green-700 flex items-center">
-        <span class="text-lg mr-2">🌿</span>
-        Plant Collection
+        <span class="text-lg mr-2">🐚</span>
+        Decoration
       </h3>
       <div class="grid grid-cols-2 gap-2">
         <div
-          v-for="plant in ownedPlants"
-          :key="`${plant.id}_${plant.instanceIndex}`"
-          class="bg-green-50 border border-green-200 rounded-lg p-2 text-center cursor-pointer hover:bg-green-100 transition"
-          :class="{ 'opacity-50': getPlantUsageCount(plant.id) >= plant.maxQuantity }"
-          @click="$emit('add-plant', plant)"
+            v-for="plant in groupedPlants"
+            :key="plant.id"
+            class="bg-green-50 border border-green-200 rounded-lg p-2 text-center cursor-pointer hover:bg-green-100 transition"
+            :class="{ 'opacity-50': getPlantUsageCount(plant.id) >= plant.maxQuantity }"
+            @click="$emit('add-plant', plant)"
         >
           <img :src="plant.img" :alt="plant.name" class="w-8 h-8 mx-auto mb-1 object-contain pixelated" />
           <p class="text-xs font-medium">{{ plant.name }}</p>
           <p class="text-xs text-gray-500">{{ getPlantUsageCount(plant.id) }}/{{ plant.maxQuantity }}</p>
         </div>
       </div>
-      <p v-if="ownedPlants.length === 0" class="text-sm text-gray-500 text-center py-4">
+      <p v-if="groupedPlants.length === 0" class="text-sm text-gray-500 text-center py-4">
         No plants owned. Visit the <NuxtLink to="/shop" class="text-sky-600 hover:underline">shop</NuxtLink> to buy some!
       </p>
     </div>
@@ -113,29 +108,19 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import {computed} from 'vue';
 
 const props = defineProps({
-  ownedFish: {
-    type: Array,
-    default: () => [],
-  },
-  ownedPlants: {
-    type: Array,
-    default: () => [],
-  },
-  getPlantUsageCount: {
-    type: Function,
-    default: () => 0,
-  },
+  ownedFish: {type: Array, default: () => []},
+  ownedPlants: {type: Array, default: () => []},
+  getPlantUsageCount: {type: Function, default: () => 0},
 });
 
 const emit = defineEmits(['toggle-fish', 'add-plant']);
 
-// Group fish by type
+// Group fish by ID
 const groupedFish = computed(() => {
   const groups = {};
-  
   props.ownedFish.forEach(fish => {
     if (!groups[fish.id]) {
       groups[fish.id] = {
@@ -149,37 +134,50 @@ const groupedFish = computed(() => {
         inTankCount: 0
       };
     }
-    
+
     groups[fish.id].instances.push(fish);
     groups[fish.id].totalCount++;
-    if (fish.inTank) {
-      groups[fish.id].inTankCount++;
-    }
+    if (fish.inTank) groups[fish.id].inTankCount++;
   });
-  
   return Object.values(groups);
 });
 
-// Helper functions for quick toggle
+// Group plants by ID
+const groupedPlants = computed(() => {
+  const groups = {};
+
+  props.ownedPlants.forEach(plant => {
+    if (!groups[plant.id]) {
+      groups[plant.id] = {
+        id: plant.id,
+        name: plant.name,
+        img: plant.img,
+        count: 0
+      };
+    }
+    groups[plant.id].count++;
+    groups[plant.id].maxQuantity = groups[plant.id].count; // Set maxQuantity based on count
+  });
+
+  return Object.values(groups);
+});
+
+
 const addNextFish = (fishGroup) => {
-  const nextFish = fishGroup.instances.find(fish => !fish.inTank);
-  if (nextFish) {
-    emit('toggle-fish', nextFish);
-  }
+  const next = fishGroup.instances.find(f => !f.inTank);
+  if (next) emit('toggle-fish', next);
 };
 
 const removeLastFish = (fishGroup) => {
-  const lastFish = [...fishGroup.instances].reverse().find(fish => fish.inTank);
-  if (lastFish) {
-    emit('toggle-fish', lastFish);
-  }
+  const last = [...fishGroup.instances].reverse().find(f => f.inTank);
+  if (last) emit('toggle-fish', last);
 };
 </script>
 
 <style scoped>
-.pixelated { 
-  image-rendering: pixelated; 
-  image-rendering: -moz-crisp-edges; 
-  image-rendering: crisp-edges; 
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 </style>

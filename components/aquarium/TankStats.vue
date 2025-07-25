@@ -11,10 +11,6 @@
         <span class="text-gray-600">Plants:</span>
         <span class="font-medium">{{ placedPlants.length }}</span>
       </div>
-      <div class="flex justify-between text-sm">
-        <span class="text-gray-600">Tank Health:</span>
-        <span class="font-medium text-green-600">{{ tankHealth }}%</span>
-      </div>
     </div>
   </div>
 </template>
@@ -28,10 +24,6 @@ defineProps({
   placedPlants: {
     type: Array,
     default: () => [],
-  },
-  tankHealth: {
-    type: Number,
-    default: 100,
   },
 });
 </script>

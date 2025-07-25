@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
 import { useUserStore } from '~/stores/user';
-import { fishData, plantData, availableBackgrounds, availableFloors, availableFrames } from '~/data/aquarium/items';
+import { fishData, plantData, availableBackgrounds, availableFloors } from '~/data/aquarium/items';
 
 interface Plant {
   id: string;
@@ -39,7 +39,6 @@ export function useAquarium() {
   const activeFish = ref<Fish[]>([]);
   const selectedBackground = ref('default');
   const selectedFloor = ref('sand');
-  const selectedFrame = ref('none');
   const loading = ref(false);
   const message = ref('');
   const messageType = ref<'success' | 'error' | 'info'>('success');
@@ -75,8 +74,7 @@ export function useAquarium() {
         instanceIndex: f.instanceIndex || 0
       })),
       background: selectedBackground.value,
-      floor: selectedFloor.value,
-      frame: selectedFrame.value
+      floor: selectedFloor.value
     };
 
     try {
@@ -94,23 +92,27 @@ export function useAquarium() {
   const loadAquariumLayout = () => {
     const layout = userStore.aquariumLayout;
     if (layout && Object.keys(layout).length > 0) {
-      placedPlants.value = layout.plants?.map((p: any) => ({
-        ...p,
-        y: p.y !== undefined ? p.y : Math.floor(Math.random() * 20),
-        scale: p.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
-      })) || [];
+      placedPlants.value =
+          layout.plants?.map((p: any) => ({
+            ...p,
+            y: p.y !== undefined ? p.y : Math.floor(Math.random() * 20),
+            scale: p.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
+          })) || [];
       selectedBackground.value = layout.background || 'default';
       selectedFloor.value = layout.floor || 'sand';
-      selectedFrame.value = layout.frame || 'none';
-      activeFish.value = layout.fish?.map((savedFish: any) => {
-        const fishTemplate = fishData.find(f => f.id === savedFish.id);
-        return { ...fishTemplate, ...savedFish };
-      }).filter((f: any) => f.name) || [];
+      activeFish.value =
+          layout.fish
+              ?.map((savedFish: any) => {
+                const fishTemplate = fishData.find(f => f.id === savedFish.id);
+                return { ...fishTemplate, ...savedFish };
+              })
+              .filter((f: any) => f.name) || [];
     }
   };
 
   // Inventory Management
-  const countOwnedItems = (itemId: string, collection: string[]) => collection.filter(id => id === itemId).length;
+  const countOwnedItems = (itemId: string, collection: string[]) =>
+      collection.filter(id => id === itemId).length;
 
   const ownedFish = computed(() => {
     const result: any[] = [];
@@ -121,9 +123,9 @@ export function useAquarium() {
         const count = countOwnedItems(fishId, userStore.fish);
         for (let i = 0; i < count; i++) {
           const inTankList = activeFish.value.filter(f => f.id === fishId);
-          result.push({ 
-            ...fishTemplate, 
-            instanceIndex: i, 
+          result.push({
+            ...fishTemplate,
+            instanceIndex: i,
             inTank: i < inTankList.length,
             uniqueKey: `${fishId}_${i}`
           });
@@ -141,8 +143,8 @@ export function useAquarium() {
       if (plantTemplate) {
         const count = countOwnedItems(plantId, userStore.decorations);
         for (let i = 0; i < count; i++) {
-          result.push({ 
-            ...plantTemplate, 
+          result.push({
+            ...plantTemplate,
             instanceIndex: i,
             uniqueKey: `${plantId}_${i}`
           });
@@ -152,7 +154,8 @@ export function useAquarium() {
     return result;
   });
 
-  const getPlantUsageCount = (plantId: string) => placedPlants.value.filter(p => p.plantId === plantId).length;
+  const getPlantUsageCount = (plantId: string) =>
+      placedPlants.value.filter(p => p.plantId === plantId).length;
 
   // Tank Health
   const tankHealth = computed(() => {
@@ -160,7 +163,7 @@ export function useAquarium() {
     const plantCount = placedPlants.value.length;
     if (fishCount === 0) return 100;
     const ratio = plantCount / fishCount;
-    return Math.min(100, Math.max(60, Math.round(75 + (ratio * 25))));
+    return Math.min(100, Math.max(60, Math.round(75 + ratio * 25)));
   });
 
   // Item Interactions
@@ -168,28 +171,31 @@ export function useAquarium() {
     if (loading.value) return;
     loading.value = true;
     try {
-      const fishIndex = activeFish.value.findIndex(f => 
-        f.id === fish.id && (f.instanceIndex || 0) === (fish.instanceIndex || 0)
+      const fishIndex = activeFish.value.findIndex(
+          f => f.id === fish.id && (f.instanceIndex || 0) === (fish.instanceIndex || 0)
       );
-      
+
       if (fishIndex >= 0) {
         activeFish.value.splice(fishIndex, 1);
-        showMessage(`${fish.name} removed from tank`, 'info');
+        //showMessage(`${fish.name} removed from tank`, 'info');
       } else {
         const sameTypeCount = activeFish.value.filter(f => f.id === fish.id).length;
         if (sameTypeCount >= fish.maxQuantity) {
-          showMessage(`Maximum number of ${fish.name} already in tank (${fish.maxQuantity})`, 'info');
+          showMessage(
+              `Maximum number of ${fish.name} already in tank (${fish.maxQuantity})`,
+              'info'
+          );
           return;
         }
         const startX = Math.random() * 60 + 20;
         const startY = Math.random() * 50 + 15;
-        activeFish.value.push({ 
-          ...fish, 
-          swimX: startX, 
-          swimY: startY, 
-          targetX: startX, 
-          targetY: startY, 
-          direction: 'right' 
+        activeFish.value.push({
+          ...fish,
+          swimX: startX,
+          swimY: startY,
+          targetX: startX,
+          targetY: startY,
+          direction: 'right'
         });
         showMessage(`${fish.name} added to tank`, 'success');
       }
@@ -230,11 +236,11 @@ export function useAquarium() {
 
   const placePlantAtPosition = async (position: Position, plant: any = null) => {
     if (loading.value) return;
-    
+
     // If no plant specified, use the first available plant
     if (!plant) {
-      const availablePlant = ownedPlants.value.find(p => 
-        getPlantUsageCount(p.id) < p.maxQuantity
+      const availablePlant = ownedPlants.value.find(
+          p => getPlantUsageCount(p.id) < p.maxQuantity
       );
       if (!availablePlant) {
         showMessage('No available plants to place', 'info');
@@ -271,29 +277,27 @@ export function useAquarium() {
 
   const resizePlant = async (plantId: string, scaleDirection: number) => {
     if (loading.value) return;
-    
+
     const plant = placedPlants.value.find(p => p.id === plantId);
     if (!plant) return;
 
-    // Find current scale index
     const currentScale = plant.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX];
-    const currentIndex = PLANT_SCALE_LEVELS.findIndex(scale => Math.abs(scale - currentScale) < 0.05);
-    
-    // Calculate new index
+    const currentIndex = PLANT_SCALE_LEVELS.findIndex(
+        scale => Math.abs(scale - currentScale) < 0.05
+    );
+
     let newIndex;
     if (scaleDirection > 0) {
       newIndex = Math.min(PLANT_SCALE_LEVELS.length - 1, currentIndex + 1);
     } else {
       newIndex = Math.max(0, currentIndex - 1);
     }
-    
+
     const newScale = PLANT_SCALE_LEVELS[newIndex];
     plant.scale = newScale;
 
     try {
       await saveAquariumLayout();
-      const scaleNames = ['Tiny', 'Small', 'Medium-Small', 'Normal', 'Medium-Large', 'Large', 'Huge'];
-      showMessage(`${plant.name} resized to ${scaleNames[newIndex]}`, 'info');
     } catch (error) {
       showMessage('Failed to resize plant', 'error');
     }
@@ -306,7 +310,7 @@ export function useAquarium() {
       const plantName = placedPlants.value.find(p => p.id === plantId)?.name || 'Plant';
       placedPlants.value = placedPlants.value.filter(p => p.id !== plantId);
       await saveAquariumLayout();
-      showMessage(`${plantName} removed`, 'info');
+      //showMessage(`${plantName} removed`, 'info');
     } catch (error) {
       showMessage('Failed to remove plant', 'error');
     } finally {
@@ -326,9 +330,6 @@ export function useAquarium() {
       } else if (type === 'floor') {
         selectedFloor.value = id;
         itemName = availableFloors.find(f => f.id === id)?.name || 'Floor';
-      } else if (type === 'frame') {
-        selectedFrame.value = id;
-        itemName = availableFrames.find(f => f.id === id)?.name || 'Frame';
       }
       await saveAquariumLayout();
       showMessage(`${itemName} selected`, 'success');
@@ -344,7 +345,6 @@ export function useAquarium() {
     activeFish,
     selectedBackground,
     selectedFloor,
-    selectedFrame,
     loading,
     message,
     messageType,

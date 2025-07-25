@@ -1,67 +1,68 @@
-<!-- pages/index.vue -->
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="w-screen max-w-full overflow-x-hidden px-4 py-6">
     <AquariumHeader
-      :loading="loading"
-      :edit-mode="editMode"
-      @toggle-edit-mode="toggleEditMode"
+        :loading="loading"
+        :edit-mode="editMode"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div class="lg:col-span-3">
-        <AquariumTank
+    <!-- Stack layout vertically on all screens -->
+    <div class="flex flex-col gap-6">
+      <!-- Aquarium Tank Section -->
+      <AquariumTank
           :placed-plants="placedPlants"
           :active-fish="activeFish"
           :bubbles="bubbles"
           :selected-background="selectedBackground"
           :selected-floor="selectedFloor"
-          :selected-frame="selectedFrame"
           :edit-mode="editMode"
           :loading="loading"
           @start-drag="startDrag"
           @remove-plant="handleRemovePlant"
           @place-plant="handlePlacePlant"
           @resize-plant="handleResizePlant"
-        />
-      </div>
+          @toggle-edit-mode="toggleEditMode"
+      />
 
-      <div class="lg:col-span-1">
+      <!-- Inventory + Customization + Stats -->
+      <div class="flex flex-col gap-4">
         <InventoryPanel
-          :owned-fish="ownedFish"
-          :owned-plants="ownedPlants"
-          :get-plant-usage-count="getPlantUsageCount"
-          @toggle-fish="toggleFish"
-          @add-plant="handleAddPlant"
+            :owned-fish="ownedFish"
+            :owned-plants="ownedPlants"
+            :get-plant-usage-count="getPlantUsageCount"
+            @toggle-fish="toggleFish"
+            @add-plant="handleAddPlant"
         />
         <CustomizationPanel
-          :selected-background="selectedBackground"
-          :selected-floor="selectedFloor"
-          :selected-frame="selectedFrame"
-          @select-item="selectItem"
+            :selected-background="selectedBackground"
+            :selected-floor="selectedFloor"
+            @select-item="selectItem"
         />
         <TankStats
-          :active-fish="activeFish"
-          :placed-plants="placedPlants"
-          :tank-health="tankHealth"
+            :active-fish="activeFish"
+            :placed-plants="placedPlants"
         />
       </div>
     </div>
 
-    <div v-if="message" class="fixed bottom-4 right-4 z-50">
+    <!-- Message Toast -->
+    <div v-if="message" class="fixed bottom-4 right-4 z-50 w-[90%] max-w-sm">
       <div
-class="p-4 rounded-md shadow-lg max-w-sm" :class="{
-        'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
-        'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
-        'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'
-      }">
+          class="p-4 rounded-md shadow-lg"
+          :class="{
+          'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
+          'bg-red-100 text-red-700 border border-red-200': messageType === 'error',
+          'bg-blue-100 text-blue-700 border border-blue-200': messageType === 'info'
+        }"
+      >
         {{ message }}
       </div>
     </div>
   </div>
 </template>
 
+
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useUserStore } from '~/stores/user';
 import { useAquarium } from '~/composables/useAquarium';
 import { useAquariumAnimations } from '~/composables/useAquariumAnimations';
@@ -78,18 +79,26 @@ definePageMeta({ ssr: false });
 const userStore = useUserStore();
 const editMode = ref(false);
 
+onMounted(() => {
+  watch(editMode, (isEditing) => {
+    if (isEditing) {
+      document.body.style.overflow = 'hidden'; // Disable scroll
+    } else {
+      document.body.style.overflow = ''; // Re-enable scroll
+    }
+  }, { immediate: true }); // Optional: run immediately with current value
+})
+
 const {
   placedPlants,
   activeFish,
   selectedBackground,
   selectedFloor,
-  selectedFrame,
   loading,
   message,
   messageType,
   ownedFish,
   ownedPlants,
-  tankHealth,
   loadAquariumLayout,
   saveAquariumLayout,
   toggleFish,
@@ -114,27 +123,22 @@ const toggleEditMode = async () => {
     loading.value = true;
     try {
       await saveAquariumLayout();
-      showMessage('Aquarium layout saved!', 'success');
     } catch (error) {
       showMessage('Failed to save layout', 'error');
     } finally {
       loading.value = false;
     }
-  } else {
-    showMessage('Edit mode activated!', 'info');
   }
 };
 
 const handleAddPlant = async (plant) => {
-  if (!editMode.value) {
-    editMode.value = true;
-    showMessage('Edit mode activated to add plants.', 'info');
-  }
+
   await addPlantToTank(plant);
 };
 
 const handlePlacePlant = async (position) => {
-  await placePlantAtPosition(position);
+  await
+      placePlantAtPosition(position);
 };
 
 const handleResizePlant = async (plantId, scaleChange) => {
@@ -150,14 +154,13 @@ onMounted(async () => {
     await navigateTo('/login');
     return;
   }
-  
+
   loading.value = true;
   try {
     if (!userStore.userProfile) {
       await userStore.loadUserProfile();
     }
     loadAquariumLayout();
-    //showMessage('Aquarium loaded successfully!', 'success');
   } catch (error) {
     showMessage('Failed to load aquarium', 'error');
   } finally {

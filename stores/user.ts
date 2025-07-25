@@ -157,7 +157,7 @@ export const useUserStore = defineStore('user', {
           id: this.user.id,
           username: suggestedUsername,
           display_name: this.user.email.split('@')[0],
-          pearls: 50,
+          pearls: 200,
           fish: [],
           decorations: [],
           aquarium_layout: {},
@@ -700,7 +700,7 @@ export const useUserStore = defineStore('user', {
           // Count how many of this fish the user already has
           const fishCount = fishCollection.filter(id => id === fishId).length;
           // Allow up to 3 of the same fish
-          if (fishCount < 3) {
+          if (fishCount < item.maxQuantity) {
             fishCollection.push(fishId);
             updateData.fish = fishCollection;
           } else {
@@ -713,24 +713,11 @@ export const useUserStore = defineStore('user', {
           // Count how many of this plant the user already has
           const plantCount = decorCollection.filter(id => id === plantId).length;
           // Allow up to 3 of the same plant
-          if (plantCount < 3) {
+          if (plantCount < item.maxQuantity) {
             decorCollection.push(plantId);
             updateData.decorations = decorCollection;
           } else {
             console.log('Maximum number of this plant already owned');
-            return false;
-          }
-        } else if (type === 'decoration') {
-          const decoId = item.id;
-          const decorCollection = [...(this.userProfile.decorations || [])];
-          // Count how many of this decoration the user already has
-          const decoCount = decorCollection.filter(id => id === decoId).length;
-          // Allow up to 3 of the same decoration
-          if (decoCount < 3) {
-            decorCollection.push(decoId);
-            updateData.decorations = decorCollection;
-          } else {
-            console.log('Maximum number of this decoration already owned');
             return false;
           }
         }
@@ -769,10 +756,14 @@ export const useUserStore = defineStore('user', {
         
         const rewardAmount = 200;
         const today = new Date().toISOString();
-        
+
+        const todayDate = new Date();
+        const yesterday = new Date(todayDate);
+        yesterday.setDate(todayDate.getDate());
+
         const updateData = {
           pearls: this.userProfile.pearls + rewardAmount,
-          last_reward_collected: today,
+          last_reward_collected: yesterday,
           updated_at: today
         };
         
@@ -782,11 +773,11 @@ export const useUserStore = defineStore('user', {
           .eq('id', this.user.id);
           
         if (error) throw error;
-        
+
         // Update local state
         if (this.userProfile) {
           this.userProfile.pearls = updateData.pearls;
-          this.userProfile.last_reward_collected = today;
+          this.userProfile.last_reward_collected = yesterday.toLocaleDateString('sv-SE');
         }
         
         return true;

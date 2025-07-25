@@ -5,6 +5,10 @@ interface Fish {
   id: string;
   swimX: number;
   swimY: number;
+  swimVY: number;
+  swimVX: number;
+  prevVY: number;
+  prevVX: number;
   targetX?: number;
   targetY?: number;
   direction?: 'left' | 'right';
@@ -24,38 +28,72 @@ export function useAquariumAnimations(activeFish: Ref<Fish[]>, bubbles: Ref<Bubb
   let fishAnimationInterval: NodeJS.Timeout | null = null;
   let bubbleInterval: NodeJS.Timeout | null = null;
 
+  const biasedEdgeRandom = () => {
+    const r = Math.random();
+    if (r < 0.5) {
+      // 50% chance: pick from left/top edge (0–20%)
+      return Math.random() * 25;
+    } else {
+      // 50% chance: pick from right/bottom edge (80–100%)
+      return 75 + Math.random() * 25;
+    }
+  };
+
+  const randomX = () => biasedEdgeRandom();  // favor left and right edges
+  const randomY = () => biasedEdgeRandom();  // favor top and bottom edges
+
   const animateFish = () => {
     activeFish.value.forEach((fish: Fish) => {
-      if (!fish.targetX || !fish.targetY) {
-        fish.targetX = Math.random() * 60 + 20;
-        fish.targetY = Math.random() * 50 + 15;
+      // Set new random target if none exists
+      if (fish.targetX === undefined || fish.targetY === undefined) {
+        fish.targetX = randomX();
+        fish.targetY = randomY();
       }
 
-      const deltaX = fish.targetX - fish.swimX;
-      const deltaY = fish.targetY - fish.swimY;
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const dx = fish.targetX - fish.swimX;
+      const dy = fish.targetY - fish.swimY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance < 3) {
-        fish.targetX = Math.random() * 60 + 20;
-        fish.targetY = Math.random() * 50 + 15;
+      // If close to the target, pick a new one
+      if (distance < 2) {
+        fish.targetX = randomX();
+        fish.targetY = randomY();
       } else {
-        const speed = 0.4;
-        const moveX = (deltaX / distance) * speed;
-        const moveY = (deltaY / distance) * speed;
-        fish.swimX += moveX;
-        fish.swimY += moveY;
-        fish.direction = moveX > 0 ? 'right' : 'left';
+        // Dynamic speed: slower when near target, faster when far
+        const maxSpeed = 0.3;
+        const minSpeed = 0.1;
+        const speed = Math.max(minSpeed, Math.min(maxSpeed, distance * 0.05));
+
+        // Apply easing for smoother turning
+        const easing = 0.05;
+        const moveX = (dx / distance) * speed;
+        const moveY = (dy / distance) * speed;
+
+        fish.swimX += (moveX - fish.prevVX || 0) * easing + (fish.prevVX || 0);
+        fish.swimY += (moveY - fish.prevVY || 0) * easing + (fish.prevVY || 0);
+
+        // Store previous velocity for smoother easing next frame
+        fish.prevVX = moveX;
+        fish.prevVY = moveY;
+
+        // Smooth direction update
+        if (Math.abs(moveX) > 0.2) {
+          fish.direction = moveX > 0 ? 'right' : 'left';
+        }
       }
 
-      fish.swimX = Math.max(15, Math.min(85, fish.swimX));
-      fish.swimY = Math.max(10, Math.min(70, fish.swimY));
+      // Clamp within 0–100 bounds
+      fish.swimX = Math.max(0, Math.min(90, fish.swimX));
+      fish.swimY = Math.max(0, Math.min(90, fish.swimY));
 
-      if (Math.random() < 0.008) {
-        fish.targetX = Math.random() * 60 + 20;
-        fish.targetY = Math.random() * 50 + 15;
+      // Occasionally assign a new target for unpredictable behavior
+      if (Math.random() < 0.005) {
+        fish.targetX = randomX();
+        fish.targetY = randomY();
       }
     });
   };
+
 
   const generateBubbles = () => {
     if (bubbles.value.length < 15) {
@@ -66,7 +104,7 @@ export function useAquariumAnimations(activeFish: Ref<Fish[]>, bubbles: Ref<Bubb
         if (size < 0.3) sizeClass = 'w-1 h-1';
         else if (size < 0.7) sizeClass = 'w-2 h-2';
         else sizeClass = 'w-3 h-3';
-        
+
         bubbles.value.push({
           id: Date.now() + Math.random(),
           x: Math.random() * 90 + 5,
@@ -74,7 +112,7 @@ export function useAquariumAnimations(activeFish: Ref<Fish[]>, bubbles: Ref<Bubb
           delay: Math.random() * 2,
           duration: 3 + Math.random() * 4,
           opacity: 0.5 + Math.random() * 0.4,
-          sizeClass: sizeClass
+          sizeClass,
         });
       }
     }
