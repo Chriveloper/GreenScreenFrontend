@@ -755,15 +755,11 @@ export const useUserStore = defineStore('user', {
         const supabase = $supabase as SupabaseClient;
         
         const rewardAmount = 200;
-        const today = new Date().toISOString();
-
-        const todayDate = new Date();
-        const yesterday = new Date(todayDate);
-        yesterday.setDate(todayDate.getDate());
+        const today = new Date().toLocaleDateString('sv-SE');
 
         const updateData = {
           pearls: this.userProfile.pearls + rewardAmount,
-          last_reward_collected: yesterday,
+          last_reward_collected: today,
           updated_at: today
         };
         
@@ -777,7 +773,7 @@ export const useUserStore = defineStore('user', {
         // Update local state
         if (this.userProfile) {
           this.userProfile.pearls = updateData.pearls;
-          this.userProfile.last_reward_collected = yesterday.toLocaleDateString('sv-SE');
+          this.userProfile.last_reward_collected = today;
         }
         
         return true;

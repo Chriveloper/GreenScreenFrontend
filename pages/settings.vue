@@ -2,8 +2,44 @@
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold text-sky-600 mb-6">Settings</h1>
 
-    <div v-if="message" class="mb-4 p-4 rounded-lg" :class="messageClass">
-      {{ message }}
+    <div v-if="message" class="mb-6">
+      <div
+          class="flex items-start space-x-3 p-4 rounded-lg text-sm"
+          :class="{
+          'bg-green-100 text-green-800 border border-green-300': messageType === 'success',
+          'bg-red-100 text-red-800 border border-red-300': messageType === 'error',
+          'bg-blue-100 text-blue-800 border border-blue-300': messageType === 'info'
+        }"
+      >
+        <svg
+            v-if="messageType === 'success'"
+            class="w-5 h-5 mt-0.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+        >
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <svg
+            v-else-if="messageType === 'error'"
+            class="w-5 h-5 mt-0.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+        >
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 7h2v4H9V7zm0 6h2v2H9v-2z" clip-rule="evenodd" />
+        </svg>
+        <svg
+            v-else
+            class="w-5 h-5 mt-0.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+        >
+          <path d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7 4h-2v-2h2v2zm0-4h-2V6h2v4z"/>
+        </svg>
+
+        <div class="flex-1">
+          {{ message }}
+        </div>
+      </div>
     </div>
 
     <!-- Screen Time Goals -->
@@ -225,8 +261,8 @@
 </template>
 
 <script setup>
-import {ref, computed, onMounted, watch} from 'vue'
-import {useUserStore} from '~/stores/user'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useUserStore } from '~/stores/user'
 
 const userStore = useUserStore()
 
@@ -335,7 +371,7 @@ const loadInstalledApps = () => {
 const saveDailyGoal = async () => {
   saving.value = true
   try {
-    const goals = {dailyLimit: Math.round(dailyLimitMinutes.value)}
+    const goals = { dailyLimit: Math.round(dailyLimitMinutes.value) }
     const success = await userStore.updateScreenTimeGoals(goals)
     showMessage(success ? 'Daily limit updated.' : 'Failed to save daily limit', success ? 'success' : 'error')
   } finally {
@@ -349,7 +385,7 @@ const addAppLimit = async () => {
   if (val < 1 || val > 1440) return
   saving.value = true
   try {
-    const updated = {...appLimits.value, [selectedApp.value]: val}
+    const updated = { ...appLimits.value, [selectedApp.value]: val }
     const success = await userStore.updateAppLimits(updated)
     if (success) {
       selectedApp.value = ''
@@ -364,7 +400,7 @@ const addAppLimit = async () => {
 const removeAppLimit = async (pkg) => {
   saving.value = true
   try {
-    const updated = {...appLimits.value}
+    const updated = { ...appLimits.value }
     delete updated[pkg]
     const success = await userStore.updateAppLimits(updated)
     showMessage(success ? 'Limit removed.' : 'Failed to remove limit', success ? 'success' : 'error')

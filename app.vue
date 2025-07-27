@@ -259,14 +259,11 @@ async function claimDailyReward(){
 async function claimedRewardToday(){
   const lastRewardDate = new Date(userStore.userProfile.last_reward_collected);
   const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
 
   const last = lastRewardDate.toLocaleDateString('sv-SE');
-  const yesterdayStr = yesterday.toLocaleDateString('sv-SE');
   const todayStr = today.toLocaleDateString('sv-SE');
 
-  return last === todayStr || last === yesterdayStr;
+  return last === todayStr;
 }
 
 async function checkLimitsExceeded() {
