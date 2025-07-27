@@ -54,22 +54,22 @@
         >
           <button
               class="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg hover:bg-blue-600 transition"
-              @click.stop="resizePlant(plant.id, 1)"
               title="Increase size scale"
+              @click.stop="resizePlant(plant.id, 1)"
           >
             +
           </button>
           <button
               class="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg hover:bg-blue-600 transition"
-              @click.stop="resizePlant(plant.id, -1)"
               title="Decrease size scale"
+              @click.stop="resizePlant(plant.id, -1)"
           >
             −
           </button>
           <button
               class="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg hover:bg-red-600 transition"
-              @click.stop="$emit('remove-plant', plant.id)"
               title="Remove plant"
+              @click.stop="$emit('remove-plant', plant.id)"
           >
             ×
           </button>
@@ -95,7 +95,7 @@
       <div
           v-for="bubble in bubbles"
           :key="bubble.id"
-          class="absolute rounded-full opacity-70 bubble z-25"
+          class="absolute rounded-full opacity-70 bubble z-1"
           :class="bubble.sizeClass"
           :style="getBubbleStyle(bubble)"
       ></div>
@@ -306,14 +306,6 @@ const resizePlant = (plantId, scaleChange) => emit('resize-plant', plantId, scal
 
 .z-30 {
   z-index: 30;
-}
-
-.z-40 {
-  z-index: 40;
-}
-
-.z-45 {
-  z-index: 45;
 }
 
 .z-50 {
