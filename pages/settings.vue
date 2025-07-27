@@ -11,17 +11,33 @@
       <h2 class="text-lg font-semibold mb-4 pb-2 border-b text-sky-700">Screen Time Goals</h2>
 
       <div class="space-y-4">
-        <!-- Daily Goal -->
+        <!-- Daily Limit -->
         <div>
-          <label for="daily-limit" class="block text-sm font-medium text-gray-700 mb-1">Daily Screen Time Limit</label>
+          <label for="daily-limit" class="text-md font-medium mb-2">Daily Screen Time Limit</label>
           <div class="flex items-center">
-            <input type="number" id="daily-limit" v-model="dailyLimitMinutes" min="0.5" max="24" step="0.5"
-                   class="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+            <input
+                id="daily-limit" v-model="dailyLimitMinutes" type="number" min="1" max="1440" step="1"
+                class="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500">
             <span class="ml-2 text-gray-600">minutes</span>
-            <button @click="saveDailyGoal" :disabled="saving"
-                    class="ml-4 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-sm transition">
+            <button
+                :disabled="saving" class="ml-4 bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-sm transition"
+                @click="saveDailyGoal">
               {{ saving ? 'Saving...' : 'Save' }}
             </button>
+          </div>
+
+          <div v-if="hasTodayData" class="mt-2">
+            <div class="text-sm text-gray-600 flex justify-between mb-1">
+              <span>Used today</span>
+              <span>{{ formatUsageTime(todayUsageSeconds) }} / {{ dailyLimitMinutes }} min</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div
+                  class="h-3 rounded-full transition-all duration-300"
+                  :class="todayUsageSeconds >= dailyLimitMinutes * 60 ? 'bg-red-500' : 'bg-sky-500'"
+                  :style="{ width: barWidth(todayUsageSeconds, dailyLimitMinutes) }"
+              ></div>
+            </div>
           </div>
         </div>
 
@@ -29,24 +45,20 @@
         <div class="border-t pt-4 mt-4">
           <h3 class="text-md font-medium mb-2">App Specific Limits</h3>
 
-          <!-- Add New App Limit -->
+          <!-- Add Limit -->
           <div class="bg-gray-50 p-4 rounded-lg mb-4">
             <h4 class="text-sm font-medium text-gray-700 mb-3">Add New App Limit</h4>
 
-            <!-- App Selector -->
             <div class="relative w-full mb-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">App</label>
               <button
-                  @click="showDropdown = !showDropdown"
-                  type="button"
                   class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              >
+                  @click="showDropdown = !showDropdown">
                 <div class="flex items-center space-x-2 truncate">
                   <img
                       v-if="selectedAppObject?.icon"
                       :src="`data:image/png;base64,${selectedAppObject.icon}`"
-                      class="w-5 h-5 rounded"
-                  />
+                      class="w-5 h-5 rounded" />
                   <span class="truncate">{{ selectedAppObject?.appName || 'Select an app' }}</span>
                 </div>
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,94 +68,102 @@
 
               <div
                   v-if="showDropdown"
-                  class="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-xl max-h-72 overflow-auto"
-              >
+                  class="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-xl max-h-72 overflow-auto">
                 <input
-                    type="text"
                     v-model="dropdownSearch"
                     placeholder="Search apps..."
-                    class="w-full px-3 py-2 text-sm border-b border-gray-200 focus:outline-none focus:ring-0"
-                />
+                    class="w-full px-3 py-2 text-sm border-b border-gray-200 focus:outline-none focus:ring-0" />
                 <ul class="divide-y divide-gray-100">
                   <li
-                      v-for="app in filteredDropdownApps"
-                      :key="app.packageName"
-                      @click="selectApp(app)"
+                      v-for="app in filteredDropdownApps" :key="app.packageName"
                       class="flex items-center px-3 py-2 hover:bg-sky-50 cursor-pointer transition"
-                  >
+                      @click="selectApp(app)">
                     <img
                         v-if="app.icon"
                         :src="`data:image/png;base64,${app.icon}`"
-                        class="w-5 h-5 mr-2 rounded"
-                    />
+                        class="w-5 h-5 mr-2 rounded" />
                     <div class="flex-1">
                       <span class="truncate">{{ app.appName }}</span>
-                      <span v-if="app.isSystemApp" class="ml-2 text-xs text-gray-500 bg-gray-100 px-1 rounded">System</span>
+                      <span
+                          v-if="app.isSystemApp"
+                          class="ml-2 text-xs text-gray-500 bg-gray-100 px-1 rounded">System</span>
                     </div>
                   </li>
-                  <li v-if="filteredDropdownApps.length === 0" class="px-3 py-2 text-sm text-gray-500">
-                    No matching apps
-                  </li>
+                  <li
+                      v-if="filteredDropdownApps.length === 0"
+                      class="px-3 py-2 text-sm text-gray-500">No matching apps</li>
                 </ul>
               </div>
             </div>
 
-            <!-- Input + Add Button Row -->
             <div class="flex items-end space-x-2">
               <div>
                 <label for="app-limit" class="block text-sm font-medium text-gray-700 mb-1">Limit (minutes)</label>
-                <input type="number" id="app-limit" v-model="newAppLimit" min="1" max="1440"
-                       class="w-28 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-                       placeholder="30">
+                <input
+                    id="app-limit" v-model="newAppLimit" type="number" min="1" max="1440"
+                    class="w-28 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
+                    placeholder="30">
               </div>
-
-              <button @click="addAppLimit" :disabled="!selectedApp || !newAppLimit || saving"
-                      class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm transition">
+              <button
+                  :disabled="!selectedApp || !newAppLimit || saving" class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm transition"
+                  @click="addAppLimit">
                 {{ saving ? 'Adding...' : 'Add' }}
               </button>
             </div>
           </div>
 
-          <!-- Current App Limits -->
-          <div v-if="Object.keys(appLimits).length > 0" class="space-y-2">
+          <!-- Current App Limits with Usage -->
+          <div v-if="Object.keys(appLimits).length > 0" class="space-y-4">
             <h4 class="text-sm font-medium text-gray-700 mb-2">Current App Limits</h4>
-            <div v-for="(limit, packageName) in appLimits"
-                 :key="packageName"
-                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border-l-4 border-sky-500">
-              <div class="flex items-center">
-                <img
-                    v-if="getAppIcon(packageName)"
-                    :src="getAppIcon(packageName)"
-                    class="w-5 h-5 mr-2 rounded"
-                    alt="App icon"
-                />
-                <div>
-                  <span class="font-medium">{{ formatAppName(packageName) }}</span>
-                  <span v-if="getAppType(packageName) === 'system'" class="ml-2 text-xs text-gray-500 bg-gray-100 px-1 rounded">System</span>
+            <div
+                v-for="(limitMin, pkg) in appLimits" :key="pkg"
+                class="p-3 bg-gray-50 rounded-lg border-l-4 border-sky-500">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <img v-if="getAppIcon(pkg)" :src="getAppIcon(pkg)" class="w-5 h-5 mr-2 rounded" />
+                  <div>
+                    <span class="font-medium">{{ formatAppName(pkg) }}</span>
+                    <span
+                        v-if="getAppType(pkg) === 'system'"
+                        class="ml-2 text-xs text-gray-500 bg-gray-100 px-1 rounded">System</span>
+                  </div>
                 </div>
-                <div class="text-sm text-gray-600 ml-2">{{ limit }} minutes per day
-                  <span class="ml-2 text-xs text-gray-500">({{ Math.round(limit / 60 * 10) / 10 }}h)</span>
-                </div>
-              </div>
-              <button @click="removeAppLimit(packageName)" :disabled="saving"
-                      class="text-red-500 hover:text-red-700 disabled:text-gray-400 p-1 transition"
-                      title="Remove limit">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd"
+                <button
+                    :disabled="saving" class="text-red-500 hover:text-red-700 disabled:text-gray-400 p-1 transition"
+                    title="Remove limit"
+                    @click="removeAppLimit(pkg)">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                        fill-rule="evenodd"
                         d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                         clip-rule="evenodd"/>
-                </svg>
-              </button>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="mt-2">
+                <div class="text-xs text-gray-600 flex justify-between mb-1">
+                  <span>Used: {{ formatUsageTime(appUsageMap[pkg].usedSeconds) }}</span>
+                  <span>{{ formatUsageTime(limitMin * 60) }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                      class="h-2 rounded-full transition-all duration-300"
+                      :class="appUsageMap[pkg].usedSeconds >= limitMin * 60 ? 'bg-red-500' : 'bg-sky-400'"
+                      :style="{ width: barWidth(appUsageMap[pkg].usedSeconds, limitMin) }"
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Centered Reset Button (no disclaimer) -->
       <div class="pt-6 border-t">
         <div class="flex justify-center">
-          <button @click="resetAllLimits"
-                  class="text-red-600 hover:text-red-700 text-sm font-medium transition">
+          <button
+              class="text-red-600 hover:text-red-700 text-sm font-medium transition"
+              @click="resetAllLimits">
             Reset All Limits
           </button>
         </div>
@@ -155,29 +175,22 @@
       <h2 class="text-lg font-semibold mb-4 pb-2 border-b text-sky-700">Profile Settings</h2>
 
       <div class="space-y-6">
-        <!-- Username -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
           <input
-              v-model="username"
-              type="text"
+              v-model="username" type="text"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-              placeholder="Enter username"
-          />
+              placeholder="Enter username" />
         </div>
 
-        <!-- Display Name -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
           <input
-              v-model="displayName"
-              type="text"
+              v-model="displayName" type="text"
               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500"
-              placeholder="Enter display name"
-          />
+              placeholder="Enter display name" />
         </div>
 
-        <!-- Privacy Settings -->
         <div class="bg-gray-50 rounded-lg p-4">
           <h3 class="text-md font-medium mb-2">Privacy Settings</h3>
           <div class="space-y-2">
@@ -199,76 +212,88 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <button
-          :disabled="saving"
-          class="mt-6 w-full bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-medium transition"
-          @click="saveProfile"
-      >
-        {{ saving ? 'Saving...' : 'Save Profile' }}
-      </button>
-
-      <!-- Success/Error Messages -->
-      <div
-          v-if="message" class="mt-4 p-3 rounded-md" :class="{
-      'bg-green-100 text-green-700 border border-green-200': messageType === 'success',
-      'bg-red-100 text-red-700 border border-red-200': messageType === 'error'
-    }">
-        {{ message }}
+        <button
+            :disabled="saving"
+            class="mt-6 w-full bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded font-medium transition"
+            @click="saveProfile">
+          {{ saving ? 'Saving...' : 'Save Profile' }}
+        </button>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup>
-definePageMeta({ ssr: false })
-
-import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '~/stores/user'
+import {ref, computed, onMounted, watch} from 'vue'
+import {useUserStore} from '~/stores/user'
 
 const userStore = useUserStore()
 
-const username = ref('');
-const displayName = ref('');
+const dailyLimitMinutes = ref(userStore.userProfile?.screen_time_goals?.dailyLimit || 0)
+const appLimits = computed(() => userStore.userProfile?.app_limits || {})
+const username = ref(userStore.userProfile?.username || '')
+const displayName = ref(userStore.userProfile?.display_name || '')
+const privacySettings = ref(userStore.userProfile?.privacy_settings || {
+  aquarium_visibility: 'friends',
+  pearls_visibility: 'friends'
+})
 
-const dailyLimitMinutes = ref(4)
+const availableApps = ref([])
 const selectedApp = ref('')
 const newAppLimit = ref('')
-const availableApps = ref([])
 const saving = ref(false)
 const showDropdown = ref(false)
 const dropdownSearch = ref('')
 const message = ref('')
 const messageType = ref('success')
 
-const privacySettings = ref({
-  aquarium_visibility: 'friends',
-  pearls_visibility: 'friends',
-  screen_time_visibility: 'friends'
-});
+const parsedUsage = computed(() => {
+  try {
+    return JSON.parse(userStore.usage_data || '[]')
+  } catch {
+    return []
+  }
+})
+const todayEntries = computed(() => parsedUsage.value[0]?.entries || [])
+const hasTodayData = computed(() => parsedUsage.value.length > 0)
 
-const appLimits = computed(() => userStore.appLimits)
-
-const availableAppsForLimits = computed(() =>
-    availableApps.value.filter(app => app && app.packageName && !appLimits.value[app.packageName])
+const todayUsageSeconds = computed(() =>
+    todayEntries.value.reduce((acc, e) => acc + (e.usageSeconds || 0), 0)
 )
+
+const appUsageMap = computed(() => {
+  const map = {}
+  for (const pkg in appLimits.value) {
+    const entry = todayEntries.value.find(e => e.packageName === pkg)
+    map[pkg] = {
+      usedSeconds: entry?.usageSeconds || 0
+    }
+  }
+  return map
+})
+
+const formatUsageTime = (seconds) => {
+  const m = Math.round(seconds / 60)
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  return `${h}h ${m % 60}m`
+}
+
+const barWidth = (usedSec, limitMin) => {
+  const width = limitMin > 0 ? Math.min((usedSec / (limitMin * 60)) * 100, 100) : 0
+  return `${width}%`
+}
 
 const filteredDropdownApps = computed(() =>
-    availableAppsForLimits.value.filter(app =>
-        app.appName.toLowerCase().includes(dropdownSearch.value.toLowerCase())
+    availableApps.value.filter(a =>
+        a.packageName &&
+        !appLimits.value[a.packageName] &&
+        a.appName.toLowerCase().includes(dropdownSearch.value.toLowerCase())
     )
 )
-
 const selectedAppObject = computed(() =>
-    availableApps.value.find(app => app.packageName === selectedApp.value) || null
-)
-
-const messageClass = computed(() =>
-    messageType.value === 'success'
-        ? 'bg-green-100 text-green-700 border border-green-200'
-        : 'bg-red-100 text-red-700 border border-red-200'
+    availableApps.value.find(a => a.packageName === selectedApp.value) || null
 )
 
 const showMessage = (text, type = 'success') => {
@@ -279,36 +304,17 @@ const showMessage = (text, type = 'success') => {
   }, 5000)
 }
 
-const loadInstalledApps = () => {
-  try {
-    if (userStore.installed_apps && typeof userStore.installed_apps === 'string') {
-      const parsed = JSON.parse(userStore.installed_apps)
-      availableApps.value = Array.isArray(parsed)
-          ? parsed.filter(app => app && app.packageName && app.appName)
-          : []
-    }
-  } catch (error) {
-    console.error('Error parsing installed apps:', error)
-    availableApps.value = []
-  }
+const getAppIcon = (pkg) => {
+  const app = availableApps.value.find(a => a.packageName === pkg)
+  return app?.icon ? `data:image/png;base64,${app.icon}` : null
 }
-
-const loadSettings = () => {
-  if (userStore.userProfile?.screen_time_goals.dailyLimit) {
-    dailyLimitMinutes.value = userStore.userProfile.screen_time_goals.dailyLimit
-  }
+const formatAppName = (pkg) => {
+  const app = availableApps.value.find(a => a.packageName === pkg)
+  return app?.appName || pkg
 }
-
-const saveDailyGoal = async () => {
-  saving.value = true
-  try {
-    const goals = { dailyLimit: Math.round(dailyLimitMinutes.value) }
-    const success = await userStore.updateScreenTimeGoals(goals)
-    if (success) showMessage(`Daily limit updated to ${dailyLimitMinutes.value} minutes`)
-    else showMessage('Failed to save daily limit', 'error')
-  } finally {
-    saving.value = false
-  }
+const getAppType = (pkg) => {
+  const app = availableApps.value.find(a => a.packageName === pkg)
+  return app?.isSystemApp ? 'system' : 'user'
 }
 
 const selectApp = (app) => {
@@ -317,38 +323,51 @@ const selectApp = (app) => {
   dropdownSearch.value = ''
 }
 
-const addAppLimit = async () => {
-  if (!selectedApp.value || !newAppLimit.value) return
-  const limitValue = parseInt(newAppLimit.value)
-  if (limitValue < 1 || limitValue > 1440) {
-    showMessage('App limit must be between 1 and 1440 minutes', 'error')
-    return
+const loadInstalledApps = () => {
+  try {
+    const parsed = JSON.parse(userStore.installed_apps || '[]')
+    availableApps.value = Array.isArray(parsed) ? parsed : []
+  } catch {
+    availableApps.value = []
   }
+}
 
+const saveDailyGoal = async () => {
   saving.value = true
   try {
-    const updatedLimits = { ...appLimits.value, [selectedApp.value]: limitValue }
-    const success = await userStore.updateAppLimits(updatedLimits)
-    if (success) {
-      showMessage(`Added ${limitValue} min limit for ${formatAppName(selectedApp.value)}`)
-      selectedApp.value = ''
-      newAppLimit.value = ''
-    } else {
-      showMessage('Failed to add app limit', 'error')
-    }
+    const goals = {dailyLimit: Math.round(dailyLimitMinutes.value)}
+    const success = await userStore.updateScreenTimeGoals(goals)
+    showMessage(success ? 'Daily limit updated.' : 'Failed to save daily limit', success ? 'success' : 'error')
   } finally {
     saving.value = false
   }
 }
 
-const removeAppLimit = async (packageName) => {
+const addAppLimit = async () => {
+  if (!selectedApp.value || !newAppLimit.value) return
+  const val = parseInt(newAppLimit.value)
+  if (val < 1 || val > 1440) return
   saving.value = true
   try {
-    const updatedLimits = { ...appLimits.value }
-    delete updatedLimits[packageName]
-    const success = await userStore.updateAppLimits(updatedLimits)
-    if (success) showMessage(`Removed limit for ${formatAppName(packageName)}`)
-    else showMessage('Failed to remove app limit', 'error')
+    const updated = {...appLimits.value, [selectedApp.value]: val}
+    const success = await userStore.updateAppLimits(updated)
+    if (success) {
+      selectedApp.value = ''
+      newAppLimit.value = ''
+      showMessage('App limit added.')
+    } else showMessage('Failed to add app limit', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+const removeAppLimit = async (pkg) => {
+  saving.value = true
+  try {
+    const updated = {...appLimits.value}
+    delete updated[pkg]
+    const success = await userStore.updateAppLimits(updated)
+    showMessage(success ? 'Limit removed.' : 'Failed to remove limit', success ? 'success' : 'error')
   } finally {
     saving.value = false
   }
@@ -359,67 +378,29 @@ const resetAllLimits = async () => {
   saving.value = true
   try {
     const success = await userStore.updateAppLimits({})
-    if (success) showMessage('All app limits reset')
-    else showMessage('Failed to reset limits', 'error')
+    showMessage(success ? 'All limits reset.' : 'Failed to reset limits', success ? 'success' : 'error')
   } finally {
     saving.value = false
   }
 }
 
-const formatAppName = (packageName) => {
-  const app = availableApps.value.find(app => app && app.packageName === packageName)
-  return app ? app.appName : packageName
-}
-
-const getAppIcon = (packageName) => {
-  const app = availableApps.value.find(app => app && app.packageName === packageName)
-  if (app && app.icon) {
-    // If icon is already a data URL, use as is; else, prepend
-    return app.icon.startsWith('data:image') ? app.icon : `data:image/png;base64,${app.icon}`
-  }
-  return null
-}
-
-const getAppType = (packageName) => {
-  const app = availableApps.value.find(app => app && app.packageName === packageName)
-  return app?.isSystemApp ? 'system' : 'user'
-}
-
-onMounted(() => {
-  loadInstalledApps()
-  loadSettings()
-
-  if (userStore.userProfile) {
-    username.value = userStore.userProfile.username || '';
-    displayName.value = userStore.userProfile.display_name || '';
-    if (userStore.userProfile.privacy_settings) {
-      privacySettings.value = { ...privacySettings.value, ...userStore.userProfile.privacy_settings };
-    }
-  }
-})
-
 const saveProfile = async () => {
-  saving.value = true;
-  message.value = '';
-
+  saving.value = true
   try {
     const updates = {
       username: username.value,
       display_name: displayName.value,
       privacy_settings: privacySettings.value
-    };
-
-    const success = await userStore.updateUserProfile(updates);
-    if (success) {
-      showMessage('Profile updated successfully', 'success');
-    } else {
-      showMessage('Failed to update profile. Please try again.', 'error');
     }
-  } catch (error) {
-    console.error('Profile update error:', error);
-    showMessage('An error occurred while updating your profile.', 'error');
+    const success = await userStore.updateUserProfile(updates)
+    showMessage(success ? 'Profile updated' : 'Failed to update profile', success ? 'success' : 'error')
   } finally {
-    saving.value = false;
+    saving.value = false
   }
-};
+}
+
+onMounted(() => {
+  loadInstalledApps();
+  watch(() => userStore.usage_data, loadInstalledApps)
+})
 </script>
