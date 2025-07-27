@@ -43,12 +43,12 @@ export function useDragAndDrop(placedPlants: Ref<Plant[]>, saveAquariumLayout: (
     const newX = ((clientX - tankRect.left) / tankRect.width) * 100;
     
     // Calculate y position as percentage from bottom within ground region
-    const groundHeight = tankRect.height * 0.25; // 25% of tank height
+    const groundHeight = tankRect.height * 0.20; // 25% of tank height
     const clickY = tankRect.bottom - clientY;
-    let newY = (clickY / groundHeight) * 25; // Scale to 0-25% range
+    let newY = (clickY / groundHeight) * 20; // Scale to 0-25% range
     
     // Constrain to ground region
-    newY = Math.max(0, Math.min(25, newY));
+    newY = Math.max(0, Math.min(20, newY));
     
     // Update plant position
     if (draggedItem.value) {

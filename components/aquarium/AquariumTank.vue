@@ -23,8 +23,9 @@
 
       <div class="absolute inset-0 bg-blue-400 bg-opacity-20 rounded-lg pointer-events-none z-5"></div>
 
+      <!-- Floor -->
       <div
-          class="absolute bottom-0 left-0 right-0 ground-region rounded-b-lg z-10 floor-tiles"
+          class="absolute bottom-0 left-0 right-0 ground-region rounded-b-lg z-5 floor-tiles"
           :style="getFloorStyle()"
       ></div>
 
@@ -35,7 +36,7 @@
           class="absolute cursor-move group transition-transform transform-origin-bottom-center"
           :class="[
           'plant-container plant-sway',
-          editMode ? 'z-45 hover:scale-110' : 'z-20'
+          'z-20'
         ]"
           :style="getPlantStyle(plant)"
           @mousedown="editMode ? $emit('start-drag', plant, $event) : null"
@@ -127,7 +128,7 @@ watch(
         isReady.value = true;
       }
     },
-    {immediate: true, deep: true}
+    { immediate: true, deep: true }
 );
 
 const getPlantStyle = (plant) => {
@@ -225,7 +226,8 @@ const resizePlant = (plantId, scaleChange) => emit('resize-plant', plantId, scal
   transform-origin: bottom center;
 }
 
-.plant-image, .fish-sprite {
+.plant-image,
+.fish-sprite {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
@@ -251,7 +253,9 @@ const resizePlant = (plantId, scaleChange) => emit('resize-plant', plantId, scal
 }
 
 @keyframes sway {
-  0%, 50%, 100% {
+  0%,
+  50%,
+  100% {
     transform: translateX(-50%) rotate(0deg);
   }
   25% {
@@ -291,23 +295,18 @@ const resizePlant = (plantId, scaleChange) => emit('resize-plant', plantId, scal
 .z-5 {
   z-index: 5;
 }
-
 .z-10 {
   z-index: 10;
 }
-
 .z-15 {
   z-index: 15;
 }
-
 .z-25 {
   z-index: 25;
 }
-
 .z-30 {
   z-index: 30;
 }
-
 .z-50 {
   z-index: 50;
 }
