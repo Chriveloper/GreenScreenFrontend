@@ -14,7 +14,7 @@
     <template v-if="isReady">
       <div class="absolute top-4 right-4 z-30">
         <button
-            class="bg-sky-600 hover:bg-sky-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md font-medium transition"
+            class="bg-sky-600/60 hover:bg-sky-600/80 disabled:bg-gray-400/50 text-white px-4 py-2 rounded-md font-medium transition"
             @click="$emit('toggle-edit-mode')"
         >
           {{ editMode ? 'Exit Edit Mode' : 'Edit Aquarium' }}

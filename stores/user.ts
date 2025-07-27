@@ -300,7 +300,7 @@ export const useUserStore = defineStore('user', {
         const { error: sessionError } = await supabase
           .from('focus_sessions')
           .insert({
-            user_id: this.user.id,
+            id: this.user.id,
             duration_minutes: durationMinutes,
             pearls_earned: pearlsEarned,
             completed_at: new Date().toISOString()
