@@ -56,7 +56,7 @@ export const availableFloors = [
   },
   { 
     id: 'tiles_1', 
-    name: 'Blue Tiles',
+    name: 'Stone Tiles',
     image: '/resources/floor_tiles/tiles_1.png',
     preview: 'background-image: url("/resources/floor_tiles/tiles_1.png"); background-size: cover;'
   },

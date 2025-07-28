@@ -14,6 +14,7 @@
     <template v-if="isReady">
       <div class="absolute top-4 right-4 z-30">
         <button
+            v-if = "showButton"
             class="bg-sky-600/60 hover:bg-sky-600/80 disabled:bg-gray-400/50 text-white px-4 py-2 rounded-md font-medium transition"
             @click="$emit('toggle-edit-mode')"
         >
@@ -114,7 +115,8 @@ const props = defineProps({
   bubbles: Array,
   selectedBackground: String,
   selectedFloor: String,
-  editMode: Boolean
+  editMode: Boolean,
+  showButton: Boolean
 });
 
 const emit = defineEmits(['start-drag', 'remove-plant', 'place-plant', 'resize-plant', 'toggle-edit-mode']);

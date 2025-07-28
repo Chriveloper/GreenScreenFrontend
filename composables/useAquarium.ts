@@ -9,7 +9,7 @@ interface Plant {
   img: string;
   x: number;
   y: number;
-  scale: number; // Scale multiplier for the plant size (0.3 to 2.0)
+  scale: number;
 }
 
 interface Fish {
@@ -37,8 +37,8 @@ export function useAquarium() {
   // Reactive state
   const placedPlants = ref<Plant[]>([]);
   const activeFish = ref<Fish[]>([]);
-  const selectedBackground = ref('default');
-  const selectedFloor = ref('sand');
+  const selectedBackground = ref('background_1b');
+  const selectedFloor = ref('tiles_10');
   const loading = ref(false);
   const message = ref('');
   const messageType = ref<'success' | 'error' | 'info'>('success');
@@ -88,6 +88,24 @@ export function useAquarium() {
     }
   };
 
+  const loadUserAquariumLayout = (layout: any) => {
+    if (!layout || typeof layout !== 'object') return;
+
+    placedPlants.value = layout.plants?.map((p: any) => ({
+      ...p,
+      y: p.y !== undefined ? p.y : Math.floor(Math.random() * 20),
+      scale: p.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
+    })) || [];
+
+    selectedBackground.value = layout.background || 'background_1b';
+    selectedFloor.value = layout.floor || 'tiles_10';
+
+    activeFish.value = layout.fish?.map((savedFish: any) => {
+      const fishTemplate = fishData.find(f => f.id === savedFish.id);
+      return fishTemplate ? { ...fishTemplate, ...savedFish } : null;
+    }).filter((f: any) => f && f.name) || [];
+  };
+
   // Load layout
   const loadAquariumLayout = () => {
     const layout = userStore.aquariumLayout;
@@ -98,8 +116,8 @@ export function useAquarium() {
             y: p.y !== undefined ? p.y : Math.floor(Math.random() * 20),
             scale: p.scale || PLANT_SCALE_LEVELS[DEFAULT_SCALE_INDEX]
           })) || [];
-      selectedBackground.value = layout.background || 'default';
-      selectedFloor.value = layout.floor || 'sand';
+      selectedBackground.value = layout.background || 'background_1b';
+      selectedFloor.value = layout.floor || 'tiles_10';
       activeFish.value =
           layout.fish
               ?.map((savedFish: any) => {
@@ -352,6 +370,7 @@ export function useAquarium() {
     ownedPlants,
     tankHealth,
     loadAquariumLayout,
+    loadUserAquariumLayout,
     saveAquariumLayout,
     toggleFish,
     addPlantToTank,

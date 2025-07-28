@@ -122,13 +122,13 @@ import { fishData, plantData } from '~/data/aquarium/items';
 
 const availableFish = ref(fishData.map((fish, i) => ({
   ...fish,
-  price: 100 + i * 125, // Example price logic: 50, 75, 100, ...
+  price: 100 + i * 125,
 })));
 
 const availablePlants = ref(plantData
     .map((plant, i) => ({
       ...plant,
-      price: 25 + i * 25, // Example price logic
+      price: 25 + i * 25,
     })));
 
 

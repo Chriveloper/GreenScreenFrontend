@@ -15,6 +15,7 @@
           :selected-background="selectedBackground"
           :selected-floor="selectedFloor"
           :edit-mode="editMode"
+          :show-button="true"
           :loading="loading"
           @start-drag="startDrag"
           @remove-plant="handleRemovePlant"

@@ -54,11 +54,11 @@ import { availableBackgrounds, availableFloors } from '~/data/aquarium/items';
 defineProps({
   selectedBackground: {
     type: String,
-    default: 'default',
+    default: 'background_1b',
   },
   selectedFloor: {
     type: String,
-    default: 'sand',
+    default: 'tiles_10',
   },
 });
 
