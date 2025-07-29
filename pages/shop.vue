@@ -141,7 +141,7 @@ const purchaseItem = async (item, type) => {
     const success = await userStore.purchaseShopItem(item, type, item.price);
     if (success) {
       lastPurchaseItem.value = item;
-      showPurchaseModal.value = true;
+      //showPurchaseModal.value = true;
     }
   } catch (error) {
     console.error('Purchase failed:', error);
